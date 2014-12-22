@@ -2,6 +2,8 @@
 
 module QuickBooks where
 
+import System.Environment (getEnv)
+
 data SalesItemLineDetail = SalesItemLineDetail
 
 data DetailType = DetailType
@@ -26,11 +28,16 @@ data Invoice = Invoice
 data APIKey = APIKey
 
 data QuickBooksRequest where
-  CreateInvoice :: Invoice -> APIKey -> QuickBooksRequest
-  -- ReadInvoice   :: String -> APIKey -> QuickBooksRequest
-  -- UpdateInvoice :: Invoice -> APIKey -> QuickBooksRequest
-  -- DeleteInvoice :: String -> APIKey -> QuickBooksRequest
+  CreateInvoice :: Invoice -> QuickBooksRequest
+  -- ReadInvoice   :: String -> QuickBooksRequest
+  -- UpdateInvoice :: Invoice -> QuickBooksRequest
+  -- DeleteInvoice :: String -> QuickBooksRequest
+
+data APIConfig = APIConfig
+  { companyId :: String
+  , apiKey    :: String
+  }
 
 runQuickBooksRequest :: QuickBooksRequest -> IO ()
-runQuickBooksRequest (CreateInvoice invoice key) = undefined
+runQuickBooksRequest (CreateInvoice invoice) = undefined
 -- runQuickBooksRequest _ = undefined
