@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 {-# LANGUAGE OverloadedStrings  #-}
 {-# LANGUAGE TypeFamilies       #-}
 {-# LANGUAGE GADTs              #-}
@@ -5,18 +6,16 @@
 {-# LANGUAGE DeriveGeneric      #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE ViewPatterns       #-}
-{-# LANGUAGE TemplateHaskell    #-}
 
 module QuickBooks where
 
 import Control.Applicative ((<$>))
 import Data.Aeson
-import Data.Aeson.TH
 import GHC.Generics
 import Data.Text(Text)
 import Network.Wreq
 import Network.HTTP.Types.URI
-import qualified Data.ByteString.Char8 as BSC
+import Data.ByteString.Char8
 import Blaze.ByteString.Builder
 
 newtype InvoiceId = InvoiceId {unInvoiceId :: Text}
@@ -27,6 +26,19 @@ newtype LineId    = LineId {unLineId :: Text}
 
 newtype CustomerRefValue = CustomerRefValue {unCustomerRefValue :: Text}
   deriving (Generic)
+=======
+{-# LANGUAGE GADTs           #-}
+{-# LANGUAGE ImplicitParams  #-}
+{-# LANGUAGE TemplateHaskell #-}
+
+module QuickBooks where
+
+import Data.Aeson
+import Data.Aeson.TH
+import Data.Monoid
+import Network.Wreq
+import System.Environment (getEnv)
+>>>>>>> 99ba814e23374b591638880b7c108507cddf1e51
 
 data SalesItemLineDetail = SalesItemLineDetail
 
@@ -49,16 +61,35 @@ data Invoice = Invoice
   , invoiceCustomerRef :: !CustomerRef
   }
 
-$(deriveJSON defaultOptions{fieldLabelModifier = drop 9} ''InvoiceId)
-$(deriveJSON defaultOptions{fieldLabelModifier = drop 4} ''LineId)
+<<<<<<< HEAD
+instance ToJSON LineId
+instance ToJSON InvoiceId
+instance ToJSON CustomerRefValue
+instance ToJSON SalesItemLineDetail
+instance ToJSON DetailType
+instance ToJSON Line
+instance ToJSON CustomerRef
+instance ToJSON Invoice
+=======
 $(deriveJSON defaultOptions{fieldLabelModifier = drop 11} ''CustomerRef)
 $(deriveJSON defaultOptions{fieldLabelModifier = drop 4} ''DetailType)
 $(deriveJSON defaultOptions{fieldLabelModifier = drop 7} ''Invoice)
 $(deriveJSON defaultOptions{fieldLabelModifier = drop 4} ''Line)
 $(deriveJSON defaultOptions{fieldLabelModifier = drop 4} ''SalesItemLineDetail)
+>>>>>>> 99ba814e23374b591638880b7c108507cddf1e51
+
+instance FromJSON LineId
+instance FromJSON InvoiceId
+instance FromJSON CustomerRefValue
+instance FromJSON SalesItemLineDetail
+instance FromJSON DetailType
+instance FromJSON Line
+instance FromJSON CustomerRef
+instance FromJSON Invoice
 
 data APIKey = APIKey
 
+<<<<<<< HEAD
 data family QuickBooksResponse a
 data instance QuickBooksResponse Invoice = QuickBooksInvoiceResponse Invoice
 
@@ -73,6 +104,13 @@ data QuickBooksRequest a where
   DeleteInvoice :: InvoiceId  -> QuickBooksQuery Invoice
 
 type QuickBooksQuery a = QuickBooksRequest (QuickBooksResponse a)
+=======
+data InvoiceOperation where
+  CreateInvoice :: Invoice -> InvoiceOperation
+  -- ReadInvoice   :: String -> InvoiceOperation
+  -- UpdateInvoice :: Invoice -> InvoiceOperation
+  -- DeleteInvoice :: String -> InvoiceOperation
+>>>>>>> 99ba814e23374b591638880b7c108507cddf1e51
 
 data APIConfig = APIConfig
   { companyId :: !Text
@@ -80,6 +118,7 @@ data APIConfig = APIConfig
   , hostname  :: !Text
   }
 
+<<<<<<< HEAD
 evalQuickBooksQuery :: (?apiConfig :: APIConfig) => QuickBooksQuery a -> IO a
 evalQuickBooksQuery rq@(CreateInvoice invoice) = undefined =<< post (requestURI rq) (toJSON invoice)
 evalQuickBooksQuery rq@(ReadInvoice _ )        = undefined =<< get $ requestURI rq
@@ -91,4 +130,13 @@ requestURI (ReadInvoice (unInvoiceId -> t))   = encodeURI ["v3", "company", comp
 requestURI (DeleteInvoice (unInvoiceId -> t)) = encodeURI ["v3", "company", companyId ?apiConfig, "company", t]
 
 encodeURI :: (?apiConfig :: APIConfig) => [Text] -> String
-encodeURI = BSC.unpack . toByteString . encodePathSegments . (:)(hostname ?apiConfig)
+encodeURI = unpack . toByteString . encodePathSegments . (:)(hostname ?apiConfig)
+=======
+runInvoiceOperation :: (?apiConfig :: APIConfig) => InvoiceOperation -> IO ()
+runInvoiceOperation (CreateInvoice invoice) = do
+  post createInvoiceURL (toJSON invoice)
+  return ()
+
+createInvoiceURL :: (?apiConfig :: APIConfig) => String
+createInvoiceURL = "/v3/company/" <> companyId ?apiConfig <> "/invoice"
+>>>>>>> 99ba814e23374b591638880b7c108507cddf1e51
