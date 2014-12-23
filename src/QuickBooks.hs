@@ -1,20 +1,18 @@
-{-# LANGUAGE DeriveGeneric  #-}
-{-# LANGUAGE GADTs          #-}
-{-# LANGUAGE ImplicitParams #-}
+{-# LANGUAGE GADTs           #-}
+{-# LANGUAGE ImplicitParams  #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module QuickBooks where
 
 import Data.Aeson
+import Data.Aeson.TH
 import Data.Monoid
-import GHC.Generics
 import Network.Wreq
 import System.Environment (getEnv)
 
 data SalesItemLineDetail = SalesItemLineDetail
-  deriving (Generic)
 
 data DetailType = DetailType
-  deriving (Generic)
 
 data Line = Line
   { lineId                  :: !(Maybe String)
@@ -22,25 +20,22 @@ data Line = Line
   , lineDetailType          :: !DetailType
   , lineSalesItemLineDetail :: !SalesItemLineDetail
   }
-  deriving (Generic)
 
 data CustomerRef = CustomerRef
   { customerRefValue :: !String
   }
-  deriving (Generic)
 
 data Invoice = Invoice
   { invoiceId          :: !(Maybe String)
   , invoiceLines       :: ![Line]
   , invoiceCustomerRef :: !CustomerRef
   }
-  deriving (Generic)
 
-instance ToJSON CustomerRef
-instance ToJSON DetailType
-instance ToJSON Invoice
-instance ToJSON Line
-instance ToJSON SalesItemLineDetail
+$(deriveJSON defaultOptions{fieldLabelModifier = drop 11} ''CustomerRef)
+$(deriveJSON defaultOptions{fieldLabelModifier = drop 4} ''DetailType)
+$(deriveJSON defaultOptions{fieldLabelModifier = drop 7} ''Invoice)
+$(deriveJSON defaultOptions{fieldLabelModifier = drop 4} ''Line)
+$(deriveJSON defaultOptions{fieldLabelModifier = drop 4} ''SalesItemLineDetail)
 
 data APIKey = APIKey
 
