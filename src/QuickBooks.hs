@@ -1,23 +1,23 @@
-{-# LANGUAGE OverloadedStrings  #-}
-{-# LANGUAGE TypeFamilies       #-}
+{-# LANGUAGE DeriveGeneric      #-}
 {-# LANGUAGE GADTs              #-}
 {-# LANGUAGE ImplicitParams     #-}
-{-# LANGUAGE DeriveGeneric      #-}
+{-# LANGUAGE OverloadedStrings  #-}
 {-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE ViewPatterns       #-}
 {-# LANGUAGE TemplateHaskell    #-}
+{-# LANGUAGE TypeFamilies       #-}
+{-# LANGUAGE ViewPatterns       #-}
 
 module QuickBooks where
 
-import Control.Applicative ((<$>))
-import Data.Aeson
-import Data.Aeson.TH
-import GHC.Generics
-import Data.Text(Text)
-import Network.Wreq
-import Network.HTTP.Types.URI
+import           Blaze.ByteString.Builder
+import           Control.Applicative ((<$>))
+import           Data.Aeson
+import           Data.Aeson.TH (defaultOptions, deriveJSON, fieldLabelModifier)
 import qualified Data.ByteString.Char8 as BSC
-import Blaze.ByteString.Builder
+import           Data.Text (Text)
+import           GHC.Generics (Generic)
+import           Network.HTTP.Types.URI (encodePathSegments)
+import           Network.Wreq (delete, get, post)
 
 newtype InvoiceId = InvoiceId {unInvoiceId :: Text}
   deriving (Generic)
@@ -57,6 +57,24 @@ data DepartmentRef = DepartmentRef
   { departmentRefValue :: !String
   }
 
+data DepositToAccountRef = DepositToAccountRef
+  { depositToAccountRefName  :: !(Maybe String)
+  , depositToAccountRefValue :: !String
+  }
+
+data SalesTermRef = SalesTermRef
+  { salesTermRefValue :: !String
+  }
+
+data ShipMethodRef = ShipMethodRef
+  { shipMethodRefName  :: !(Maybe String)
+  , shipMethodRefValue :: !String
+  }
+
+data TxnTaxCodeRef = TxnTaxCodeRef
+  { txnTaxCodeRefValue :: !String
+  }
+
 data MetaData = MetaData
   { metaDataCreateTime      :: !String
   , metaDataLastUpdatedTime :: !String
@@ -78,41 +96,69 @@ data PhysicalAddress = PhysicalAddress
   , physicalAddressLong                   :: !String
   }
 
-data Invoice = Invoice
-  { invoiceId               :: !(Maybe InvoiceId)
-  , invoiceLines            :: ![Line]
-  , invoiceCustomerRef      :: !CustomerRef
-  , invoiceDeposit          :: !(Maybe Double)
-  , invoiceAllowIPNPayment  :: !(Maybe Bool)
-  , invoiceDomain           :: !(Maybe Text)
-  , invoiceSparse           :: !(Maybe Bool)
-  , invoiceSyncToken        :: !(Maybe String)
-  , invoiceMetaData         :: !(Maybe MetaData)
-
-  , invoiceDocNumber        :: !(Maybe String)
-  , invoiceTxnDate          :: !(Maybe String)
-  , invoiceDepartmentRef    :: !(Maybe DepartmentRef)
-  , invoiceCurrencyRef      :: !(Maybe CurrencyRef)
-  , invoicePrivateNote      :: !(Maybe String)
-
-  , invoiceCustomerMemo     :: !(Maybe String)
-  , invoiceBillAddr         :: !(Maybe PhysicalAddress)
-  , invoiceShipAddr         :: !(Maybe PhysicalAddress)
-  , invoiceClassRef         :: !(Maybe ClassRef)
+data EmailAddress = EmailAddress
+  { emailAddress :: !String
   }
 
-$(deriveJSON defaultOptions{fieldLabelModifier = drop 8} ''ClassRef)
+data TxnTaxDetail = TxnTaxDetail
+  { txnTaxDetailTxnTaxCodeRef :: !TxnTaxCodeRef
+  , txnTaxDetailTotalTax      :: !Double
+  , txnTaxDetailTaxLine       :: !Line
+  }
+
+data Invoice = Invoice
+  { invoiceId                    :: !(Maybe InvoiceId)
+  , invoiceLines                 :: ![Line]
+  , invoiceCustomerRef           :: !CustomerRef
+  , invoiceDeposit               :: !(Maybe Double)
+  , invoiceAllowIPNPayment       :: !(Maybe Bool)
+  , invoiceDomain                :: !(Maybe Text)
+  , invoiceSparse                :: !(Maybe Bool)
+  , invoiceSyncToken             :: !(Maybe String)
+  , invoiceMetaData              :: !(Maybe MetaData)
+
+  , invoiceDocNumber             :: !(Maybe String)
+  , invoiceTxnDate               :: !(Maybe String)
+  , invoiceDepartmentRef         :: !(Maybe DepartmentRef)
+  , invoiceCurrencyRef           :: !(Maybe CurrencyRef)
+  , invoicePrivateNote           :: !(Maybe String)
+  , invoiceTxnTaxDetail          :: !(Maybe TxnTaxDetail)
+  , invoiceCustomerMemo          :: !(Maybe String)
+  , invoiceBillAddr              :: !(Maybe PhysicalAddress)
+  , invoiceShipAddr              :: !(Maybe PhysicalAddress)
+  , invoiceClassRef              :: !(Maybe ClassRef)
+  , invoiceSalesTermRef          :: !(Maybe SalesTermRef)
+  , invoiceDueDate               :: !(Maybe String)
+  , invoiceShipMethodRef         :: !(Maybe ShipMethodRef)
+  , invoiceShipDate              :: !(Maybe String)
+  , invoiceTrackingNum           :: !(Maybe String)
+  , invoiceTotalAmt              :: !(Maybe Double)
+  , invoiceApplyTaxAfterDiscount :: !(Maybe Bool)
+  , invoicePrintStatus           :: !(Maybe String)
+  , invoiceEmailStatus           :: !(Maybe String)
+  , invoiceBillEmail             :: !(Maybe EmailAddress)
+  , invoiceBalance               :: !(Maybe Double)
+  , invoiceDepositToAccountRef   :: !(Maybe DepositToAccountRef)
+  }
+
+$(deriveJSON defaultOptions{fieldLabelModifier = drop 8}  ''ClassRef)
 $(deriveJSON defaultOptions{fieldLabelModifier = drop 11} ''CurrencyRef)
 $(deriveJSON defaultOptions{fieldLabelModifier = drop 11} ''CustomerRef)
 $(deriveJSON defaultOptions{fieldLabelModifier = drop 13} ''DepartmentRef)
-$(deriveJSON defaultOptions{fieldLabelModifier = drop 4} ''DetailType)
-$(deriveJSON defaultOptions{fieldLabelModifier = drop 7} ''Invoice)
-$(deriveJSON defaultOptions{fieldLabelModifier = drop 9} ''InvoiceId)
-$(deriveJSON defaultOptions{fieldLabelModifier = drop 4} ''Line)
-$(deriveJSON defaultOptions{fieldLabelModifier = drop 4} ''LineId)
-$(deriveJSON defaultOptions{fieldLabelModifier = drop 8} ''MetaData)
+$(deriveJSON defaultOptions{fieldLabelModifier = drop 19} ''DepositToAccountRef)
+$(deriveJSON defaultOptions{fieldLabelModifier = drop 4}  ''DetailType)
+$(deriveJSON defaultOptions{fieldLabelModifier = drop 5}  ''EmailAddress)
+$(deriveJSON defaultOptions{fieldLabelModifier = drop 7}  ''Invoice)
+$(deriveJSON defaultOptions{fieldLabelModifier = drop 9}  ''InvoiceId)
+$(deriveJSON defaultOptions{fieldLabelModifier = drop 4}  ''Line)
+$(deriveJSON defaultOptions{fieldLabelModifier = drop 4}  ''LineId)
+$(deriveJSON defaultOptions{fieldLabelModifier = drop 8}  ''MetaData)
 $(deriveJSON defaultOptions{fieldLabelModifier = drop 15} ''PhysicalAddress)
-$(deriveJSON defaultOptions{fieldLabelModifier = drop 4} ''SalesItemLineDetail)
+$(deriveJSON defaultOptions{fieldLabelModifier = drop 4}  ''SalesItemLineDetail)
+$(deriveJSON defaultOptions{fieldLabelModifier = drop 12} ''SalesTermRef)
+$(deriveJSON defaultOptions{fieldLabelModifier = drop 13} ''ShipMethodRef)
+$(deriveJSON defaultOptions{fieldLabelModifier = drop 13} ''TxnTaxCodeRef)
+$(deriveJSON defaultOptions{fieldLabelModifier = drop 12} ''TxnTaxDetail)
 
 data APIKey = APIKey
 
@@ -125,11 +171,9 @@ instance FromJSON (QuickBooksResponse Invoice) where
 
 data QuickBooksRequest a where
   CreateInvoice :: Invoice -> QuickBooksQuery Invoice
-  ReadInvoice   :: InvoiceId -> QuickBooksQuery Invoice 
+  ReadInvoice   :: InvoiceId -> QuickBooksQuery Invoice
 -- UpdateInvoice :: Invoice ->  QuickBooksRequest Invoice
   DeleteInvoice :: InvoiceId  -> QuickBooksQuery Invoice
-  
-  
 
 type QuickBooksQuery a = QuickBooksRequest (QuickBooksResponse a)
 
