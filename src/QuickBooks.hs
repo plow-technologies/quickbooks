@@ -44,9 +44,14 @@ data CustomerRef = CustomerRef
   }
 
 data Invoice = Invoice
-  { invoiceId          :: !(Maybe InvoiceId)
-  , invoiceLines       :: ![Line]
-  , invoiceCustomerRef :: !CustomerRef
+  { invoiceId               :: !(Maybe InvoiceId)
+  , invoiceLines            :: ![Line]
+  , invoiceCustomerRef      :: !CustomerRef
+  , invoiceDeposit          :: !(Maybe Double)
+  , invoiceAllowIPNPayment  :: !(Maybe Bool)
+  , invoiceDomain           :: !(Maybe Text)
+  , invoiceSparse           :: !(Maybe Bool)
+  , invoiceSyncToken        :: !(Maybe Integer)
   }
 
 $(deriveJSON defaultOptions{fieldLabelModifier = drop 9} ''InvoiceId)
@@ -60,7 +65,7 @@ $(deriveJSON defaultOptions{fieldLabelModifier = drop 4} ''SalesItemLineDetail)
 data APIKey = APIKey
 
 data family QuickBooksResponse a
-data instance QuickBooksResponse Invoice = QuickBooksInvoiceResponse Invoice
+data instance QuickBooksResponse Invoice = QuickBooksInvoiceResponse { quickBooksResponseInvoice :: Invoice }
 
 instance FromJSON (QuickBooksResponse Invoice) where
   parseJSON (Object o) = QuickBooksInvoiceResponse <$> o .: "invoice"
@@ -69,8 +74,10 @@ instance FromJSON (QuickBooksResponse Invoice) where
 data QuickBooksRequest a where
   CreateInvoice :: Invoice -> QuickBooksQuery Invoice
   ReadInvoice   :: InvoiceId -> QuickBooksQuery Invoice 
---  UpdateInvoice :: Invoice ->  QuickBooksRequest Invoice
+-- UpdateInvoice :: Invoice ->  QuickBooksRequest Invoice
   DeleteInvoice :: InvoiceId  -> QuickBooksQuery Invoice
+  
+  
 
 type QuickBooksQuery a = QuickBooksRequest (QuickBooksResponse a)
 
