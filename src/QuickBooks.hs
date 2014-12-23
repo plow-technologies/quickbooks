@@ -12,8 +12,9 @@ module QuickBooks where
 import           Blaze.ByteString.Builder
 import           Control.Applicative ((<$>))
 import           Data.Aeson
-import           Data.Aeson.TH (defaultOptions, deriveJSON, fieldLabelModifier)
+import           Data.Aeson.TH (defaultOptions, deriveJSON, fieldLabelModifier, omitNothingFields)
 import qualified Data.ByteString.Char8 as BSC
+import           Data.Char (toLower)
 import           Data.Text (Text)
 import           GHC.Generics (Generic)
 import           Network.HTTP.Types.URI (encodePathSegments)
@@ -39,41 +40,27 @@ data Line = Line
   , lineSalesItemLineDetail :: !SalesItemLineDetail
   }
 
-data ClassRef = ClassRef
-  { classRefName  :: !(Maybe String)
-  , classRefValue :: !String
+data Reference = Reference
+  { referenceName  :: Maybe String
+  , referenceType  :: Maybe String
+  , referenceValue :: String
   }
 
-data CurrencyRef = CurrencyRef
-  { currencyRefName  :: !(Maybe String)
-  , currencyRefValue :: !String
-  }
+newtype ClassRef = ClassRef { classRef :: Reference }
 
-data CustomerRef = CustomerRef
-  { customerRefValue :: !String
-  }
+newtype CurrencyRef = CurrencyRef { currencyRef :: Reference }
 
-data DepartmentRef = DepartmentRef
-  { departmentRefValue :: !String
-  }
+newtype DepartmentRef = DepartmentRef { departmentRef :: Reference }
 
-data DepositToAccountRef = DepositToAccountRef
-  { depositToAccountRefName  :: !(Maybe String)
-  , depositToAccountRefValue :: !String
-  }
+newtype CustomerRef = CustomerRef { customerRef :: Reference }
 
-data SalesTermRef = SalesTermRef
-  { salesTermRefValue :: !String
-  }
+newtype DepositToAccountRef = DepositToAccountRef { depositToAccountRef :: Reference }
 
-data ShipMethodRef = ShipMethodRef
-  { shipMethodRefName  :: !(Maybe String)
-  , shipMethodRefValue :: !String
-  }
+newtype SalesTermRef = SalesTermRef { salesTermRef :: Reference }
 
-data TxnTaxCodeRef = TxnTaxCodeRef
-  { txnTaxCodeRefValue :: !String
-  }
+newtype ShipMethodRef = ShipMethodRef { shipMethodRef :: Reference }
+
+newtype TxnTaxCodeRef = TxnTaxCodeRef { txnTaxCodeRef :: Reference }
 
 data MetaData = MetaData
   { metaDataCreateTime      :: !String
@@ -141,11 +128,26 @@ data Invoice = Invoice
   , invoiceDepositToAccountRef   :: !(Maybe DepositToAccountRef)
   }
 
-$(deriveJSON defaultOptions{fieldLabelModifier = drop 8}  ''ClassRef)
-$(deriveJSON defaultOptions{fieldLabelModifier = drop 11} ''CurrencyRef)
-$(deriveJSON defaultOptions{fieldLabelModifier = drop 11} ''CustomerRef)
-$(deriveJSON defaultOptions{fieldLabelModifier = drop 13} ''DepartmentRef)
-$(deriveJSON defaultOptions{fieldLabelModifier = drop 19} ''DepositToAccountRef)
+$(deriveJSON defaultOptions
+               { fieldLabelModifier = \_ -> "ClassRef" }
+             ''ClassRef)
+
+$(deriveJSON defaultOptions
+               { fieldLabelModifier = \_ -> "CurrencyRef" }
+             ''CurrencyRef)
+
+$(deriveJSON defaultOptions
+               { fieldLabelModifier = \_ -> "CustomerRef" }
+             ''CustomerRef)
+
+$(deriveJSON defaultOptions
+               { fieldLabelModifier = \_ -> "DepartmentRef" }
+             ''DepartmentRef)
+
+$(deriveJSON defaultOptions
+               { fieldLabelModifier = \_ -> "DepositToAccountRef" }
+             ''DepositToAccountRef)
+
 $(deriveJSON defaultOptions{fieldLabelModifier = drop 4}  ''DetailType)
 $(deriveJSON defaultOptions{fieldLabelModifier = drop 5}  ''EmailAddress)
 $(deriveJSON defaultOptions{fieldLabelModifier = drop 7}  ''Invoice)
@@ -154,11 +156,27 @@ $(deriveJSON defaultOptions{fieldLabelModifier = drop 4}  ''Line)
 $(deriveJSON defaultOptions{fieldLabelModifier = drop 4}  ''LineId)
 $(deriveJSON defaultOptions{fieldLabelModifier = drop 8}  ''MetaData)
 $(deriveJSON defaultOptions{fieldLabelModifier = drop 15} ''PhysicalAddress)
+
+$(deriveJSON defaultOptions
+               { fieldLabelModifier = map toLower . drop 9
+               , omitNothingFields  = True }
+             ''Reference)
+
 $(deriveJSON defaultOptions{fieldLabelModifier = drop 4}  ''SalesItemLineDetail)
-$(deriveJSON defaultOptions{fieldLabelModifier = drop 12} ''SalesTermRef)
-$(deriveJSON defaultOptions{fieldLabelModifier = drop 13} ''ShipMethodRef)
-$(deriveJSON defaultOptions{fieldLabelModifier = drop 13} ''TxnTaxCodeRef)
-$(deriveJSON defaultOptions{fieldLabelModifier = drop 12} ''TxnTaxDetail)
+
+$(deriveJSON defaultOptions
+               { fieldLabelModifier = \_ -> "SalesTermRef" }
+             ''SalesTermRef)
+
+$(deriveJSON defaultOptions
+               { fieldLabelModifier = \_ -> "ShipMethodRef" }
+             ''ShipMethodRef)
+
+$(deriveJSON defaultOptions
+               { fieldLabelModifier = \_ -> "TxnTaxCodeRef" }
+             ''TxnTaxCodeRef)
+
+$(deriveJSON defaultOptions{ fieldLabelModifier = drop 12} ''TxnTaxDetail)
 
 data APIKey = APIKey
 
