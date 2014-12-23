@@ -19,7 +19,10 @@ library
 
   -- other-modules:
   -- other-extensions:
-  build-depends:         base  >=4.7     && <4.8
-                       , wreq  == 0.3.*
-                       , aeson == 0.8.*
-
+  build-depends:         base       >= 4.7   && < 4.8
+                       , wreq       == 0.3.*
+                       , aeson      == 0.8.*
+                       , http-types == 0.8.*
+                       , text
+                       , blaze-builder == 0.3.*
+                       , bytestring == 0.10.*
