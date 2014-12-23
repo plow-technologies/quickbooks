@@ -39,8 +39,43 @@ data Line = Line
   , lineSalesItemLineDetail :: !SalesItemLineDetail
   }
 
+data ClassRef = ClassRef
+  { classRefName  :: !(Maybe String)
+  , classRefValue :: !String
+  }
+
+data CurrencyRef = CurrencyRef
+  { currencyRefName  :: !(Maybe String)
+  , currencyRefValue :: !String
+  }
+
 data CustomerRef = CustomerRef
   { customerRefValue :: !String
+  }
+
+data DepartmentRef = DepartmentRef
+  { departmentRefValue :: !String
+  }
+
+data MetaData = MetaData
+  { metaDataCreateTime      :: !String
+  , metaDataLastUpdatedTime :: !String
+  }
+
+data PhysicalAddress = PhysicalAddress
+  { physicalAddressId                     :: !String
+  , physicalAddressLine1                  :: !String
+  , physicalAddressLine2                  :: !String
+  , physicalAddressLine3                  :: !String
+  , physicalAddressLine4                  :: !String
+  , physicalAddressLine5                  :: !String
+  , physicalAddressCity                   :: !String
+  , physicalAddressCountry                :: !String
+  , physicalAddressCountrySubDivisionCode :: !String
+  , physicalAddressPostalCode             :: !String
+  , physicalAddressNote                   :: !(Maybe String)
+  , physicalAddressLat                    :: !String
+  , physicalAddressLong                   :: !String
   }
 
 data Invoice = Invoice
@@ -51,15 +86,32 @@ data Invoice = Invoice
   , invoiceAllowIPNPayment  :: !(Maybe Bool)
   , invoiceDomain           :: !(Maybe Text)
   , invoiceSparse           :: !(Maybe Bool)
-  , invoiceSyncToken        :: !(Maybe Integer)
+  , invoiceSyncToken        :: !(Maybe String)
+  , invoiceMetaData         :: !(Maybe MetaData)
+
+  , invoiceDocNumber        :: !(Maybe String)
+  , invoiceTxnDate          :: !(Maybe String)
+  , invoiceDepartmentRef    :: !(Maybe DepartmentRef)
+  , invoiceCurrencyRef      :: !(Maybe CurrencyRef)
+  , invoicePrivateNote      :: !(Maybe String)
+
+  , invoiceCustomerMemo     :: !(Maybe String)
+  , invoiceBillAddr         :: !(Maybe PhysicalAddress)
+  , invoiceShipAddr         :: !(Maybe PhysicalAddress)
+  , invoiceClassRef         :: !(Maybe ClassRef)
   }
 
-$(deriveJSON defaultOptions{fieldLabelModifier = drop 9} ''InvoiceId)
-$(deriveJSON defaultOptions{fieldLabelModifier = drop 4} ''LineId)
+$(deriveJSON defaultOptions{fieldLabelModifier = drop 8} ''ClassRef)
+$(deriveJSON defaultOptions{fieldLabelModifier = drop 11} ''CurrencyRef)
 $(deriveJSON defaultOptions{fieldLabelModifier = drop 11} ''CustomerRef)
+$(deriveJSON defaultOptions{fieldLabelModifier = drop 13} ''DepartmentRef)
 $(deriveJSON defaultOptions{fieldLabelModifier = drop 4} ''DetailType)
 $(deriveJSON defaultOptions{fieldLabelModifier = drop 7} ''Invoice)
+$(deriveJSON defaultOptions{fieldLabelModifier = drop 9} ''InvoiceId)
 $(deriveJSON defaultOptions{fieldLabelModifier = drop 4} ''Line)
+$(deriveJSON defaultOptions{fieldLabelModifier = drop 4} ''LineId)
+$(deriveJSON defaultOptions{fieldLabelModifier = drop 8} ''MetaData)
+$(deriveJSON defaultOptions{fieldLabelModifier = drop 15} ''PhysicalAddress)
 $(deriveJSON defaultOptions{fieldLabelModifier = drop 4} ''SalesItemLineDetail)
 
 data APIKey = APIKey
