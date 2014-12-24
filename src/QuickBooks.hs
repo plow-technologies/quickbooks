@@ -12,7 +12,7 @@ module QuickBooks where
 import           Blaze.ByteString.Builder
 import           Control.Applicative ((<$>))
 import           Data.Aeson
-import           Data.Aeson.TH 
+import           Data.Aeson.TH
 import qualified Data.ByteString.Char8 as BSC
 import           Data.Char (toLower)
 import           Data.Text (Text)
@@ -27,6 +27,17 @@ newtype LineId    = LineId {unLineId :: Text}
   deriving (Generic)
 
 data SalesItemLineDetail = SalesItemLineDetail
+  { salesItemLineDetailItemRef         :: !(Maybe ItemRef)
+  , salesItemLineDetailClassRef        :: !(Maybe ClassRef)
+  , salesItemLineDetailUnitPrice       :: !(Maybe Double)
+  , salesItemLineDetailRatePercent     :: !(Maybe Double)
+  , salesItemLineDetailPriceLevelRef   :: !(Maybe PriceLevelRef)
+  , salesItemLineDetailMarkupInfo      :: !(Maybe Text)
+  , salesItemLineDetailQty             :: !(Maybe Double)
+  , salesItemLineDetailTaxCodeRef      :: !(Maybe TaxCodeRef)
+  , salesItemLineDetailServiceData     :: !(Maybe Text)
+  , salesItemLineDetailTaxInclusiveAmt :: !(Maybe Double)
+  }
 
 data DetailType = DetailType
 
@@ -53,9 +64,15 @@ newtype DepartmentRef = DepartmentRef { departmentRef :: Reference }
 
 newtype DepositToAccountRef = DepositToAccountRef { depositToAccountRef :: Reference }
 
+newtype ItemRef = ItemRef { itemRef :: Reference }
+
+newtype PriceLevelRef = PriceLevelRef { priceLevelRef :: Reference }
+
 newtype SalesTermRef = SalesTermRef { salesTermRef :: Reference }
 
 newtype ShipMethodRef = ShipMethodRef { shipMethodRef :: Reference }
+
+newtype TaxCodeRef = TaxCodeRef { taxCodeRef :: Reference }
 
 newtype TxnTaxCodeRef = TxnTaxCodeRef { txnTaxCodeRef :: Reference }
 
@@ -190,10 +207,20 @@ $(deriveJSON defaultOptions{fieldLabelModifier = drop 18}  ''GlobalTaxModelEnum)
 
 $(deriveJSON defaultOptions{fieldLabelModifier = drop 7}  ''Invoice)
 $(deriveJSON defaultOptions{fieldLabelModifier = drop 9}  ''InvoiceId)
+
+$(deriveJSON defaultOptions
+               { fieldLabelModifier = \_ -> "ItemRef" }
+             ''ItemRef)
+
 $(deriveJSON defaultOptions{fieldLabelModifier = drop 4}  ''Line)
 $(deriveJSON defaultOptions{fieldLabelModifier = drop 4}  ''LineId)
 $(deriveJSON defaultOptions{fieldLabelModifier = drop 9}  ''LinkedTxn)
 $(deriveJSON defaultOptions{fieldLabelModifier = drop 8}  ''MetaData)
+
+$(deriveJSON defaultOptions
+               { fieldLabelModifier = \_ -> "PriceLevelRef" }
+             ''PriceLevelRef)
+
 $(deriveJSON defaultOptions{fieldLabelModifier = drop 15} ''PhysicalAddress)
 
 $(deriveJSON defaultOptions
@@ -210,6 +237,10 @@ $(deriveJSON defaultOptions
 $(deriveJSON defaultOptions
                { fieldLabelModifier = \_ -> "ShipMethodRef" }
              ''ShipMethodRef)
+
+$(deriveJSON defaultOptions
+               { fieldLabelModifier = \_ -> "TaxCodeRef" }
+             ''TaxCodeRef)
 
 $(deriveJSON defaultOptions
                { fieldLabelModifier = \_ -> "TxnTaxCodeRef" }
