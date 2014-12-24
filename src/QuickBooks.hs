@@ -93,39 +93,53 @@ data TxnTaxDetail = TxnTaxDetail
   , txnTaxDetailTaxLine       :: !Line
   }
 
+data DeliveryInfo = DeliveryInfo
+
+data LinkedTxn = LinkedTxn
+
+data CustomField = CustomField
+
+data GlobalTaxModelEnum = GlobalTaxModelEnum
+
 data Invoice = Invoice
   { invoiceId                    :: !(Maybe InvoiceId)
-  , invoiceLines                 :: ![Line]
-  , invoiceCustomerRef           :: !CustomerRef
-  , invoiceDeposit               :: !(Maybe Double)
-  , invoiceAllowIPNPayment       :: !(Maybe Bool)
-  , invoiceDomain                :: !(Maybe Text)
-  , invoiceSparse                :: !(Maybe Bool)
   , invoiceSyncToken             :: !(Maybe Text)
   , invoiceMetaData              :: !(Maybe MetaData)
-
+  , invoiceCustomField           :: !(Maybe [CustomField])
   , invoiceDocNumber             :: !(Maybe Text)
   , invoiceTxnDate               :: !(Maybe Text)
   , invoiceDepartmentRef         :: !(Maybe DepartmentRef)
-  , invoiceCurrencyRef           :: !(Maybe CurrencyRef)
+  , invoiceCurrencyRef           :: !(Maybe CurrencyRef) -- Non-US
+  , invoiceExchangeRate          :: !(Maybe Double) -- Non-US
   , invoicePrivateNote           :: !(Maybe Text)
+  , invoiceLinkedTxn             :: !(Maybe [LinkedTxn])
+  , invoiceLine                  :: ![Line]
   , invoiceTxnTaxDetail          :: !(Maybe TxnTaxDetail)
+  , invoiceCustomerRef           :: !CustomerRef
   , invoiceCustomerMemo          :: !(Maybe Text)
   , invoiceBillAddr              :: !(Maybe PhysicalAddress)
   , invoiceShipAddr              :: !(Maybe PhysicalAddress)
   , invoiceClassRef              :: !(Maybe ClassRef)
   , invoiceSalesTermRef          :: !(Maybe SalesTermRef)
   , invoiceDueDate               :: !(Maybe Text)
+  , invoiceGlobalTaxCalculation  :: !(Maybe GlobalTaxModelEnum) -- Non-US
   , invoiceShipMethodRef         :: !(Maybe ShipMethodRef)
   , invoiceShipDate              :: !(Maybe Text)
   , invoiceTrackingNum           :: !(Maybe Text)
   , invoiceTotalAmt              :: !(Maybe Double)
+  , invoiceHomeTotalAmt          :: !(Maybe Double) -- Non-US
   , invoiceApplyTaxAfterDiscount :: !(Maybe Bool)
   , invoicePrintStatus           :: !(Maybe Text)
   , invoiceEmailStatus           :: !(Maybe Text)
   , invoiceBillEmail             :: !(Maybe EmailAddress)
+  , invoiceDeliveryInfo          :: !(Maybe DeliveryInfo)
   , invoiceBalance               :: !(Maybe Double)
   , invoiceDepositToAccountRef   :: !(Maybe DepositToAccountRef)
+  , invoiceDeposit               :: !(Maybe Double)
+
+  , invoiceAllowIPNPayment       :: !(Maybe Bool)
+  , invoiceDomain                :: !(Maybe Text)
+  , invoiceSparse                :: !(Maybe Bool)
   }
 
 $(deriveJSON defaultOptions
@@ -140,6 +154,10 @@ $(deriveJSON defaultOptions
                { fieldLabelModifier = \_ -> "CustomerRef" }
              ''CustomerRef)
 
+$(deriveJSON defaultOptions{fieldLabelModifier = drop 11}  ''CustomField)
+
+$(deriveJSON defaultOptions{fieldLabelModifier = drop 12}  ''DeliveryInfo)
+
 $(deriveJSON defaultOptions
                { fieldLabelModifier = \_ -> "DepartmentRef" }
              ''DepartmentRef)
@@ -150,10 +168,14 @@ $(deriveJSON defaultOptions
 
 $(deriveJSON defaultOptions{fieldLabelModifier = drop 4}  ''DetailType)
 $(deriveJSON defaultOptions{fieldLabelModifier = drop 5}  ''EmailAddress)
+
+$(deriveJSON defaultOptions{fieldLabelModifier = drop 18}  ''GlobalTaxModelEnum)
+
 $(deriveJSON defaultOptions{fieldLabelModifier = drop 7}  ''Invoice)
 $(deriveJSON defaultOptions{fieldLabelModifier = drop 9}  ''InvoiceId)
 $(deriveJSON defaultOptions{fieldLabelModifier = drop 4}  ''Line)
 $(deriveJSON defaultOptions{fieldLabelModifier = drop 4}  ''LineId)
+$(deriveJSON defaultOptions{fieldLabelModifier = drop 9}  ''LinkedTxn)
 $(deriveJSON defaultOptions{fieldLabelModifier = drop 8}  ''MetaData)
 $(deriveJSON defaultOptions{fieldLabelModifier = drop 15} ''PhysicalAddress)
 
