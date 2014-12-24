@@ -29,3 +29,4 @@ library
                        , blaze-builder == 0.3.*
                        , bytestring == 0.10.*
                        , authenticate-oauth == 1.5.*
+                       , data-default == 0.5.*

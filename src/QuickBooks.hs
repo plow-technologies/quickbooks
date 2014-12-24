@@ -1,10 +1,10 @@
 {-# LANGUAGE GADTs              #-}
 {-# LANGUAGE ImplicitParams     #-}
 {-# LANGUAGE OverloadedStrings  #-}
-{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell    #-}
 {-# LANGUAGE TypeFamilies       #-}
 {-# LANGUAGE ViewPatterns       #-}
+{-# LANGUAGE RecordWildCards    #-}
 
 module QuickBooks where
 
@@ -14,9 +14,13 @@ import           Blaze.ByteString.Builder
 import           Control.Applicative ((<$>))
 import           Data.Aeson
 import qualified Data.ByteString.Char8 as BSC
+import           Data.Default (def)
 import           Data.Text (Text)
 import           Network.HTTP.Types.URI (encodePathSegments)
 import           Network.Wreq (delete, get, post)
+import           Network.Wreq.Types
+import qualified Network.Wreq.Session as WS
+import           Web.Authenticate.OAuth hiding (delete)
 
 data APIKey = APIKey
 
@@ -44,8 +48,12 @@ data APIConfig = APIConfig
   , hostname       :: !Text
   }
 
-signRequest :: APIConfig -> Request -> Request
 
+quickbooksOAuth :: OAuth
+quickbooksOAuth = undefined
+
+runWithOAuthSignature :: APIConfig -> WS.Session -> Run a -> Run a
+runWithOAuthSignature apiConfig (WS.Session{..}) act (Req _ req) = undefined
 
 evalQuickBooksQuery :: (?apiConfig :: APIConfig) => QuickBooksQuery a -> IO a
 evalQuickBooksQuery rq@(CreateInvoice invoice) = undefined =<< post (requestURI rq) (toJSON invoice)
