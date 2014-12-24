@@ -41,9 +41,9 @@ data Line = Line
   }
 
 data Reference = Reference
-  { referenceName  :: Maybe String
-  , referenceType  :: Maybe String
-  , referenceValue :: String
+  { referenceName  :: Maybe Text
+  , referenceType  :: Maybe Text
+  , referenceValue :: Text
   }
 
 newtype ClassRef = ClassRef { classRef :: Reference }
@@ -63,28 +63,28 @@ newtype ShipMethodRef = ShipMethodRef { shipMethodRef :: Reference }
 newtype TxnTaxCodeRef = TxnTaxCodeRef { txnTaxCodeRef :: Reference }
 
 data MetaData = MetaData
-  { metaDataCreateTime      :: !String
-  , metaDataLastUpdatedTime :: !String
+  { metaDataCreateTime      :: !Text
+  , metaDataLastUpdatedTime :: !Text
   }
 
 data PhysicalAddress = PhysicalAddress
-  { physicalAddressId                     :: !String
-  , physicalAddressLine1                  :: !String
-  , physicalAddressLine2                  :: !String
-  , physicalAddressLine3                  :: !String
-  , physicalAddressLine4                  :: !String
-  , physicalAddressLine5                  :: !String
-  , physicalAddressCity                   :: !String
-  , physicalAddressCountry                :: !String
-  , physicalAddressCountrySubDivisionCode :: !String
-  , physicalAddressPostalCode             :: !String
-  , physicalAddressNote                   :: !(Maybe String)
-  , physicalAddressLat                    :: !String
-  , physicalAddressLong                   :: !String
+  { physicalAddressId                     :: !Text
+  , physicalAddressLine1                  :: !Text
+  , physicalAddressLine2                  :: !Text
+  , physicalAddressLine3                  :: !Text
+  , physicalAddressLine4                  :: !Text
+  , physicalAddressLine5                  :: !Text
+  , physicalAddressCity                   :: !Text
+  , physicalAddressCountry                :: !Text
+  , physicalAddressCountrySubDivisionCode :: !Text
+  , physicalAddressPostalCode             :: !Text
+  , physicalAddressNote                   :: !(Maybe Text)
+  , physicalAddressLat                    :: !Text
+  , physicalAddressLong                   :: !Text
   }
 
 data EmailAddress = EmailAddress
-  { emailAddress :: !String
+  { emailAddress :: !Text
   }
 
 data TxnTaxDetail = TxnTaxDetail
@@ -101,28 +101,28 @@ data Invoice = Invoice
   , invoiceAllowIPNPayment       :: !(Maybe Bool)
   , invoiceDomain                :: !(Maybe Text)
   , invoiceSparse                :: !(Maybe Bool)
-  , invoiceSyncToken             :: !(Maybe String)
+  , invoiceSyncToken             :: !(Maybe Text)
   , invoiceMetaData              :: !(Maybe MetaData)
 
-  , invoiceDocNumber             :: !(Maybe String)
-  , invoiceTxnDate               :: !(Maybe String)
+  , invoiceDocNumber             :: !(Maybe Text)
+  , invoiceTxnDate               :: !(Maybe Text)
   , invoiceDepartmentRef         :: !(Maybe DepartmentRef)
   , invoiceCurrencyRef           :: !(Maybe CurrencyRef)
-  , invoicePrivateNote           :: !(Maybe String)
+  , invoicePrivateNote           :: !(Maybe Text)
   , invoiceTxnTaxDetail          :: !(Maybe TxnTaxDetail)
-  , invoiceCustomerMemo          :: !(Maybe String)
+  , invoiceCustomerMemo          :: !(Maybe Text)
   , invoiceBillAddr              :: !(Maybe PhysicalAddress)
   , invoiceShipAddr              :: !(Maybe PhysicalAddress)
   , invoiceClassRef              :: !(Maybe ClassRef)
   , invoiceSalesTermRef          :: !(Maybe SalesTermRef)
-  , invoiceDueDate               :: !(Maybe String)
+  , invoiceDueDate               :: !(Maybe Text)
   , invoiceShipMethodRef         :: !(Maybe ShipMethodRef)
-  , invoiceShipDate              :: !(Maybe String)
-  , invoiceTrackingNum           :: !(Maybe String)
+  , invoiceShipDate              :: !(Maybe Text)
+  , invoiceTrackingNum           :: !(Maybe Text)
   , invoiceTotalAmt              :: !(Maybe Double)
   , invoiceApplyTaxAfterDiscount :: !(Maybe Bool)
-  , invoicePrintStatus           :: !(Maybe String)
-  , invoiceEmailStatus           :: !(Maybe String)
+  , invoicePrintStatus           :: !(Maybe Text)
+  , invoiceEmailStatus           :: !(Maybe Text)
   , invoiceBillEmail             :: !(Maybe EmailAddress)
   , invoiceBalance               :: !(Maybe Double)
   , invoiceDepositToAccountRef   :: !(Maybe DepositToAccountRef)
