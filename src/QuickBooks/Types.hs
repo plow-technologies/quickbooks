@@ -1,17 +1,10 @@
-{-# LANGUAGE DeriveGeneric      #-}
-{-# LANGUAGE GADTs              #-}
-{-# LANGUAGE ImplicitParams     #-}
-{-# LANGUAGE OverloadedStrings  #-}
-{-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE TemplateHaskell    #-}
-{-# LANGUAGE TypeFamilies       #-}
-{-# LANGUAGE ViewPatterns       #-}
+{-# LANGUAGE DeriveGeneric     #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell   #-}
 
 module QuickBooks.Types where
 
-import           Data.Aeson
 import           Data.Aeson.TH
-import qualified Data.ByteString.Char8 as BSC
 import           Data.Char (toLower)
 import           Data.Text (Text)
 import           GHC.Generics (Generic)
@@ -21,6 +14,18 @@ newtype InvoiceId = InvoiceId {unInvoiceId :: Text}
 
 newtype LineId    = LineId {unLineId :: Text}
   deriving (Generic)
+
+data DescriptionLineDetail = DescriptionLineDetail
+  { descriptionLineDetailServiceDate :: !(Maybe Text)
+  , descriptionLineDetailTaxCodeRef  :: !(Maybe TaxCodeRef)
+  }
+
+data DiscountLineDetail = DiscountLineDetail
+  { discountLineDetailDiscountRef        :: !(Maybe DiscountRef)
+  , discountLineDetailPercentBased       :: !(Maybe Bool)
+  , discountLineDetailDiscountPercent    :: !(Maybe Double)
+  , discountLineDetailDiscountAccountRef :: !(Maybe DiscountAccountRef)
+  }
 
 data SalesItemLineDetail = SalesItemLineDetail
   { salesItemLineDetailItemRef         :: !(Maybe ItemRef)
@@ -34,6 +39,9 @@ data SalesItemLineDetail = SalesItemLineDetail
   , salesItemLineDetailServiceData     :: !(Maybe Text)
   , salesItemLineDetailTaxInclusiveAmt :: !(Maybe Double)
   }
+
+data SubtotalLineDetail = SubtotalLineDetail
+  { subtotalLineDetailItemRef :: !(Maybe ItemRef) }
 
 data DetailType = DetailType
 
@@ -59,6 +67,10 @@ newtype CustomerRef = CustomerRef { customerRef :: Reference }
 newtype DepartmentRef = DepartmentRef { departmentRef :: Reference }
 
 newtype DepositToAccountRef = DepositToAccountRef { depositToAccountRef :: Reference }
+
+newtype DiscountAccountRef = DiscountAccountRef { discountAccountRef :: Reference }
+
+newtype DiscountRef = DiscountRef { discountRef :: Reference }
 
 newtype ItemRef = ItemRef { itemRef :: Reference }
 
@@ -197,6 +209,15 @@ $(deriveJSON defaultOptions
              ''DepositToAccountRef)
 
 $(deriveJSON defaultOptions{fieldLabelModifier = drop 4}  ''DetailType)
+
+$(deriveJSON defaultOptions
+               { fieldLabelModifier = \_ -> "DiscountAccountRef" }
+             ''DiscountAccountRef)
+
+$(deriveJSON defaultOptions
+               { fieldLabelModifier = \_ -> "DiscountRef" }
+             ''DiscountRef)
+
 $(deriveJSON defaultOptions{fieldLabelModifier = drop 5}  ''EmailAddress)
 
 $(deriveJSON defaultOptions{fieldLabelModifier = drop 18}  ''GlobalTaxModelEnum)
