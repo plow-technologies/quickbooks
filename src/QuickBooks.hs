@@ -12,7 +12,7 @@ module QuickBooks where
 import           Blaze.ByteString.Builder
 import           Control.Applicative ((<$>))
 import           Data.Aeson
-import           Data.Aeson.TH (defaultOptions, deriveJSON, fieldLabelModifier, omitNothingFields)
+import           Data.Aeson.TH 
 import qualified Data.ByteString.Char8 as BSC
 import           Data.Char (toLower)
 import           Data.Text (Text)
@@ -98,6 +98,20 @@ data DeliveryInfo = DeliveryInfo
 data LinkedTxn = LinkedTxn
 
 data CustomField = CustomField
+  { customFieldDefinitionId :: !Text
+  , customFieldName         :: !Text
+  , customFieldType         :: !CustomFieldType
+  , customFieldStringValue  :: !(Maybe Text)
+  , customFieldBooleanValue :: !(Maybe Bool)
+  , customFieldDateValue    :: !(Maybe Text)
+  , customFieldNumberValue  :: !(Maybe Double)
+  }
+
+data CustomFieldType
+  = BooleanType
+  | DateType
+  | NumberType
+  | StringType
 
 data GlobalTaxModelEnum = GlobalTaxModelEnum
 
@@ -154,7 +168,13 @@ $(deriveJSON defaultOptions
                { fieldLabelModifier = \_ -> "CustomerRef" }
              ''CustomerRef)
 
-$(deriveJSON defaultOptions{fieldLabelModifier = drop 11}  ''CustomField)
+$(deriveJSON defaultOptions
+               { fieldLabelModifier = drop 11
+               , omitNothingFields  = True }
+             ''CustomField)
+
+$(deriveJSON defaultOptions
+             ''CustomFieldType)
 
 $(deriveJSON defaultOptions{fieldLabelModifier = drop 12}  ''DeliveryInfo)
 
