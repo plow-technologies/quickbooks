@@ -26,9 +26,6 @@ newtype InvoiceId = InvoiceId {unInvoiceId :: Text}
 newtype LineId    = LineId {unLineId :: Text}
   deriving (Generic)
 
-newtype CustomerRefValue = CustomerRefValue {unCustomerRefValue :: Text}
-  deriving (Generic)
-
 data SalesItemLineDetail = SalesItemLineDetail
 
 data DetailType = DetailType
@@ -50,9 +47,9 @@ newtype ClassRef = ClassRef { classRef :: Reference }
 
 newtype CurrencyRef = CurrencyRef { currencyRef :: Reference }
 
-newtype DepartmentRef = DepartmentRef { departmentRef :: Reference }
-
 newtype CustomerRef = CustomerRef { customerRef :: Reference }
+
+newtype DepartmentRef = DepartmentRef { departmentRef :: Reference }
 
 newtype DepositToAccountRef = DepositToAccountRef { depositToAccountRef :: Reference }
 
