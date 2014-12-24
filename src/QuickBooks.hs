@@ -266,10 +266,16 @@ data QuickBooksRequest a where
 type QuickBooksQuery a = QuickBooksRequest (QuickBooksResponse a)
 
 data APIConfig = APIConfig
-  { companyId :: !Text
-  , apiKey    :: !Text
-  , hostname  :: !Text
+  { companyId      :: !Text
+  , consumerToken  :: !Text
+  , consumerSecret :: !Text
+  , oauthToken     :: !Text
+  , oauthSecret    :: !Text
+  , hostname       :: !Text
   }
+
+signRequest :: APIConfig -> Request -> Request
+
 
 evalQuickBooksQuery :: (?apiConfig :: APIConfig) => QuickBooksQuery a -> IO a
 evalQuickBooksQuery rq@(CreateInvoice invoice) = undefined =<< post (requestURI rq) (toJSON invoice)
