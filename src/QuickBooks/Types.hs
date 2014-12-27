@@ -128,9 +128,9 @@ newtype TaxCodeRef = TaxCodeRef { taxCodeRef :: Reference }
 
 newtype TxnTaxCodeRef = TxnTaxCodeRef { txnTaxCodeRef :: Reference }
 
-data MetaData = MetaData
-  { metaDataCreateTime      :: !Text
-  , metaDataLastUpdatedTime :: !Text
+data ModificationMetaData = ModificationMetaData
+  { modificationMetaDataCreateTime      :: !Text
+  , modificationMetaDataLastUpdatedTime :: !Text
   }
 
 data PhysicalAddress = PhysicalAddress
@@ -184,7 +184,7 @@ data GlobalTaxModelEnum = GlobalTaxModelEnum
 data Invoice = Invoice
   { invoiceId                    :: !(Maybe InvoiceId)
   , invoiceSyncToken             :: !(Maybe Text)
-  , invoiceMetaData              :: !(Maybe MetaData)
+  , invoiceMetaData              :: !(Maybe ModificationMetaData)
   , invoiceCustomField           :: !(Maybe [CustomField])
   , invoiceDocNumber             :: !(Maybe Text)
   , invoiceTxnDate               :: !(Maybe Text)
@@ -307,8 +307,8 @@ $(deriveJSON defaultOptions
              ''LinkedTxn)
 
 $(deriveJSON defaultOptions
-               { fieldLabelModifier = drop 8 }
-             ''MetaData)
+               { fieldLabelModifier = drop 20 }
+             ''ModificationMetaData)
 
 $(deriveJSON defaultOptions
                { fieldLabelModifier = \_ -> "PriceLevelRef" }
