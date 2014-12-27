@@ -25,10 +25,10 @@ queryQuickBooks query = do
   let ?apiConfig = apiConfig 
   let ?manager = manager
   case query of
-    (CreateInvoice invoice) -> createInvoiceHandler invoice
-    (UpdateInvoice _)       -> undefined
-    (ReadInvoice _)         -> undefined
-    (DeleteInvoice _)       -> undefined
+    (CreateInvoice invoice)   -> createInvoiceRequest invoice 
+    (UpdateInvoice invoice)   -> updateInvoiceRequest invoice
+    (ReadInvoice invoiceId)   -> readInvoiceRequest invoiceId
+    (DeleteInvoice invoiceId) -> deleteInvoiceRequest invoiceId 
 
 readAPIConfig :: IO APIConfig
 readAPIConfig = undefined

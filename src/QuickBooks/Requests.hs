@@ -6,7 +6,12 @@
 {-# LANGUAGE QuasiQuotes        #-}
 {-# LANGUAGE TypeFamilies       #-}
 
-module QuickBooks.Requests where
+module QuickBooks.Requests
+ ( createInvoiceRequest
+ , readInvoiceRequest
+ , updateInvoiceRequest
+ , deleteInvoiceRequest
+ ) where
 
 import           QuickBooks.Types
 import           Data.Aeson
@@ -57,20 +62,18 @@ deleteInvoiceRequest :: ( ?apiConfig :: APIConfig
 deleteInvoiceRequest invoiceId = do
   let apiConfig = ?apiConfig
   req  <-  oauthSignRequest =<< parseUrl [i| #{invoiceURITemplate apiConfig}?operation=delete |]
-  let req' = req{method = "POST"} 
+  let req' = req{method = "POST", requestBody = RequestBodyLBS $ encode body}
   resp <-  httpLbs req' ?manager
   -- write log line ?fast-logger package? log response
   return $ eitherDecode $ responseBody resp
+  where
+   body = object [ ("id", String (unInvoiceId invoiceId)), ("syncTokent", Number 3) ]
 
 oauthSignRequest :: (?apiConfig :: APIConfig) => Request -> IO Request 
 oauthSignRequest req = signOAuth (oauth ?apiConfig) credentials req
     where
     credentials = newCredential (oauthToken ?apiConfig) 
                                 (oauthSecret ?apiConfig)
-
--- requestURI apiConfig (ReadInvoice (unInvoiceId -> iId))   =  
--- requestURI apiConfig (UpdateInvoice _)                    = [i| #{invoiceURITemplate apiConfig}#invoice |]
--- requestURI apiConfig (DeleteInvoice (unInvoiceId -> iId)) = [i| #{invoiceURITemplate apiConfig}#{iId}   |]
 
 invoiceURITemplate :: APIConfig -> String
 invoiceURITemplate apiConfig = [i| https://#{hostname apiConfig}/v3/company/#{companyId apiConfig}/invoice|]
