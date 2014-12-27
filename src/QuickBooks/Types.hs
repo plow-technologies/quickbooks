@@ -1,13 +1,49 @@
 {-# LANGUAGE DeriveGeneric     #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeFamilies      #-}
+{-# LANGUAGE GADTs             #-}
+{-# LANGUAGE ImplicitParams    #-}
 {-# LANGUAGE TemplateHaskell   #-}
+{-# LANGUAGE ViewPatterns      #-}
+{-# LANGUAGE RecordWildCards   #-}
+{-# LANGUAGE QuasiQuotes       #-}
+{-# LANGUAGE OverloadedStrings #-}
+
 
 module QuickBooks.Types where
 
+import           Data.Aeson
+import           Data.ByteString (ByteString)
 import           Data.Aeson.TH
 import           Data.Char (toLower)
 import           Data.Text (Text)
 import           GHC.Generics (Generic)
+import           Web.Authenticate.OAuth
+
+data APIConfig = APIConfig
+  { companyId      :: !ByteString
+  , consumerToken  :: !ByteString
+  , consumerSecret :: !ByteString
+  , oauth          :: !OAuth
+  , oauthToken     :: !ByteString
+  , oauthSecret    :: !ByteString
+  , hostname       :: !ByteString
+  }
+
+data family QuickBooksResponse a
+data instance QuickBooksResponse Invoice = QuickBooksInvoiceResponse { quickBooksResponseInvoice :: Invoice }
+
+instance FromJSON (QuickBooksResponse Invoice) where
+  parseJSON (Object o) = QuickBooksInvoiceResponse `fmap` (o .: "invoice")
+  parseJSON _          = fail "Could not parse invoice response from QuickBooks"
+
+type QuickBooksQuery a = QuickBooksRequest (QuickBooksResponse a)
+
+data QuickBooksRequest a where
+--  GetOAuthCredentials :: QuickBooksQuery (ByteString, ByteString)
+  CreateInvoice :: Invoice -> QuickBooksQuery Invoice
+  ReadInvoice   :: InvoiceId -> QuickBooksQuery Invoice
+  UpdateInvoice :: Invoice ->  QuickBooksQuery Invoice
+  DeleteInvoice :: InvoiceId  -> QuickBooksQuery Invoice
 
 newtype InvoiceId = InvoiceId {unInvoiceId :: Text}
   deriving (Generic)
