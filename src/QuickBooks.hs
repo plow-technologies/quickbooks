@@ -8,6 +8,9 @@
 
 module QuickBooks
   ( createInvoice
+  , readInvoice
+  , updateInvoice
+  , deleteInvoice
   ) where 
 
 import           QuickBooks.Types
@@ -17,6 +20,15 @@ import           QuickBooks.Requests
 
 createInvoice :: Invoice -> IO (Either String Invoice)
 createInvoice = queryQuickBooks . CreateInvoice
+
+readInvoice :: InvoiceId -> IO (Either String Invoice)
+readInvoice = queryQuickBooks . ReadInvoice
+
+updateInvoice :: Invoice -> IO (Either String Invoice)
+updateInvoice = queryQuickBooks . UpdateInvoice
+
+deleteInvoice :: InvoiceId -> IO (Either String Invoice)
+deleteInvoice = queryQuickBooks . DeleteInvoice
 
 queryQuickBooks :: QuickBooksQuery a -> IO (Either String a)
 queryQuickBooks query = do
