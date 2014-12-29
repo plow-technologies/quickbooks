@@ -237,6 +237,10 @@ data Invoice = Invoice
   }
   deriving (Show)
 
+data InvoiceResponse = InvoiceResponse
+  { invoiceResponseInvoice :: Invoice }
+  deriving (Show)
+
 simpleInvoice :: [Line] -> CustomerRef -> Invoice
 simpleInvoice simpleInvoiceLine simpleInvoiceCustomerRef =
   Invoice Nothing
@@ -307,12 +311,7 @@ $(deriveJSON defaultOptions
 $(deriveJSON defaultOptions
              ''GlobalTaxModel)
 
-$(deriveFromJSON defaultOptions
-               { fieldLabelModifier = drop 7
-               , omitNothingFields  = True }
-             ''Invoice)
-
-$(deriveToJSON defaultOptions
+$(deriveJSON defaultOptions
                { fieldLabelModifier = drop 7
                , omitNothingFields  = True }
              ''Invoice)
@@ -320,6 +319,10 @@ $(deriveToJSON defaultOptions
 $(deriveJSON defaultOptions
                { fieldLabelModifier = drop 9 }
              ''InvoiceId)
+
+$(deriveJSON defaultOptions
+               { fieldLabelModifier = drop 15 }
+             ''InvoiceResponse)
 
 $(deriveJSON defaultOptions
                { fieldLabelModifier = drop 4 }
