@@ -106,7 +106,7 @@ newtype ClassRef = ClassRef { classRef :: Reference }
 
 newtype CurrencyRef = CurrencyRef { currencyRef :: Reference }
 
-newtype CustomerRef = CustomerRef { customerRef :: Reference }
+type CustomerRef = Reference
 
 newtype DepartmentRef = DepartmentRef { departmentRef :: Reference }
 
@@ -278,10 +278,6 @@ $(deriveJSON defaultOptions
 $(deriveJSON defaultOptions
                { fieldLabelModifier = \_ -> "CurrencyRef" }
              ''CurrencyRef)
-
-$(deriveJSON defaultOptions
-               { fieldLabelModifier = \_ -> "CustomerRef" }
-             ''CustomerRef)
 
 $(deriveJSON defaultOptions
                { fieldLabelModifier = drop 11
