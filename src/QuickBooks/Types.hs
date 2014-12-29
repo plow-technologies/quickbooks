@@ -79,16 +79,13 @@ data SalesItemLineDetail = SalesItemLineDetail
 data SubtotalLineDetail = SubtotalLineDetail
   { subtotalLineDetailItemRef :: !(Maybe ItemRef) }
 
-data LineDetailType
-  = LineDetailType
-
 data Line = Line
   { lineId                    :: !(Maybe LineId)
   , lineNum                   :: !(Maybe Double)
   , lineDescription           :: !(Maybe Text)
   , lineAmount                :: !Double
   , lineLinkedTxn             :: !(Maybe [LinkedTxn])
-  , lineDetailType            :: !LineDetailType
+  , lineDetailType            :: !Text
   , lineDescriptionLineDetail :: !(Maybe DescriptionLineDetail)
   , lineDiscountLineDetail    :: !(Maybe DiscountLineDetail)
   , lineSalesItemLineDetail   :: !(Maybe SalesItemLineDetail)
@@ -281,16 +278,14 @@ $(deriveJSON defaultOptions
              ''DeliveryInfo)
 
 $(deriveJSON defaultOptions
-               { fieldLabelModifier = drop 21 }
+               { fieldLabelModifier = drop 21
+               , omitNothingFields  = True }
              ''DescriptionLineDetail)
 
 $(deriveJSON defaultOptions
-               { fieldLabelModifier = drop 18 }
+               { fieldLabelModifier = drop 18
+               , omitNothingFields  = True }
              ''DiscountLineDetail)
-
-$(deriveJSON defaultOptions
-               { fieldLabelModifier = drop 14 }
-             ''LineDetailType)
 
 $(deriveJSON defaultOptions
                { fieldLabelModifier = drop 5 }
@@ -340,11 +335,13 @@ $(deriveJSON defaultOptions
              ''Reference)
 
 $(deriveJSON defaultOptions
-               { fieldLabelModifier = drop 4 }
+               { fieldLabelModifier = drop 19
+               , omitNothingFields  = True }
              ''SalesItemLineDetail)
 
 $(deriveJSON defaultOptions
-               { fieldLabelModifier = drop 4 }
+               { fieldLabelModifier = drop 18
+               , omitNothingFields  = True }
              ''SubtotalLineDetail)
 
 $(deriveJSON defaultOptions
