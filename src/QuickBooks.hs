@@ -27,8 +27,8 @@ readInvoice = queryQuickBooks . ReadInvoice
 updateInvoice :: Invoice -> IO (Either String Invoice)
 updateInvoice = queryQuickBooks . UpdateInvoice
 
-deleteInvoice :: InvoiceId -> IO (Either String Invoice)
-deleteInvoice = queryQuickBooks . DeleteInvoice
+deleteInvoice :: InvoiceId -> SyncToken -> IO (Either String Invoice)
+deleteInvoice iId = queryQuickBooks . DeleteInvoice iId
 
 queryQuickBooks :: QuickBooksQuery a -> IO (Either String a)
 queryQuickBooks query = do
@@ -40,7 +40,7 @@ queryQuickBooks query = do
     (CreateInvoice invoice)   -> createInvoiceRequest invoice 
     (UpdateInvoice invoice)   -> updateInvoiceRequest invoice
     (ReadInvoice invoiceId)   -> readInvoiceRequest invoiceId
-    (DeleteInvoice invoiceId) -> deleteInvoiceRequest invoiceId 
+    (DeleteInvoice invoiceId syncToken) -> deleteInvoiceRequest invoiceId syncToken
 
 readAPIConfig :: IO APIConfig
 readAPIConfig = undefined

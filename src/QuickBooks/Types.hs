@@ -41,13 +41,15 @@ data QuickBooksRequest a where
   CreateInvoice :: Invoice -> QuickBooksQuery Invoice
   ReadInvoice   :: InvoiceId -> QuickBooksQuery Invoice
   UpdateInvoice :: Invoice ->  QuickBooksQuery Invoice
-  DeleteInvoice :: InvoiceId  -> QuickBooksQuery Invoice
+  DeleteInvoice :: InvoiceId  -> SyncToken -> QuickBooksQuery Invoice
 
 newtype InvoiceId = InvoiceId {unInvoiceId :: Text}
   deriving (Generic)
 
 newtype LineId    = LineId {unLineId :: Text}
   deriving (Generic)
+
+newtype SyncToken = SyncToken { unSyncToken :: Integer }
 
 data DescriptionLineDetail = DescriptionLineDetail
   { descriptionLineDetailServiceDate :: !(Maybe Text)
@@ -173,7 +175,7 @@ data GlobalTaxModelEnum = GlobalTaxModelEnum
 
 data Invoice = Invoice
   { invoiceId                    :: !(Maybe InvoiceId)
-  , invoiceSyncToken             :: !(Maybe Text)
+  , invoiceSyncToken             :: !(Maybe SyncToken)
   , invoiceMetaData              :: !(Maybe ModificationMetaData)
   , invoiceCustomField           :: !(Maybe [CustomField])
   , invoiceDocNumber             :: !(Maybe Text)
@@ -252,6 +254,10 @@ simpleInvoice simpleInvoiceLine simpleInvoiceCustomerRef =
           Nothing
           Nothing
           Nothing
+
+$(deriveJSON defaultOptions
+               { fieldLabelModifier = \_ -> "SyncToken" }
+              ''SyncToken) 
 
 $(deriveJSON defaultOptions
                { fieldLabelModifier = \_ -> "BillAddr" }

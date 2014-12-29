@@ -66,7 +66,7 @@ deleteInvoiceRequest iId syncToken = do
   return $ eitherDecode $ responseBody resp
   where
    body = object [ ("id", String (unInvoiceId iId))
-                 , ("syncTokent", Number (unSyncToken syncToken) 
+                 , ("SyncToken", Number $ fromInteger (unSyncToken syncToken))
                  ]
 
 oauthSignRequest :: (?apiConfig :: APIConfig) => Request -> IO Request
