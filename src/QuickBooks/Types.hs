@@ -226,6 +226,47 @@ data Invoice = Invoice
   , invoiceSparse                :: !(Maybe Bool)
   }
 
+simpleInvoice :: [Line] -> CustomerRef -> Invoice
+simpleInvoice simpleInvoiceLine simpleInvoiceCustomerRef =
+  Invoice Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          simpleInvoiceLine
+          Nothing
+          simpleInvoiceCustomerRef
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+
+          Nothing
+          Nothing
+          Nothing
+
 $(deriveJSON defaultOptions
                { fieldLabelModifier = \_ -> "BillAddr" }
              ''BillAddr)
@@ -291,7 +332,8 @@ $(deriveJSON defaultOptions
              ''GlobalTaxModelEnum)
 
 $(deriveJSON defaultOptions
-               { fieldLabelModifier = drop 7 }
+               { fieldLabelModifier = drop 7
+               , omitNothingFields  = True }
              ''Invoice)
 
 $(deriveJSON defaultOptions
