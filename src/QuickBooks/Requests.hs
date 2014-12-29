@@ -20,7 +20,7 @@ import           Data.String.Interpolate
 createInvoiceRequest :: ( ?apiConfig :: APIConfig
                         , ?manager :: Manager
                         ) => Invoice
-                          -> IO (Either String Invoice)
+                          -> IO (Either String (QuickBooksResponse Invoice))
 createInvoiceRequest invoice = do
   let apiConfig = ?apiConfig
   req  <-  oauthSignRequest =<< parseUrl [i|#{invoiceURITemplate apiConfig}|]
@@ -32,7 +32,7 @@ createInvoiceRequest invoice = do
 updateInvoiceRequest :: ( ?apiConfig :: APIConfig
                         , ?manager :: Manager
                         ) => Invoice
-                          -> IO (Either String Invoice)
+                          -> IO (Either String (QuickBooksResponse Invoice))
 updateInvoiceRequest invoice = do
   let apiConfig = ?apiConfig
   req  <-  oauthSignRequest =<< parseUrl [i|#{invoiceURITemplate apiConfig}|]
@@ -44,7 +44,7 @@ updateInvoiceRequest invoice = do
 readInvoiceRequest :: ( ?apiConfig :: APIConfig
                       , ?manager :: Manager
                       ) => InvoiceId
-                        -> IO (Either String Invoice)
+                        -> IO (Either String (QuickBooksResponse Invoice))
 readInvoiceRequest iId = do
   let apiConfig = ?apiConfig
   req  <-  oauthSignRequest =<< parseUrl [i|#{invoiceURITemplate apiConfig}#{unInvoiceId iId}|]
@@ -59,7 +59,7 @@ deleteInvoiceRequest :: ( ?apiConfig :: APIConfig
                         , ?manager :: Manager
                         ) => InvoiceId
                           -> SyncToken
-                          -> IO (Either String Invoice)
+                          -> IO (Either String (QuickBooksResponse Invoice))
 deleteInvoiceRequest iId syncToken = do
   let apiConfig = ?apiConfig
   req  <-  oauthSignRequest =<< parseUrl [i|#{invoiceURITemplate apiConfig}?operation=delete|]
@@ -69,7 +69,7 @@ deleteInvoiceRequest iId syncToken = do
   return $ eitherDecode $ responseBody resp
   where
    body = object [ ("id", String (unInvoiceId iId))
-                 , ("SyncToken", Number $ fromInteger (unSyncToken syncToken))
+                 , ("SyncToken", String $ (unSyncToken syncToken))
                  ]
 
 oauthSignRequest :: (?apiConfig :: APIConfig) => Request -> IO Request

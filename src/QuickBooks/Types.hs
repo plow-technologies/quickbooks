@@ -1,12 +1,13 @@
-{-# LANGUAGE DeriveGeneric     #-}
-{-# LANGUAGE TypeFamilies      #-}
-{-# LANGUAGE GADTs             #-}
-{-# LANGUAGE ImplicitParams    #-}
-{-# LANGUAGE TemplateHaskell   #-}
-{-# LANGUAGE ViewPatterns      #-}
-{-# LANGUAGE RecordWildCards   #-}
-{-# LANGUAGE QuasiQuotes       #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DeriveGeneric              #-}
+{-# LANGUAGE TypeFamilies               #-}
+{-# LANGUAGE GADTs                      #-}
+{-# LANGUAGE ImplicitParams             #-}
+{-# LANGUAGE TemplateHaskell            #-}
+{-# LANGUAGE ViewPatterns               #-}
+{-# LANGUAGE RecordWildCards            #-}
+{-# LANGUAGE QuasiQuotes                #-}
+{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 
 module QuickBooks.Types where
@@ -31,26 +32,26 @@ data family QuickBooksResponse a
 data instance QuickBooksResponse Invoice = QuickBooksInvoiceResponse { quickBooksResponseInvoice :: Invoice }
 
 instance FromJSON (QuickBooksResponse Invoice) where
-  parseJSON (Object o) = QuickBooksInvoiceResponse `fmap` (o .: "invoice")
+  parseJSON (Object o) = QuickBooksInvoiceResponse `fmap` (o .: "Invoice")
   parseJSON _          = fail "Could not parse invoice response from QuickBooks"
 
-type QuickBooksQuery a = QuickBooksRequest (QuickBooksResponse a)
+type QuickBooksQuery a = QuickBooksRequest a
 
 data QuickBooksRequest a where
 --  GetOAuthCredentials :: QuickBooksQuery (ByteString, ByteString)
-  CreateInvoice :: Invoice -> QuickBooksQuery Invoice
-  ReadInvoice   :: InvoiceId -> QuickBooksQuery Invoice
-  UpdateInvoice :: Invoice ->  QuickBooksQuery Invoice
-  DeleteInvoice :: InvoiceId  -> SyncToken -> QuickBooksQuery Invoice
+  CreateInvoice :: Invoice   -> QuickBooksRequest (QuickBooksResponse Invoice)
+  ReadInvoice   :: InvoiceId -> QuickBooksRequest (QuickBooksResponse Invoice)
+  UpdateInvoice :: Invoice   -> QuickBooksRequest (QuickBooksResponse Invoice)
+  DeleteInvoice :: InvoiceId -> SyncToken -> QuickBooksRequest (QuickBooksResponse Invoice)
 
 newtype InvoiceId = InvoiceId {unInvoiceId :: Text}
-  deriving (Generic, Show)
+  deriving (Generic, Show, FromJSON, ToJSON)
 
 newtype LineId    = LineId {unLineId :: Text}
-  deriving (Generic, Show)
+  deriving (Generic, Show, FromJSON, ToJSON)
 
-newtype SyncToken = SyncToken { unSyncToken :: Integer }
-  deriving (Show)
+newtype SyncToken = SyncToken { unSyncToken :: Text }
+  deriving (Show, FromJSON, ToJSON)
 
 data DescriptionLineDetail = DescriptionLineDetail
   { descriptionLineDetailServiceDate :: !(Maybe Text)
@@ -129,12 +130,12 @@ data ModificationMetaData = ModificationMetaData
 data PhysicalAddress = PhysicalAddress
   { physicalAddressId                     :: !Text
   , physicalAddressLine1                  :: !Text
-  , physicalAddressLine2                  :: !Text
-  , physicalAddressLine3                  :: !Text
-  , physicalAddressLine4                  :: !Text
-  , physicalAddressLine5                  :: !Text
+  , physicalAddressLine2                  :: !(Maybe Text)
+  , physicalAddressLine3                  :: !(Maybe Text)
+  , physicalAddressLine4                  :: !(Maybe Text)
+  , physicalAddressLine5                  :: !(Maybe Text)
   , physicalAddressCity                   :: !Text
-  , physicalAddressCountry                :: !Text
+  , physicalAddressCountry                :: !(Maybe Text)
   , physicalAddressCountrySubDivisionCode :: !Text
   , physicalAddressPostalCode             :: !Text
   , physicalAddressNote                   :: !(Maybe Text)
@@ -152,10 +153,10 @@ data EmailAddress = EmailAddress
   deriving (Show)
 
 data TxnTaxDetail = TxnTaxDetail
-  { txnTaxDetailTxnTaxCodeRef :: !TxnTaxCodeRef
+  { txnTaxDetailTxnTaxCodeRef :: !(Maybe TxnTaxCodeRef)
   , txnTaxDetailTotalTax      :: !Double
-  , txnTaxDetailTaxLine       :: !Line
-  }
+  , txnTaxDetailTaxLine       :: !(Maybe Line)
+  } 
   deriving (Show)
 
 data DeliveryInfo = DeliveryInfo
@@ -317,20 +318,12 @@ $(deriveJSON defaultOptions
              ''Invoice)
 
 $(deriveJSON defaultOptions
-               { fieldLabelModifier = drop 9 }
-             ''InvoiceId)
-
-$(deriveJSON defaultOptions
                { fieldLabelModifier = drop 15 }
              ''InvoiceResponse)
 
 $(deriveJSON defaultOptions
                { fieldLabelModifier = drop 4 }
              ''Line)
-
-$(deriveJSON defaultOptions
-               { fieldLabelModifier = drop 4 }
-             ''LineId)
 
 $(deriveJSON defaultOptions
                { fieldLabelModifier = drop 6
@@ -359,10 +352,6 @@ $(deriveJSON defaultOptions
                { fieldLabelModifier = drop 18
                , omitNothingFields  = True }
              ''SubtotalLineDetail)
-
-$(deriveJSON defaultOptions
-               { fieldLabelModifier = \_ -> "SyncToken" }
-             ''SyncToken)
 
 $(deriveJSON defaultOptions
                { fieldLabelModifier = drop 12 }

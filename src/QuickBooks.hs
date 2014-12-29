@@ -18,19 +18,19 @@ import Network.HTTP.Client.TLS (tlsManagerSettings)
 import Network.HTTP.Client
 import System.Environment (getEnvironment)
 
-createInvoice :: Invoice -> IO (Either String Invoice)
+createInvoice :: Invoice -> IO (Either String (QuickBooksResponse Invoice))
 createInvoice = queryQuickBooks . CreateInvoice
 
-readInvoice :: InvoiceId -> IO (Either String Invoice)
+readInvoice :: InvoiceId -> IO (Either String (QuickBooksResponse Invoice))
 readInvoice = queryQuickBooks . ReadInvoice
 
-updateInvoice :: Invoice -> IO (Either String Invoice)
+updateInvoice :: Invoice -> IO (Either String (QuickBooksResponse Invoice))
 updateInvoice = queryQuickBooks . UpdateInvoice
 
-deleteInvoice :: InvoiceId -> SyncToken -> IO (Either String Invoice)
+deleteInvoice :: InvoiceId -> SyncToken -> IO (Either String (QuickBooksResponse Invoice))
 deleteInvoice iId = queryQuickBooks . DeleteInvoice iId
 
-queryQuickBooks :: QuickBooksQuery a -> IO (Either String a)
+queryQuickBooks :: QuickBooksRequest (QuickBooksResponse Invoice) -> IO (Either String (QuickBooksResponse Invoice))
 queryQuickBooks query = do
   apiConfig <- readAPIConfig
   manager   <- newManager tlsManagerSettings
