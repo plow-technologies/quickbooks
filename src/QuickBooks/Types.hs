@@ -44,17 +44,19 @@ data QuickBooksRequest a where
   DeleteInvoice :: InvoiceId  -> SyncToken -> QuickBooksQuery Invoice
 
 newtype InvoiceId = InvoiceId {unInvoiceId :: Text}
-  deriving (Generic)
+  deriving (Generic, Show)
 
 newtype LineId    = LineId {unLineId :: Text}
-  deriving (Generic)
+  deriving (Generic, Show)
 
 newtype SyncToken = SyncToken { unSyncToken :: Integer }
+  deriving (Show)
 
 data DescriptionLineDetail = DescriptionLineDetail
   { descriptionLineDetailServiceDate :: !(Maybe Text)
   , descriptionLineDetailTaxCodeRef  :: !(Maybe TaxCodeRef)
   }
+  deriving (Show)
 
 data DiscountLineDetail = DiscountLineDetail
   { discountLineDetailDiscountRef        :: !(Maybe DiscountRef)
@@ -62,6 +64,7 @@ data DiscountLineDetail = DiscountLineDetail
   , discountLineDetailDiscountPercent    :: !(Maybe Double)
   , discountLineDetailDiscountAccountRef :: !(Maybe DiscountAccountRef)
   }
+  deriving (Show)
 
 data SalesItemLineDetail = SalesItemLineDetail
   { salesItemLineDetailItemRef         :: !(Maybe ItemRef)
@@ -75,9 +78,11 @@ data SalesItemLineDetail = SalesItemLineDetail
   , salesItemLineDetailServiceData     :: !(Maybe Text)
   , salesItemLineDetailTaxInclusiveAmt :: !(Maybe Double)
   }
+  deriving (Show)
 
 data SubtotalLineDetail = SubtotalLineDetail
   { subtotalLineDetailItemRef :: !(Maybe ItemRef) }
+  deriving (Show)
 
 data Line = Line
   { lineId                    :: !(Maybe LineId)
@@ -92,12 +97,14 @@ data Line = Line
   , lineSubtotalLineDetail    :: !(Maybe SubtotalLineDetail)
   , lineCustomField           :: !(Maybe [CustomField])
   }
+  deriving (Show)
 
 data Reference = Reference
   { referenceName  :: !(Maybe Text)
   , referenceType  :: !(Maybe Text)
   , referenceValue :: !(Text)
   }
+  deriving (Show)
 
 type ClassRef            = Reference
 type CurrencyRef         = Reference
@@ -117,6 +124,7 @@ data ModificationMetaData = ModificationMetaData
   { modificationMetaDataCreateTime      :: !Text
   , modificationMetaDataLastUpdatedTime :: !Text
   }
+  deriving (Show)
 
 data PhysicalAddress = PhysicalAddress
   { physicalAddressId                     :: !Text
@@ -133,6 +141,7 @@ data PhysicalAddress = PhysicalAddress
   , physicalAddressLat                    :: !Text
   , physicalAddressLong                   :: !Text
   }
+  deriving (Show)
 
 type BillAddr = PhysicalAddress
 type ShipAddr = PhysicalAddress
@@ -140,23 +149,27 @@ type ShipAddr = PhysicalAddress
 data EmailAddress = EmailAddress
   { emailAddress :: !Text
   }
+  deriving (Show)
 
 data TxnTaxDetail = TxnTaxDetail
   { txnTaxDetailTxnTaxCodeRef :: !TxnTaxCodeRef
   , txnTaxDetailTotalTax      :: !Double
   , txnTaxDetailTaxLine       :: !Line
   }
+  deriving (Show)
 
 data DeliveryInfo = DeliveryInfo
   { deliveryInfoDeliveryType :: !(Maybe Text)
   , deliveryInfoDeliveryTime :: !(Maybe Text)
   }
+  deriving (Show)
 
 data LinkedTxn = LinkedTxn
   { linkedTxnId     :: !(Maybe Text)
   , linkedTxnType   :: !(Maybe Text)
   , linkedTxnLineId :: !(Maybe Text)
   }
+  deriving (Show)
 
 data CustomField = CustomField
   { customFieldDefinitionId :: !Text
@@ -167,17 +180,20 @@ data CustomField = CustomField
   , customFieldDateValue    :: !(Maybe Text)
   , customFieldNumberValue  :: !(Maybe Double)
   }
+  deriving (Show)
 
 data CustomFieldType
   = BooleanType
   | DateType
   | NumberType
   | StringType
+  deriving (Show)
 
 data GlobalTaxModel
   = NotApplicable
   | TaxExcluded
   | TaxInclusive
+  deriving (Show)
 
 data Invoice = Invoice
   { invoiceId                    :: !(Maybe InvoiceId)
@@ -219,6 +235,7 @@ data Invoice = Invoice
   , invoiceDomain                :: !(Maybe Text)
   , invoiceSparse                :: !(Maybe Bool)
   }
+  deriving (Show)
 
 simpleInvoice :: [Line] -> CustomerRef -> Invoice
 simpleInvoice simpleInvoiceLine simpleInvoiceCustomerRef =
