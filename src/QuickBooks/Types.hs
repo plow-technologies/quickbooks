@@ -331,7 +331,12 @@ $(deriveJSON defaultOptions
                { fieldLabelModifier = drop 18 }
              ''GlobalTaxModelEnum)
 
-$(deriveJSON defaultOptions
+$(deriveFromJSON defaultOptions
+               { fieldLabelModifier = drop 7
+               , omitNothingFields  = True }
+             ''Invoice)
+
+$(deriveToJSON defaultOptions
                { fieldLabelModifier = drop 7
                , omitNothingFields  = True }
              ''Invoice)
