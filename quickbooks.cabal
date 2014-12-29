@@ -26,6 +26,7 @@ library
                        , authenticate-oauth == 1.5.*
                        , bytestring         == 0.10.*
                        , http-client        == 0.4.*
+                       , http-types         == 0.8.*
                        , http-client-tls    == 0.2.*
                        , interpolate        == 0.1.*
                        , text
