@@ -102,31 +102,19 @@ data Reference = Reference
   , referenceValue :: Text
   }
 
-newtype ClassRef = ClassRef { classRef :: Reference }
-
-newtype CurrencyRef = CurrencyRef { currencyRef :: Reference }
-
-type CustomerRef = Reference
-
-newtype DepartmentRef = DepartmentRef { departmentRef :: Reference }
-
-newtype DepositToAccountRef = DepositToAccountRef { depositToAccountRef :: Reference }
-
-newtype DiscountAccountRef = DiscountAccountRef { discountAccountRef :: Reference }
-
-newtype DiscountRef = DiscountRef { discountRef :: Reference }
-
-newtype ItemRef = ItemRef { itemRef :: Reference }
-
-newtype PriceLevelRef = PriceLevelRef { priceLevelRef :: Reference }
-
-newtype SalesTermRef = SalesTermRef { salesTermRef :: Reference }
-
-newtype ShipMethodRef = ShipMethodRef { shipMethodRef :: Reference }
-
-newtype TaxCodeRef = TaxCodeRef { taxCodeRef :: Reference }
-
-newtype TxnTaxCodeRef = TxnTaxCodeRef { txnTaxCodeRef :: Reference }
+type ClassRef            = Reference
+type CurrencyRef         = Reference
+type CustomerRef         = Reference
+type DepartmentRef       = Reference
+type DepositToAccountRef = Reference
+type DiscountAccountRef  = Reference
+type DiscountRef         = Reference
+type ItemRef             = Reference
+type PriceLevelRef       = Reference
+type SalesTermRef        = Reference
+type ShipMethodRef       = Reference
+type TaxCodeRef          = Reference
+type TxnTaxCodeRef       = Reference
 
 data ModificationMetaData = ModificationMetaData
   { modificationMetaDataCreateTime      :: !Text
@@ -272,14 +260,6 @@ $(deriveJSON defaultOptions
              ''BillAddr)
 
 $(deriveJSON defaultOptions
-               { fieldLabelModifier = \_ -> "ClassRef" }
-             ''ClassRef)
-
-$(deriveJSON defaultOptions
-               { fieldLabelModifier = \_ -> "CurrencyRef" }
-             ''CurrencyRef)
-
-$(deriveJSON defaultOptions
                { fieldLabelModifier = drop 11
                , omitNothingFields  = True }
              ''CustomField)
@@ -292,14 +272,6 @@ $(deriveJSON defaultOptions
              ''DeliveryInfo)
 
 $(deriveJSON defaultOptions
-               { fieldLabelModifier = \_ -> "DepartmentRef" }
-             ''DepartmentRef)
-
-$(deriveJSON defaultOptions
-               { fieldLabelModifier = \_ -> "DepositToAccountRef" }
-             ''DepositToAccountRef)
-
-$(deriveJSON defaultOptions
                { fieldLabelModifier = drop 21 }
              ''DescriptionLineDetail)
 
@@ -310,14 +282,6 @@ $(deriveJSON defaultOptions
 $(deriveJSON defaultOptions
                { fieldLabelModifier = drop 14 }
              ''LineDetailType)
-
-$(deriveJSON defaultOptions
-               { fieldLabelModifier = \_ -> "DiscountAccountRef" }
-             ''DiscountAccountRef)
-
-$(deriveJSON defaultOptions
-               { fieldLabelModifier = \_ -> "DiscountRef" }
-             ''DiscountRef)
 
 $(deriveJSON defaultOptions
                { fieldLabelModifier = drop 5 }
@@ -342,10 +306,6 @@ $(deriveJSON defaultOptions
              ''InvoiceId)
 
 $(deriveJSON defaultOptions
-               { fieldLabelModifier = \_ -> "ItemRef" }
-             ''ItemRef)
-
-$(deriveJSON defaultOptions
                { fieldLabelModifier = drop 4 }
              ''Line)
 
@@ -362,10 +322,6 @@ $(deriveJSON defaultOptions
              ''ModificationMetaData)
 
 $(deriveJSON defaultOptions
-               { fieldLabelModifier = \_ -> "PriceLevelRef" }
-             ''PriceLevelRef)
-
-$(deriveJSON defaultOptions
                { fieldLabelModifier = drop 15 }
              ''PhysicalAddress)
 
@@ -379,28 +335,12 @@ $(deriveJSON defaultOptions
              ''SalesItemLineDetail)
 
 $(deriveJSON defaultOptions
-               { fieldLabelModifier = \_ -> "SalesTermRef" }
-             ''SalesTermRef)
-
-$(deriveJSON defaultOptions
                { fieldLabelModifier = \_ -> "ShipAddr" }
              ''ShipAddr)
 
 $(deriveJSON defaultOptions
-               { fieldLabelModifier = \_ -> "ShipMethodRef" }
-             ''ShipMethodRef)
-
-$(deriveJSON defaultOptions
                { fieldLabelModifier = drop 4 }
              ''SubtotalLineDetail)
-
-$(deriveJSON defaultOptions
-               { fieldLabelModifier = \_ -> "TaxCodeRef" }
-             ''TaxCodeRef)
-
-$(deriveJSON defaultOptions
-               { fieldLabelModifier = \_ -> "TxnTaxCodeRef" }
-             ''TxnTaxCodeRef)
 
 $(deriveJSON defaultOptions
                { fieldLabelModifier = drop 12 }
