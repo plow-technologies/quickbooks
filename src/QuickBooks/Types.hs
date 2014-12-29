@@ -151,6 +151,9 @@ data TxnTaxDetail = TxnTaxDetail
   }
 
 data DeliveryInfo = DeliveryInfo
+  { deliveryInfoDeliveryType :: !(Maybe Text)
+  , deliveryInfoDeliveryTime :: !(Maybe Text)
+  }
 
 data LinkedTxn = LinkedTxn
   { linkedTxnId     :: !(Maybe Text)
@@ -174,7 +177,10 @@ data CustomFieldType
   | NumberType
   | StringType
 
-data GlobalTaxModelEnum = GlobalTaxModelEnum
+data GlobalTaxModel
+  = NotApplicable
+  | TaxExcluded
+  | TaxInclusive
 
 data Invoice = Invoice
   { invoiceId                    :: !(Maybe InvoiceId)
@@ -197,7 +203,7 @@ data Invoice = Invoice
   , invoiceClassRef              :: !(Maybe ClassRef)
   , invoiceSalesTermRef          :: !(Maybe SalesTermRef)
   , invoiceDueDate               :: !(Maybe Text)
-  , invoiceGlobalTaxCalculation  :: !(Maybe GlobalTaxModelEnum) -- Non-US
+  , invoiceGlobalTaxCalculation  :: !(Maybe GlobalTaxModel) -- Non-US
   , invoiceShipMethodRef         :: !(Maybe ShipMethodRef)
   , invoiceShipDate              :: !(Maybe Text)
   , invoiceTrackingNum           :: !(Maybe Text)
@@ -291,8 +297,7 @@ $(deriveJSON defaultOptions
              ''EmailAddress)
 
 $(deriveJSON defaultOptions
-               { fieldLabelModifier = drop 18 }
-             ''GlobalTaxModelEnum)
+             ''GlobalTaxModel)
 
 $(deriveFromJSON defaultOptions
                { fieldLabelModifier = drop 7
