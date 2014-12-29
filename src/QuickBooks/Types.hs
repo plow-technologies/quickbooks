@@ -44,17 +44,19 @@ data QuickBooksRequest a where
   DeleteInvoice :: InvoiceId  -> SyncToken -> QuickBooksQuery Invoice
 
 newtype InvoiceId = InvoiceId {unInvoiceId :: Text}
-  deriving (Generic)
+  deriving (Generic, Show)
 
 newtype LineId    = LineId {unLineId :: Text}
-  deriving (Generic)
+  deriving (Generic, Show)
 
 newtype SyncToken = SyncToken { unSyncToken :: Integer }
+  deriving (Show)
 
 data DescriptionLineDetail = DescriptionLineDetail
   { descriptionLineDetailServiceDate :: !(Maybe Text)
   , descriptionLineDetailTaxCodeRef  :: !(Maybe TaxCodeRef)
   }
+  deriving (Show)
 
 data DiscountLineDetail = DiscountLineDetail
   { discountLineDetailDiscountRef        :: !(Maybe DiscountRef)
@@ -62,6 +64,7 @@ data DiscountLineDetail = DiscountLineDetail
   , discountLineDetailDiscountPercent    :: !(Maybe Double)
   , discountLineDetailDiscountAccountRef :: !(Maybe DiscountAccountRef)
   }
+  deriving (Show)
 
 data SalesItemLineDetail = SalesItemLineDetail
   { salesItemLineDetailItemRef         :: !(Maybe ItemRef)
@@ -75,12 +78,11 @@ data SalesItemLineDetail = SalesItemLineDetail
   , salesItemLineDetailServiceData     :: !(Maybe Text)
   , salesItemLineDetailTaxInclusiveAmt :: !(Maybe Double)
   }
+  deriving (Show)
 
 data SubtotalLineDetail = SubtotalLineDetail
   { subtotalLineDetailItemRef :: !(Maybe ItemRef) }
-
-data LineDetailType
-  = LineDetailType
+  deriving (Show)
 
 data Line = Line
   { lineId                    :: !(Maybe LineId)
@@ -88,19 +90,21 @@ data Line = Line
   , lineDescription           :: !(Maybe Text)
   , lineAmount                :: !Double
   , lineLinkedTxn             :: !(Maybe [LinkedTxn])
-  , lineDetailType            :: !LineDetailType
+  , lineDetailType            :: !Text
   , lineDescriptionLineDetail :: !(Maybe DescriptionLineDetail)
   , lineDiscountLineDetail    :: !(Maybe DiscountLineDetail)
   , lineSalesItemLineDetail   :: !(Maybe SalesItemLineDetail)
   , lineSubtotalLineDetail    :: !(Maybe SubtotalLineDetail)
   , lineCustomField           :: !(Maybe [CustomField])
   }
+  deriving (Show)
 
 data Reference = Reference
-  { referenceName  :: Maybe Text
-  , referenceType  :: Maybe Text
-  , referenceValue :: Text
+  { referenceName  :: !(Maybe Text)
+  , referenceType  :: !(Maybe Text)
+  , referenceValue :: !(Text)
   }
+  deriving (Show)
 
 type ClassRef            = Reference
 type CurrencyRef         = Reference
@@ -120,6 +124,7 @@ data ModificationMetaData = ModificationMetaData
   { modificationMetaDataCreateTime      :: !Text
   , modificationMetaDataLastUpdatedTime :: !Text
   }
+  deriving (Show)
 
 data PhysicalAddress = PhysicalAddress
   { physicalAddressId                     :: !Text
@@ -136,6 +141,7 @@ data PhysicalAddress = PhysicalAddress
   , physicalAddressLat                    :: !Text
   , physicalAddressLong                   :: !Text
   }
+  deriving (Show)
 
 type BillAddr = PhysicalAddress
 type ShipAddr = PhysicalAddress
@@ -143,16 +149,27 @@ type ShipAddr = PhysicalAddress
 data EmailAddress = EmailAddress
   { emailAddress :: !Text
   }
+  deriving (Show)
 
 data TxnTaxDetail = TxnTaxDetail
   { txnTaxDetailTxnTaxCodeRef :: !TxnTaxCodeRef
   , txnTaxDetailTotalTax      :: !Double
   , txnTaxDetailTaxLine       :: !Line
   }
+  deriving (Show)
 
 data DeliveryInfo = DeliveryInfo
+  { deliveryInfoDeliveryType :: !(Maybe Text)
+  , deliveryInfoDeliveryTime :: !(Maybe Text)
+  }
+  deriving (Show)
 
 data LinkedTxn = LinkedTxn
+  { linkedTxnId     :: !(Maybe Text)
+  , linkedTxnType   :: !(Maybe Text)
+  , linkedTxnLineId :: !(Maybe Text)
+  }
+  deriving (Show)
 
 data CustomField = CustomField
   { customFieldDefinitionId :: !Text
@@ -163,14 +180,20 @@ data CustomField = CustomField
   , customFieldDateValue    :: !(Maybe Text)
   , customFieldNumberValue  :: !(Maybe Double)
   }
+  deriving (Show)
 
 data CustomFieldType
   = BooleanType
   | DateType
   | NumberType
   | StringType
+  deriving (Show)
 
-data GlobalTaxModelEnum = GlobalTaxModelEnum
+data GlobalTaxModel
+  = NotApplicable
+  | TaxExcluded
+  | TaxInclusive
+  deriving (Show)
 
 data Invoice = Invoice
   { invoiceId                    :: !(Maybe InvoiceId)
@@ -193,7 +216,7 @@ data Invoice = Invoice
   , invoiceClassRef              :: !(Maybe ClassRef)
   , invoiceSalesTermRef          :: !(Maybe SalesTermRef)
   , invoiceDueDate               :: !(Maybe Text)
-  , invoiceGlobalTaxCalculation  :: !(Maybe GlobalTaxModelEnum) -- Non-US
+  , invoiceGlobalTaxCalculation  :: !(Maybe GlobalTaxModel) -- Non-US
   , invoiceShipMethodRef         :: !(Maybe ShipMethodRef)
   , invoiceShipDate              :: !(Maybe Text)
   , invoiceTrackingNum           :: !(Maybe Text)
@@ -212,6 +235,7 @@ data Invoice = Invoice
   , invoiceDomain                :: !(Maybe Text)
   , invoiceSparse                :: !(Maybe Bool)
   }
+  deriving (Show)
 
 simpleInvoice :: [Line] -> CustomerRef -> Invoice
 simpleInvoice simpleInvoiceLine simpleInvoiceCustomerRef =
@@ -255,10 +279,6 @@ simpleInvoice simpleInvoiceLine simpleInvoiceCustomerRef =
           Nothing
 
 $(deriveJSON defaultOptions
-               { fieldLabelModifier = \_ -> "SyncToken" }
-              ''SyncToken) 
-
-$(deriveJSON defaultOptions
                { fieldLabelModifier = drop 11
                , omitNothingFields  = True }
              ''CustomField)
@@ -271,24 +291,21 @@ $(deriveJSON defaultOptions
              ''DeliveryInfo)
 
 $(deriveJSON defaultOptions
-               { fieldLabelModifier = drop 21 }
+               { fieldLabelModifier = drop 21
+               , omitNothingFields  = True }
              ''DescriptionLineDetail)
 
 $(deriveJSON defaultOptions
-               { fieldLabelModifier = drop 18 }
+               { fieldLabelModifier = drop 18
+               , omitNothingFields  = True }
              ''DiscountLineDetail)
-
-$(deriveJSON defaultOptions
-               { fieldLabelModifier = drop 14 }
-             ''LineDetailType)
 
 $(deriveJSON defaultOptions
                { fieldLabelModifier = drop 5 }
              ''EmailAddress)
 
 $(deriveJSON defaultOptions
-               { fieldLabelModifier = drop 18 }
-             ''GlobalTaxModelEnum)
+             ''GlobalTaxModel)
 
 $(deriveFromJSON defaultOptions
                { fieldLabelModifier = drop 7
@@ -313,7 +330,8 @@ $(deriveJSON defaultOptions
              ''LineId)
 
 $(deriveJSON defaultOptions
-               { fieldLabelModifier = drop 9 }
+               { fieldLabelModifier = drop 6
+               , omitNothingFields  = True }
              ''LinkedTxn)
 
 $(deriveJSON defaultOptions
@@ -330,12 +348,18 @@ $(deriveJSON defaultOptions
              ''Reference)
 
 $(deriveJSON defaultOptions
-               { fieldLabelModifier = drop 4 }
+               { fieldLabelModifier = drop 19
+               , omitNothingFields  = True }
              ''SalesItemLineDetail)
 
 $(deriveJSON defaultOptions
-               { fieldLabelModifier = drop 4 }
+               { fieldLabelModifier = drop 18
+               , omitNothingFields  = True }
              ''SubtotalLineDetail)
+
+$(deriveJSON defaultOptions
+               { fieldLabelModifier = \_ -> "SyncToken" }
+             ''SyncToken)
 
 $(deriveJSON defaultOptions
                { fieldLabelModifier = drop 12 }
