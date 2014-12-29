@@ -94,9 +94,9 @@ data Line = Line
   }
 
 data Reference = Reference
-  { referenceName  :: Maybe Text
-  , referenceType  :: Maybe Text
-  , referenceValue :: Text
+  { referenceName  :: !(Maybe Text)
+  , referenceType  :: !(Maybe Text)
+  , referenceValue :: !(Text)
   }
 
 type ClassRef            = Reference
@@ -262,10 +262,6 @@ simpleInvoice simpleInvoiceLine simpleInvoiceCustomerRef =
           Nothing
 
 $(deriveJSON defaultOptions
-               { fieldLabelModifier = \_ -> "SyncToken" }
-              ''SyncToken) 
-
-$(deriveJSON defaultOptions
                { fieldLabelModifier = drop 11
                , omitNothingFields  = True }
              ''CustomField)
@@ -343,6 +339,10 @@ $(deriveJSON defaultOptions
                { fieldLabelModifier = drop 18
                , omitNothingFields  = True }
              ''SubtotalLineDetail)
+
+$(deriveJSON defaultOptions
+               { fieldLabelModifier = \_ -> "SyncToken" }
+             ''SyncToken)
 
 $(deriveJSON defaultOptions
                { fieldLabelModifier = drop 12 }
