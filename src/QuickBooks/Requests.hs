@@ -1,10 +1,7 @@
 {-# LANGUAGE ImplicitParams     #-}
 {-# LANGUAGE OverloadedStrings  #-}
-{-# LANGUAGE TemplateHaskell    #-}
-{-# LANGUAGE ViewPatterns       #-}
-{-# LANGUAGE RecordWildCards    #-}
 {-# LANGUAGE QuasiQuotes        #-}
-{-# LANGUAGE TypeFamilies       #-}
+
 
 module QuickBooks.Requests
  ( createInvoiceRequest
@@ -44,12 +41,12 @@ updateInvoiceRequest invoice = do
   return $ eitherDecode $ responseBody resp
 
 readInvoiceRequest :: ( ?apiConfig :: APIConfig
-                        , ?manager :: Manager
-                        ) => InvoiceId
-                          -> IO (Either String Invoice)
-readInvoiceRequest invoiceId = do
+                      , ?manager :: Manager
+                      ) => InvoiceId
+                        -> IO (Either String Invoice)
+readInvoiceRequest iId = do
   let apiConfig = ?apiConfig
-  req  <-  oauthSignRequest =<< parseUrl [i| #{invoiceURITemplate apiConfig}#{unInvoiceId invoiceId} |]
+  req  <-  oauthSignRequest =<< parseUrl [i| #{invoiceURITemplate apiConfig}#{unInvoiceId iId} |]
   let req' = req{method = "GET"}
   resp <-  httpLbs req' ?manager
   -- write log line ?fast-logger package? log response
@@ -58,8 +55,9 @@ readInvoiceRequest invoiceId = do
 deleteInvoiceRequest :: ( ?apiConfig :: APIConfig
                         , ?manager :: Manager
                         ) => InvoiceId
+                          -> SyncToken
                           -> IO (Either String Invoice)
-deleteInvoiceRequest invoiceId = do
+deleteInvoiceRequest iId syncToken = do
   let apiConfig = ?apiConfig
   req  <-  oauthSignRequest =<< parseUrl [i| #{invoiceURITemplate apiConfig}?operation=delete |]
   let req' = req{method = "POST", requestBody = RequestBodyLBS $ encode body}
@@ -67,7 +65,9 @@ deleteInvoiceRequest invoiceId = do
   -- write log line ?fast-logger package? log response
   return $ eitherDecode $ responseBody resp
   where
-   body = object [ ("id", String (unInvoiceId invoiceId)), ("syncTokent", Number 3) ]
+   body = object [ ("id", String (unInvoiceId iId))
+                 , ("syncTokent", Number (unSyncToken syncToken) 
+                 ]
 
 oauthSignRequest :: (?apiConfig :: APIConfig) => Request -> IO Request 
 oauthSignRequest req = signOAuth (oauth ?apiConfig) credentials req
