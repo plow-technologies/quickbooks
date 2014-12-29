@@ -17,13 +17,11 @@ import           Data.Aeson.TH
 import           Data.Char (toLower)
 import           Data.Text (Text)
 import           GHC.Generics (Generic)
-import           Web.Authenticate.OAuth
 
 data APIConfig = APIConfig
   { companyId      :: !ByteString
   , consumerToken  :: !ByteString
   , consumerSecret :: !ByteString
-  , oauth          :: !OAuth
   , oauthToken     :: !ByteString
   , oauthSecret    :: !ByteString
   , hostname       :: !ByteString
@@ -102,31 +100,19 @@ data Reference = Reference
   , referenceValue :: Text
   }
 
-newtype ClassRef = ClassRef { classRef :: Reference }
-
-newtype CurrencyRef = CurrencyRef { currencyRef :: Reference }
-
-newtype CustomerRef = CustomerRef { customerRef :: Reference }
-
-newtype DepartmentRef = DepartmentRef { departmentRef :: Reference }
-
-newtype DepositToAccountRef = DepositToAccountRef { depositToAccountRef :: Reference }
-
-newtype DiscountAccountRef = DiscountAccountRef { discountAccountRef :: Reference }
-
-newtype DiscountRef = DiscountRef { discountRef :: Reference }
-
-newtype ItemRef = ItemRef { itemRef :: Reference }
-
-newtype PriceLevelRef = PriceLevelRef { priceLevelRef :: Reference }
-
-newtype SalesTermRef = SalesTermRef { salesTermRef :: Reference }
-
-newtype ShipMethodRef = ShipMethodRef { shipMethodRef :: Reference }
-
-newtype TaxCodeRef = TaxCodeRef { taxCodeRef :: Reference }
-
-newtype TxnTaxCodeRef = TxnTaxCodeRef { txnTaxCodeRef :: Reference }
+type ClassRef            = Reference
+type CurrencyRef         = Reference
+type CustomerRef         = Reference
+type DepartmentRef       = Reference
+type DepositToAccountRef = Reference
+type DiscountAccountRef  = Reference
+type DiscountRef         = Reference
+type ItemRef             = Reference
+type PriceLevelRef       = Reference
+type SalesTermRef        = Reference
+type ShipMethodRef       = Reference
+type TaxCodeRef          = Reference
+type TxnTaxCodeRef       = Reference
 
 data ModificationMetaData = ModificationMetaData
   { modificationMetaDataCreateTime      :: !Text
@@ -148,6 +134,10 @@ data PhysicalAddress = PhysicalAddress
   , physicalAddressLat                    :: !Text
   , physicalAddressLong                   :: !Text
   }
+
+newtype BillAddr = BillAddr { billAddr :: PhysicalAddress }
+
+newtype ShipAddr = ShipAddr { shipAddr :: PhysicalAddress }
 
 data EmailAddress = EmailAddress
   { emailAddress :: !Text
@@ -197,8 +187,8 @@ data Invoice = Invoice
   , invoiceTxnTaxDetail          :: !(Maybe TxnTaxDetail)
   , invoiceCustomerRef           :: !CustomerRef
   , invoiceCustomerMemo          :: !(Maybe Text)
-  , invoiceBillAddr              :: !(Maybe PhysicalAddress)
-  , invoiceShipAddr              :: !(Maybe PhysicalAddress)
+  , invoiceBillAddr              :: !(Maybe BillAddr)
+  , invoiceShipAddr              :: !(Maybe ShipAddr)
   , invoiceClassRef              :: !(Maybe ClassRef)
   , invoiceSalesTermRef          :: !(Maybe SalesTermRef)
   , invoiceDueDate               :: !(Maybe Text)
@@ -222,17 +212,50 @@ data Invoice = Invoice
   , invoiceSparse                :: !(Maybe Bool)
   }
 
-$(deriveJSON defaultOptions
-               { fieldLabelModifier = \_ -> "ClassRef" }
-             ''ClassRef)
+simpleInvoice :: [Line] -> CustomerRef -> Invoice
+simpleInvoice simpleInvoiceLine simpleInvoiceCustomerRef =
+  Invoice Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          simpleInvoiceLine
+          Nothing
+          simpleInvoiceCustomerRef
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+
+          Nothing
+          Nothing
+          Nothing
 
 $(deriveJSON defaultOptions
-               { fieldLabelModifier = \_ -> "CurrencyRef" }
-             ''CurrencyRef)
-
-$(deriveJSON defaultOptions
-               { fieldLabelModifier = \_ -> "CustomerRef" }
-             ''CustomerRef)
+               { fieldLabelModifier = \_ -> "BillAddr" }
+             ''BillAddr)
 
 $(deriveJSON defaultOptions
                { fieldLabelModifier = drop 11
@@ -247,14 +270,6 @@ $(deriveJSON defaultOptions
              ''DeliveryInfo)
 
 $(deriveJSON defaultOptions
-               { fieldLabelModifier = \_ -> "DepartmentRef" }
-             ''DepartmentRef)
-
-$(deriveJSON defaultOptions
-               { fieldLabelModifier = \_ -> "DepositToAccountRef" }
-             ''DepositToAccountRef)
-
-$(deriveJSON defaultOptions
                { fieldLabelModifier = drop 21 }
              ''DescriptionLineDetail)
 
@@ -267,14 +282,6 @@ $(deriveJSON defaultOptions
              ''LineDetailType)
 
 $(deriveJSON defaultOptions
-               { fieldLabelModifier = \_ -> "DiscountAccountRef" }
-             ''DiscountAccountRef)
-
-$(deriveJSON defaultOptions
-               { fieldLabelModifier = \_ -> "DiscountRef" }
-             ''DiscountRef)
-
-$(deriveJSON defaultOptions
                { fieldLabelModifier = drop 5 }
              ''EmailAddress)
 
@@ -282,17 +289,19 @@ $(deriveJSON defaultOptions
                { fieldLabelModifier = drop 18 }
              ''GlobalTaxModelEnum)
 
-$(deriveJSON defaultOptions
-               { fieldLabelModifier = drop 7 }
+$(deriveFromJSON defaultOptions
+               { fieldLabelModifier = drop 7
+               , omitNothingFields  = True }
+             ''Invoice)
+
+$(deriveToJSON defaultOptions
+               { fieldLabelModifier = drop 7
+               , omitNothingFields  = True }
              ''Invoice)
 
 $(deriveJSON defaultOptions
                { fieldLabelModifier = drop 9 }
              ''InvoiceId)
-
-$(deriveJSON defaultOptions
-               { fieldLabelModifier = \_ -> "ItemRef" }
-             ''ItemRef)
 
 $(deriveJSON defaultOptions
                { fieldLabelModifier = drop 4 }
@@ -311,10 +320,6 @@ $(deriveJSON defaultOptions
              ''ModificationMetaData)
 
 $(deriveJSON defaultOptions
-               { fieldLabelModifier = \_ -> "PriceLevelRef" }
-             ''PriceLevelRef)
-
-$(deriveJSON defaultOptions
                { fieldLabelModifier = drop 15 }
              ''PhysicalAddress)
 
@@ -328,24 +333,12 @@ $(deriveJSON defaultOptions
              ''SalesItemLineDetail)
 
 $(deriveJSON defaultOptions
-               { fieldLabelModifier = \_ -> "SalesTermRef" }
-             ''SalesTermRef)
-
-$(deriveJSON defaultOptions
-               { fieldLabelModifier = \_ -> "ShipMethodRef" }
-             ''ShipMethodRef)
+               { fieldLabelModifier = \_ -> "ShipAddr" }
+             ''ShipAddr)
 
 $(deriveJSON defaultOptions
                { fieldLabelModifier = drop 4 }
              ''SubtotalLineDetail)
-
-$(deriveJSON defaultOptions
-               { fieldLabelModifier = \_ -> "TaxCodeRef" }
-             ''TaxCodeRef)
-
-$(deriveJSON defaultOptions
-               { fieldLabelModifier = \_ -> "TxnTaxCodeRef" }
-             ''TxnTaxCodeRef)
 
 $(deriveJSON defaultOptions
                { fieldLabelModifier = drop 12 }

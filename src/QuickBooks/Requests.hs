@@ -69,11 +69,13 @@ deleteInvoiceRequest iId syncToken = do
                  , ("syncTokent", Number (unSyncToken syncToken) 
                  ]
 
-oauthSignRequest :: (?apiConfig :: APIConfig) => Request -> IO Request 
-oauthSignRequest req = signOAuth (oauth ?apiConfig) credentials req
+oauthSignRequest :: (?apiConfig :: APIConfig) => Request -> IO Request
+oauthSignRequest = signOAuth oauthApp credentials
     where
-    credentials = newCredential (oauthToken ?apiConfig) 
+    credentials = newCredential (oauthToken ?apiConfig)
                                 (oauthSecret ?apiConfig)
+    oauthApp    = newOAuth { oauthConsumerKey    = consumerToken ?apiConfig
+                           , oauthConsumerSecret = consumerSecret ?apiConfig }
 
 invoiceURITemplate :: APIConfig -> String
 invoiceURITemplate apiConfig = [i| https://#{hostname apiConfig}/v3/company/#{companyId apiConfig}/invoice|]
