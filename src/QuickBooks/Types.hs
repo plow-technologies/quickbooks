@@ -149,6 +149,10 @@ data PhysicalAddress = PhysicalAddress
   , physicalAddressLong                   :: !Text
   }
 
+newtype BillAddr = BillAddr { billAddr :: PhysicalAddress }
+
+newtype ShipAddr = ShipAddr { shipAddr :: PhysicalAddress }
+
 data EmailAddress = EmailAddress
   { emailAddress :: !Text
   }
@@ -197,8 +201,8 @@ data Invoice = Invoice
   , invoiceTxnTaxDetail          :: !(Maybe TxnTaxDetail)
   , invoiceCustomerRef           :: !CustomerRef
   , invoiceCustomerMemo          :: !(Maybe Text)
-  , invoiceBillAddr              :: !(Maybe PhysicalAddress)
-  , invoiceShipAddr              :: !(Maybe PhysicalAddress)
+  , invoiceBillAddr              :: !(Maybe BillAddr)
+  , invoiceShipAddr              :: !(Maybe ShipAddr)
   , invoiceClassRef              :: !(Maybe ClassRef)
   , invoiceSalesTermRef          :: !(Maybe SalesTermRef)
   , invoiceDueDate               :: !(Maybe Text)
@@ -221,6 +225,10 @@ data Invoice = Invoice
   , invoiceDomain                :: !(Maybe Text)
   , invoiceSparse                :: !(Maybe Bool)
   }
+
+$(deriveJSON defaultOptions
+               { fieldLabelModifier = \_ -> "BillAddr" }
+             ''BillAddr)
 
 $(deriveJSON defaultOptions
                { fieldLabelModifier = \_ -> "ClassRef" }
@@ -330,6 +338,10 @@ $(deriveJSON defaultOptions
 $(deriveJSON defaultOptions
                { fieldLabelModifier = \_ -> "SalesTermRef" }
              ''SalesTermRef)
+
+$(deriveJSON defaultOptions
+               { fieldLabelModifier = \_ -> "ShipAddr" }
+             ''ShipAddr)
 
 $(deriveJSON defaultOptions
                { fieldLabelModifier = \_ -> "ShipMethodRef" }
