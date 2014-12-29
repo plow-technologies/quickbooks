@@ -17,13 +17,11 @@ import           Data.Aeson.TH
 import           Data.Char (toLower)
 import           Data.Text (Text)
 import           GHC.Generics (Generic)
-import           Web.Authenticate.OAuth
 
 data APIConfig = APIConfig
   { companyId      :: !ByteString
   , consumerToken  :: !ByteString
   , consumerSecret :: !ByteString
-  , oauth          :: !OAuth
   , oauthToken     :: !ByteString
   , oauthSecret    :: !ByteString
   , hostname       :: !ByteString

@@ -1,8 +1,5 @@
 {-# LANGUAGE ImplicitParams     #-}
 {-# LANGUAGE OverloadedStrings  #-}
-{-# LANGUAGE TemplateHaskell    #-}
-{-# LANGUAGE ViewPatterns       #-}
-{-# LANGUAGE RecordWildCards    #-}
 {-# LANGUAGE QuasiQuotes        #-}
 {-# LANGUAGE TypeFamilies       #-}
 
@@ -69,11 +66,13 @@ deleteInvoiceRequest invoiceId = do
   where
    body = object [ ("id", String (unInvoiceId invoiceId)), ("syncTokent", Number 3) ]
 
-oauthSignRequest :: (?apiConfig :: APIConfig) => Request -> IO Request 
-oauthSignRequest req = signOAuth (oauth ?apiConfig) credentials req
+oauthSignRequest :: (?apiConfig :: APIConfig) => Request -> IO Request
+oauthSignRequest = signOAuth oauthApp credentials
     where
-    credentials = newCredential (oauthToken ?apiConfig) 
+    credentials = newCredential (oauthToken ?apiConfig)
                                 (oauthSecret ?apiConfig)
+    oauthApp    = newOAuth { oauthConsumerKey    = consumerToken ?apiConfig
+                           , oauthConsumerSecret = consumerSecret ?apiConfig }
 
 invoiceURITemplate :: APIConfig -> String
 invoiceURITemplate apiConfig = [i| https://#{hostname apiConfig}/v3/company/#{companyId apiConfig}/invoice|]
