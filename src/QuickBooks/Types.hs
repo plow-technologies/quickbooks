@@ -137,9 +137,8 @@ data PhysicalAddress = PhysicalAddress
   , physicalAddressLong                   :: !Text
   }
 
-newtype BillAddr = BillAddr { billAddr :: PhysicalAddress }
-
-newtype ShipAddr = ShipAddr { shipAddr :: PhysicalAddress }
+type BillAddr = PhysicalAddress
+type ShipAddr = PhysicalAddress
 
 data EmailAddress = EmailAddress
   { emailAddress :: !Text
@@ -260,10 +259,6 @@ $(deriveJSON defaultOptions
               ''SyncToken) 
 
 $(deriveJSON defaultOptions
-               { fieldLabelModifier = \_ -> "BillAddr" }
-             ''BillAddr)
-
-$(deriveJSON defaultOptions
                { fieldLabelModifier = drop 11
                , omitNothingFields  = True }
              ''CustomField)
@@ -337,10 +332,6 @@ $(deriveJSON defaultOptions
 $(deriveJSON defaultOptions
                { fieldLabelModifier = drop 4 }
              ''SalesItemLineDetail)
-
-$(deriveJSON defaultOptions
-               { fieldLabelModifier = \_ -> "ShipAddr" }
-             ''ShipAddr)
 
 $(deriveJSON defaultOptions
                { fieldLabelModifier = drop 4 }
