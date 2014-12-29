@@ -29,3 +29,21 @@ library
                        , http-client-tls    == 0.2.*
                        , interpolate        == 0.1.*
                        , text
+
+
+test-suite spec
+  type:  exitcode-stdio-1.0
+  hs-source-dirs: test,src
+  ghc-options: -Wall -O2
+  main-is: Spec.hs
+  build-depends:     base   >= 4.7 && < 4.8
+                   , hspec
+
+-- copied from library
+                   , aeson              == 0.8.*
+                   , authenticate-oauth == 1.5.*
+                   , bytestring         == 0.10.*
+                   , http-client        == 0.4.*
+                   , http-client-tls    == 0.2.*
+                   , interpolate        == 0.1.*
+                   , text
