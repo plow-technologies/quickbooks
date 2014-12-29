@@ -153,6 +153,10 @@ data TxnTaxDetail = TxnTaxDetail
 data DeliveryInfo = DeliveryInfo
 
 data LinkedTxn = LinkedTxn
+  { linkedTxnId     :: !(Maybe Text)
+  , linkedTxnType   :: !(Maybe Text)
+  , linkedTxnLineId :: !(Maybe Text)
+  }
 
 data CustomField = CustomField
   { customFieldDefinitionId :: !Text
@@ -313,7 +317,8 @@ $(deriveJSON defaultOptions
              ''LineId)
 
 $(deriveJSON defaultOptions
-               { fieldLabelModifier = drop 9 }
+               { fieldLabelModifier = drop 6
+               , omitNothingFields  = True }
              ''LinkedTxn)
 
 $(deriveJSON defaultOptions
