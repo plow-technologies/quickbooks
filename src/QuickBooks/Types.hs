@@ -9,7 +9,6 @@
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
-
 module QuickBooks.Types where
 
 import           Data.Aeson
@@ -84,13 +83,13 @@ data SalesItemLineDetail = SalesItemLineDetail
   }
   deriving (Show)
 
-data SubtotalLineDetail = SubtotalLineDetail
+data SubTotalLineDetail = SubTotalLineDetail
   { subtotalLineDetailItemRef :: !(Maybe ItemRef) }
   deriving (Show)
 
 data Line = Line
   { lineId                    :: !(Maybe LineId)
-  , lineNum                   :: !(Maybe Double)
+  , lineLineNum               :: !(Maybe Double)
   , lineDescription           :: !(Maybe Text)
   , lineAmount                :: !Double
   , lineLinkedTxn             :: !(Maybe [LinkedTxn])
@@ -98,7 +97,7 @@ data Line = Line
   , lineDescriptionLineDetail :: !(Maybe DescriptionLineDetail)
   , lineDiscountLineDetail    :: !(Maybe DiscountLineDetail)
   , lineSalesItemLineDetail   :: !(Maybe SalesItemLineDetail)
-  , lineSubtotalLineDetail    :: !(Maybe SubtotalLineDetail)
+  , lineSubTotalLineDetail    :: !(Maybe SubTotalLineDetail)
   , lineCustomField           :: !(Maybe [CustomField])
   }
   deriving (Show)
@@ -142,8 +141,8 @@ data PhysicalAddress = PhysicalAddress
   , physicalAddressCountrySubDivisionCode :: !Text
   , physicalAddressPostalCode             :: !Text
   , physicalAddressNote                   :: !(Maybe Text)
-  , physicalAddressLat                    :: !Text
-  , physicalAddressLong                   :: !Text
+  , physicalAddressLat                    :: !(Maybe Text)
+  , physicalAddressLong                   :: !(Maybe Text)
   }
   deriving (Show)
 
@@ -245,47 +244,6 @@ data InvoiceResponse = InvoiceResponse
   { invoiceResponseInvoice :: Invoice }
   deriving (Show)
 
-simpleInvoice :: [Line] -> CustomerRef -> Invoice
-simpleInvoice simpleInvoiceLine simpleInvoiceCustomerRef =
-  Invoice Nothing
-          Nothing
-          Nothing
-          Nothing
-          Nothing
-          Nothing
-          Nothing
-          Nothing
-          Nothing
-          Nothing
-          Nothing
-          simpleInvoiceLine
-          Nothing
-          simpleInvoiceCustomerRef
-          Nothing
-          Nothing
-          Nothing
-          Nothing
-          Nothing
-          Nothing
-          Nothing
-          Nothing
-          Nothing
-          Nothing
-          Nothing
-          Nothing
-          Nothing
-          Nothing
-          Nothing
-          Nothing
-          Nothing
-          Nothing
-          Nothing
-          Nothing
-
-          Nothing
-          Nothing
-          Nothing
-
 $(deriveJSON defaultOptions
                { fieldLabelModifier = drop 11
                , omitNothingFields  = True }
@@ -354,7 +312,7 @@ $(deriveJSON defaultOptions
 $(deriveJSON defaultOptions
                { fieldLabelModifier = drop 18
                , omitNothingFields  = True }
-             ''SubtotalLineDetail)
+             ''SubTotalLineDetail)
 
 $(deriveJSON defaultOptions
                { fieldLabelModifier = drop 12 }
