@@ -56,7 +56,6 @@ readInvoiceRequest iId = do
   let req' = req{method = "GET", requestHeaders = oauthHeaders ++ [(hAccept, "application/json")]}
   resp <-  httpLbs req' ?manager
   -- write log line ?fast-logger package? log response
-  print $ responseBody resp
   return $ eitherDecode $ responseBody resp
 
 deleteInvoiceRequest :: ( ?apiConfig :: APIConfig

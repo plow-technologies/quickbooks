@@ -7,15 +7,19 @@ module QuickBooks
   , readInvoice
   , updateInvoice
   , deleteInvoice
+  , getTempTokens
   ) where
 
 import QuickBooks.Requests
-import QuickBooks.Types (APIConfig(..)
-                        ,Invoice
-                        ,InvoiceId
-                        ,QuickBooksRequest(..)
-                        ,QuickBooksResponse(..)
-                        ,SyncToken)
+import QuickBooks.Authentication
+import QuickBooks.Types ( APIConfig(..)
+                        , CallbackURL
+                        , Invoice
+                        , InvoiceId
+                        , QuickBooksRequest(..)
+                        , QuickBooksResponse(..)
+                        , SyncToken
+                        , OAuthToken)
 
 import Control.Applicative
 import Control.Arrow (second)
@@ -36,7 +40,10 @@ updateInvoice = queryQuickBooks . UpdateInvoice
 deleteInvoice :: InvoiceId -> SyncToken -> IO (Either String (QuickBooksResponse Invoice))
 deleteInvoice iId = queryQuickBooks . DeleteInvoice iId
 
-queryQuickBooks :: QuickBooksRequest (QuickBooksResponse Invoice) -> IO (Either String (QuickBooksResponse Invoice))
+getTempTokens :: CallbackURL -> IO (Either String (QuickBooksResponse OAuthToken))
+getTempTokens = queryQuickBooks . GetTempOAuthCredentials
+
+queryQuickBooks :: QuickBooksRequest (QuickBooksResponse a) -> IO (Either String (QuickBooksResponse a))
 queryQuickBooks query = do
   apiConfig <- readAPIConfig
   manager   <- newManager tlsManagerSettings
@@ -47,6 +54,7 @@ queryQuickBooks query = do
     (UpdateInvoice invoice) -> updateInvoiceRequest invoice
     (ReadInvoice invoiceId) -> readInvoiceRequest invoiceId
     (DeleteInvoice invoiceId syncToken) -> deleteInvoiceRequest invoiceId syncToken
+    (GetTempOAuthCredentials callbackURL) -> getTempOAuthCredentialsRequest callbackURL
 
 readAPIConfig :: IO APIConfig
 readAPIConfig = do

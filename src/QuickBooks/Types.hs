@@ -18,6 +18,8 @@ import           Data.Char (toLower)
 import           Data.Text (Text)
 import           GHC.Generics (Generic)
 
+type CallbackURL = String
+
 newtype OAuthVerifier = OAuthVerifier { unOAuthVerifier :: Text }
   deriving (Show)
 
@@ -28,10 +30,17 @@ data APIConfig = APIConfig
   , oauthToken     :: !ByteString
   , oauthSecret    :: !ByteString
   , hostname       :: !ByteString
-  }
+  } deriving (Show)
+
+
+data OAuthToken = OAuthToken
+  { token         :: ByteString
+  , tokenSecret   :: ByteString
+  } deriving (Show)
 
 data family QuickBooksResponse a
 data instance QuickBooksResponse Invoice = QuickBooksInvoiceResponse { quickBooksResponseInvoice :: Invoice }
+data instance QuickBooksResponse OAuthToken = QuickBooksAuthResponse { tokens :: OAuthToken }
 
 instance FromJSON (QuickBooksResponse Invoice) where
   parseJSON (Object o) = QuickBooksInvoiceResponse `fmap` (o .: "Invoice")
@@ -40,11 +49,11 @@ instance FromJSON (QuickBooksResponse Invoice) where
 type QuickBooksQuery a = QuickBooksRequest a
 
 data QuickBooksRequest a where
---  GetOAuthCredentials :: QuickBooksQuery (ByteString, ByteString)
-  CreateInvoice :: Invoice   -> QuickBooksRequest (QuickBooksResponse Invoice)
-  ReadInvoice   :: InvoiceId -> QuickBooksRequest (QuickBooksResponse Invoice)
-  UpdateInvoice :: Invoice   -> QuickBooksRequest (QuickBooksResponse Invoice)
-  DeleteInvoice :: InvoiceId -> SyncToken -> QuickBooksRequest (QuickBooksResponse Invoice)
+  GetTempOAuthCredentials :: CallbackURL -> QuickBooksRequest (QuickBooksResponse OAuthToken)
+  CreateInvoice           :: Invoice     -> QuickBooksRequest (QuickBooksResponse Invoice)
+  ReadInvoice             :: InvoiceId   -> QuickBooksRequest (QuickBooksResponse Invoice)
+  UpdateInvoice           :: Invoice     -> QuickBooksRequest (QuickBooksResponse Invoice)
+  DeleteInvoice           :: InvoiceId   -> SyncToken -> QuickBooksRequest (QuickBooksResponse Invoice)
 
 newtype InvoiceId = InvoiceId {unInvoiceId :: Text}
   deriving (Generic, Show, FromJSON, ToJSON)

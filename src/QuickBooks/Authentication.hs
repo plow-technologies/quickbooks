@@ -2,36 +2,37 @@
 {-# LANGUAGE OverloadedStrings  #-}
 
 module QuickBooks.Authentication
-  ( acquireTempTokens
-  , acquireAccessTokens
+  ( getTempOAuthCredentialsRequest
+  , getAccessTokensRequest
   , oauthSignRequest
   ) where
 
-import QuickBooks.Types (APIConfig(..), OAuthVerifier(..))
-import Network.HTTP.Client (Manager, Request)
+import Control.Applicative
+import qualified Data.ByteString.Lazy as BSL
+import QuickBooks.Types
+import Network.HTTP.Client (Manager, Request(..), RequestBody(RequestBodyLBS), responseBody, parseUrl, httpLbs)
+import Network.HTTP.Types.URI
 import Web.Authenticate.OAuth (signOAuth, newCredential, emptyCredential, newOAuth, OAuth(..))
 
-acquireTempTokens :: ( ?apiConfig :: APIConfig
-                     , ?manager   :: Manager
-                     ) => IO APIConfig -- ^ An APIConfig with temporary credentials
-acquireTempTokens = do
-  let apiConfig = ?apiConfig
-  request <- parseUrl
+getTempOAuthCredentialsRequest :: ( ?apiConfig :: APIConfig
+                                  , ?manager   :: Manager
+                                  ) => CallbackURL
+                                    -> IO (Either String (QuickBooksResponse OAuthToken)) -- ^ An OAuthToken with temporary credentials
+getTempOAuthCredentialsRequest callbackURL = do
+  request  <- parseUrl $ concat [temporaryTokenURL, "?oauth_callback=", callbackURL]
+  request' <- oauthSignRequestWithEmptyCredentials request {method="POST", requestBody = RequestBodyLBS ""}
+  response <- httpLbs request' ?manager
+  case tempTokensFromResponse (responseBody response) of
+    Just tempTokens -> return $ Right $ QuickBooksAuthResponse tempTokens
+    Nothing         -> return $ Left ("Couldn't find tokens in QuickBooks response" :: String)
 
-acquireAccessTokens :: ( ?apiConfig :: APIConfig
-                       , ?manager   :: Manager
-                       ) => OAuthVerifier -- ^ The OAuthVerifier provided to the callback
-                         -> IO APIConfig     -- ^ An APIConfig containing access tokens
-                                          --   for a resource-owner
-acquireAccessTokens = undefined
+getAccessTokensRequest :: ( ?apiConfig :: APIConfig
+                          , ?manager   :: Manager
+                          ) => OAuthVerifier -- ^ The OAuthVerifier provided to the callback
+                            -> IO OAuthToken -- ^ OAuthToken containing access tokens
+                                             --   for a resource-owner
+getAccessTokensRequest = undefined
 
-
-oauthSignRequestWithEmptyCredentials :: (?apiConfig :: APIConfig) => Request -> IO Request
-oauthSignRequestWithEmptyCredentials = signOAuth oauthApp credentials
-  where
-    credentials = emptyCredential
-    oauthApp    = newOAuth { oauthConsumerKey    = consumerToken ?apiConfig
-                           , oauthConsumerSecret = consumerSecret ?apiConfig }
 
 oauthSignRequest :: (?apiConfig :: APIConfig) => Request -> IO Request
 oauthSignRequest = signOAuth oauthApp credentials
@@ -40,3 +41,18 @@ oauthSignRequest = signOAuth oauthApp credentials
                                 (oauthSecret ?apiConfig)
     oauthApp    = newOAuth { oauthConsumerKey    = consumerToken ?apiConfig
                            , oauthConsumerSecret = consumerSecret ?apiConfig }
+
+oauthSignRequestWithEmptyCredentials :: (?apiConfig :: APIConfig) => Request -> IO Request
+oauthSignRequestWithEmptyCredentials = signOAuth oauthApp credentials
+  where
+    credentials = emptyCredential
+    oauthApp    = newOAuth { oauthConsumerKey    = consumerToken ?apiConfig
+                           , oauthConsumerSecret = consumerSecret ?apiConfig }
+
+temporaryTokenURL :: String
+temporaryTokenURL = "https://oauth.intuit.com/oauth/v1/get_request_token"
+
+tempTokensFromResponse :: BSL.ByteString -> Maybe OAuthToken
+tempTokensFromResponse response = OAuthToken <$> lookup "oauth_token" responseParams
+                                             <*> lookup "oauth_token_secret" responseParams
+  where responseParams = parseSimpleQuery (BSL.toStrict response)
