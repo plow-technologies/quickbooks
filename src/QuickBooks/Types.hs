@@ -1,13 +1,27 @@
 {-# LANGUAGE DeriveGeneric              #-}
-{-# LANGUAGE TypeFamilies               #-}
 {-# LANGUAGE GADTs                      #-}
-{-# LANGUAGE ImplicitParams             #-}
-{-# LANGUAGE TemplateHaskell            #-}
-{-# LANGUAGE ViewPatterns               #-}
-{-# LANGUAGE RecordWildCards            #-}
-{-# LANGUAGE QuasiQuotes                #-}
-{-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE ImplicitParams             #-}
+{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE QuasiQuotes                #-}
+{-# LANGUAGE RecordWildCards            #-}
+{-# LANGUAGE TemplateHaskell            #-}
+{-# LANGUAGE TypeFamilies               #-}
+{-# LANGUAGE ViewPatterns               #-}
+
+------------------------------------------------------------------------------
+-- |
+-- Module      : QuickBooks.Types
+-- Description :
+-- Copyright   :
+-- License     :
+-- Maintainer  :
+-- Stability   :
+-- Portability :
+--
+--
+--
+------------------------------------------------------------------------------
 
 module QuickBooks.Types where
 

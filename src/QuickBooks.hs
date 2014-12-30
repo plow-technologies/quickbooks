@@ -1,6 +1,20 @@
-{-# LANGUAGE ImplicitParams     #-}
-{-# LANGUAGE OverloadedStrings  #-}
-{-# LANGUAGE TypeFamilies       #-}
+{-# LANGUAGE ImplicitParams    #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeFamilies      #-}
+
+------------------------------------------------------------------------------
+-- |
+-- Module      : QuickBooks
+-- Description :
+-- Copyright   :
+-- License     :
+-- Maintainer  :
+-- Stability   :
+-- Portability :
+--
+--
+--
+------------------------------------------------------------------------------
 
 module QuickBooks
   ( createInvoice

@@ -1,6 +1,20 @@
-{-# LANGUAGE ImplicitParams     #-}
-{-# LANGUAGE OverloadedStrings  #-}
-{-# LANGUAGE QuasiQuotes        #-}
+{-# LANGUAGE ImplicitParams    #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes       #-}
+
+------------------------------------------------------------------------------
+-- |
+-- Module      : QuickBooks.Requests
+-- Description :
+-- Copyright   :
+-- License     :
+-- Maintainer  :
+-- Stability   :
+-- Portability :
+--
+--
+--
+------------------------------------------------------------------------------
 
 module QuickBooks.Requests
  ( createInvoiceRequest
