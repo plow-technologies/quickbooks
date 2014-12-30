@@ -1,23 +1,43 @@
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE DeriveGeneric              #-}
-{-# LANGUAGE TypeFamilies               #-}
+{-# LANGUAGE DeriveGeneric            #-}
 {-# LANGUAGE GADTs                      #-}
-{-# LANGUAGE ImplicitParams             #-}
-{-# LANGUAGE TemplateHaskell            #-}
-{-# LANGUAGE ViewPatterns               #-}
-{-# LANGUAGE RecordWildCards            #-}
-{-# LANGUAGE QuasiQuotes                #-}
-{-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE ImplicitParams             #-}
+{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE QuasiQuotes                #-}
+{-# LANGUAGE RecordWildCards            #-}
+{-# LANGUAGE TemplateHaskell            #-}
+{-# LANGUAGE TypeFamilies               #-}
+{-# LANGUAGE ViewPatterns               #-}
+
+------------------------------------------------------------------------------
+-- |
+-- Module      : QuickBooks.Types
+-- Description :
+-- Copyright   :
+-- License     :
+-- Maintainer  :
+-- Stability   :
+-- Portability :
+--
+--
+--
+------------------------------------------------------------------------------
 
 module QuickBooks.Types where
 
-import           Data.Aeson
-import           Data.ByteString (ByteString)
-import           Data.Aeson.TH
-import           Data.Char (toLower)
-import           Data.Text (Text)
-import           GHC.Generics (Generic)
+import Data.Aeson      ((.:),FromJSON(..),Value(Object),ToJSON)
+import Data.ByteString (ByteString)
+import Data.Aeson.TH   (defaultOptions
+                       ,deriveJSON
+                       ,Options(fieldLabelModifier,omitNothingFields))
+import Data.Char       (toLower)
+import Data.Text       (Text)
+import GHC.Generics    (Generic)
+
+type CallbackURL = String
+
+newtype OAuthVerifier = OAuthVerifier { unOAuthVerifier :: Text }
+  deriving (Show)
 
 data APIConfig = APIConfig
   { companyId      :: !ByteString
@@ -26,15 +46,17 @@ data APIConfig = APIConfig
   , oauthToken     :: !ByteString
   , oauthSecret    :: !ByteString
   , hostname       :: !ByteString
-  }
+  } deriving (Show)
+
+data OAuthToken = OAuthToken
+  { token         :: ByteString
+  , tokenSecret   :: ByteString
+  } deriving (Show)
 
 data family QuickBooksResponse a
-
-data instance QuickBooksResponse Invoice = 
-  QuickBooksInvoiceResponse { quickBooksResponseInvoice :: Invoice }
-
-data instance QuickBooksResponse DeletedInvoice = 
-  QuickBooksDeletedInvoiceResponse { quickBooksResponseDeletedInvoice :: DeletedInvoice }
+data instance QuickBooksResponse Invoice = QuickBooksInvoiceResponse { quickBooksResponseInvoice :: Invoice }
+data instance QuickBooksResponse DeletedInvoice = QuickBooksDeletedInvoiceResponse DeletedInvoice
+data instance QuickBooksResponse OAuthToken = QuickBooksAuthResponse { tokens :: OAuthToken }
 
 instance FromJSON (QuickBooksResponse Invoice) where
   parseJSON (Object o) = QuickBooksInvoiceResponse `fmap` (o .: "Invoice")
@@ -47,10 +69,11 @@ instance FromJSON (QuickBooksResponse DeletedInvoice) where
 type QuickBooksQuery a = QuickBooksRequest (QuickBooksResponse a)
 
 data QuickBooksRequest a where
-  CreateInvoice :: Invoice   -> QuickBooksQuery Invoice -- (QuickBooksResponse Invoice)
-  ReadInvoice   :: InvoiceId -> QuickBooksQuery Invoice -- (QuickBooksResponse Invoice)
-  UpdateInvoice :: Invoice   -> QuickBooksQuery Invoice -- (QuickBooksResponse Invoice)
-  DeleteInvoice :: InvoiceId -> SyncToken -> QuickBooksQuery DeletedInvoice  --(QuickBooksResponse DeletedInvoice)
+  GetTempOAuthCredentials :: CallbackURL -> QuickBooksRequest (QuickBooksResponse OAuthToken)
+  CreateInvoice           :: Invoice     -> QuickBooksRequest (QuickBooksResponse Invoice)
+  ReadInvoice             :: InvoiceId   -> QuickBooksRequest (QuickBooksResponse Invoice)
+  UpdateInvoice           :: Invoice     -> QuickBooksRequest (QuickBooksResponse Invoice)
+  DeleteInvoice           :: InvoiceId   -> SyncToken -> QuickBooksRequest (QuickBooksResponse DeletedInvoice)
 
 newtype InvoiceId = InvoiceId {unInvoiceId :: Text}
   deriving (Generic, Show, FromJSON, ToJSON)

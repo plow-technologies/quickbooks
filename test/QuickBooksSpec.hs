@@ -13,9 +13,13 @@ spec :: Spec
 spec = quickBooksAPISpec
 
 quickBooksAPISpec :: Spec
-quickBooksAPISpec = describe "readInvoice" $ do
-  it "queries an invoice given an invoice Identifier" readInvoiceTest
-  it "queries quickbooks to create a new invoice." createInvoiceTest
+quickBooksAPISpec = do
+  describe "invoices" $ do
+    it "queries an invoice given an invoice Identifier" readInvoiceTest
+    it "queries quickbooks to create a new invoice." createInvoiceTest
+  describe "authentication" $ do
+    it "gets temporary tokens." getTempTokensTest
+    it "exchange oauth_verifier for access tokens" getTempTokensTest
 
 setTestEnv :: IO ()
 setTestEnv = do
@@ -25,6 +29,15 @@ setTestEnv = do
  setEnv "INTUIT_TOKEN"           "lvprdeMmQMNWSSPzSkF65TGhC3C6NYSGiiDFuNB3q4Szs6TC"
  setEnv "INTUIT_SECRET"          "QOLKz5xg0wjGsdiqUbRE7wLZgrgmcs2X7Zy9JFpl"
  setEnv "INTUIT_HOSTNAME"        "sandbox-quickbooks.api.intuit.com"
+
+
+getTempTokensTest :: Expectation
+getTempTokensTest = do
+  setTestEnv
+  temporaryTokens <- getTempTokens "localhost"
+  case temporaryTokens of
+    Left err -> print err
+    Right _  -> return ()
 
 createInvoiceTest :: Expectation
 createInvoiceTest = do
