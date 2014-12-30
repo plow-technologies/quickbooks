@@ -41,15 +41,19 @@ import Network.HTTP.Client.TLS (tlsManagerSettings)
 import Network.HTTP.Client     (newManager)
 import System.Environment      (getEnvironment)
 
+-- | Create an invoice.
 createInvoice :: Invoice -> IO (Either String (QuickBooksResponse Invoice))
 createInvoice = queryQuickBooks . CreateInvoice
 
+-- | Read an invoice.
 readInvoice :: InvoiceId -> IO (Either String (QuickBooksResponse Invoice))
 readInvoice = queryQuickBooks . ReadInvoice
 
+-- | Update an invoice.
 updateInvoice :: Invoice -> IO (Either String (QuickBooksResponse Invoice))
 updateInvoice = queryQuickBooks . UpdateInvoice
 
+-- | Delete an invoice.
 deleteInvoice :: InvoiceId -> SyncToken -> IO (Either String (QuickBooksResponse Invoice))
 deleteInvoice iId = queryQuickBooks . DeleteInvoice iId
 
