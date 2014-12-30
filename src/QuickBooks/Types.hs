@@ -156,7 +156,7 @@ data TxnTaxDetail = TxnTaxDetail
   { txnTaxDetailTxnTaxCodeRef :: !(Maybe TxnTaxCodeRef)
   , txnTaxDetailTotalTax      :: !Double
   , txnTaxDetailTaxLine       :: !(Maybe Line)
-  } 
+  }
   deriving (Show)
 
 data DeliveryInfo = DeliveryInfo

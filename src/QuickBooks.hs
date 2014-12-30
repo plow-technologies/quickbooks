@@ -7,7 +7,7 @@ module QuickBooks
   , readInvoice
   , updateInvoice
   , deleteInvoice
-  ) where 
+  ) where
 
 import QuickBooks.Requests
 import QuickBooks.Types (APIConfig(..)
@@ -40,10 +40,10 @@ queryQuickBooks :: QuickBooksRequest (QuickBooksResponse Invoice) -> IO (Either 
 queryQuickBooks query = do
   apiConfig <- readAPIConfig
   manager   <- newManager tlsManagerSettings
-  let ?apiConfig = apiConfig 
+  let ?apiConfig = apiConfig
   let ?manager = manager
   case query of
-    (CreateInvoice invoice) -> createInvoiceRequest invoice 
+    (CreateInvoice invoice) -> createInvoiceRequest invoice
     (UpdateInvoice invoice) -> updateInvoiceRequest invoice
     (ReadInvoice invoiceId) -> readInvoiceRequest invoiceId
     (DeleteInvoice invoiceId syncToken) -> deleteInvoiceRequest invoiceId syncToken
