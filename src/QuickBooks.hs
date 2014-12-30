@@ -1,6 +1,20 @@
-{-# LANGUAGE ImplicitParams     #-}
-{-# LANGUAGE OverloadedStrings  #-}
-{-# LANGUAGE TypeFamilies       #-}
+{-# LANGUAGE ImplicitParams    #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeFamilies      #-}
+
+------------------------------------------------------------------------------
+-- |
+-- Module      : QuickBooks
+-- Description :
+-- Copyright   :
+-- License     :
+-- Maintainer  :
+-- Stability   :
+-- Portability :
+--
+--
+--
+------------------------------------------------------------------------------
 
 module QuickBooks
   ( createInvoice
@@ -10,33 +24,40 @@ module QuickBooks
   , getTempTokens
   ) where
 
-import QuickBooks.Requests
 import QuickBooks.Authentication
-import QuickBooks.Types ( APIConfig(..)
-                        , CallbackURL
-                        , Invoice
-                        , InvoiceId
-                        , QuickBooksRequest(..)
-                        , QuickBooksResponse(..)
-                        , SyncToken
-                        , OAuthToken)
+import QuickBooks.Types        ( APIConfig(..)
+                               , CallbackURL
+                               , Invoice
+                               , InvoiceId
+                               , QuickBooksRequest(..)
+                               , QuickBooksResponse(..)
+                               , SyncToken
+                               , OAuthToken)
+import QuickBooks.Requests     ( createInvoiceRequest
+                               , deleteInvoiceRequest
+                               , readInvoiceRequest
+                               , updateInvoiceRequest)
 
-import Control.Applicative
-import Control.Arrow (second)
-import Data.ByteString.Char8 (pack)
+import Control.Applicative     ((<$>),(<*>))
+import Control.Arrow           (second)
+import Data.ByteString.Char8   (pack)
 import Network.HTTP.Client.TLS (tlsManagerSettings)
-import Network.HTTP.Client
-import System.Environment (getEnvironment)
+import Network.HTTP.Client     (newManager)
+import System.Environment      (getEnvironment)
 
+-- | Create an invoice.
 createInvoice :: Invoice -> IO (Either String (QuickBooksResponse Invoice))
 createInvoice = queryQuickBooks . CreateInvoice
 
+-- | Read an invoice.
 readInvoice :: InvoiceId -> IO (Either String (QuickBooksResponse Invoice))
 readInvoice = queryQuickBooks . ReadInvoice
 
+-- | Update an invoice.
 updateInvoice :: Invoice -> IO (Either String (QuickBooksResponse Invoice))
 updateInvoice = queryQuickBooks . UpdateInvoice
 
+-- | Delete an invoice.
 deleteInvoice :: InvoiceId -> SyncToken -> IO (Either String (QuickBooksResponse Invoice))
 deleteInvoice iId = queryQuickBooks . DeleteInvoice iId
 

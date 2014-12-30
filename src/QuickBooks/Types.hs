@@ -1,22 +1,38 @@
 {-# LANGUAGE DeriveGeneric              #-}
-{-# LANGUAGE TypeFamilies               #-}
 {-# LANGUAGE GADTs                      #-}
-{-# LANGUAGE ImplicitParams             #-}
-{-# LANGUAGE TemplateHaskell            #-}
-{-# LANGUAGE ViewPatterns               #-}
-{-# LANGUAGE RecordWildCards            #-}
-{-# LANGUAGE QuasiQuotes                #-}
-{-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE ImplicitParams             #-}
+{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE QuasiQuotes                #-}
+{-# LANGUAGE RecordWildCards            #-}
+{-# LANGUAGE TemplateHaskell            #-}
+{-# LANGUAGE TypeFamilies               #-}
+{-# LANGUAGE ViewPatterns               #-}
+
+------------------------------------------------------------------------------
+-- |
+-- Module      : QuickBooks.Types
+-- Description :
+-- Copyright   :
+-- License     :
+-- Maintainer  :
+-- Stability   :
+-- Portability :
+--
+--
+--
+------------------------------------------------------------------------------
 
 module QuickBooks.Types where
 
-import           Data.Aeson
-import           Data.ByteString (ByteString)
-import           Data.Aeson.TH
-import           Data.Char (toLower)
-import           Data.Text (Text)
-import           GHC.Generics (Generic)
+import Data.Aeson      ((.:),FromJSON(..),Value(Object),ToJSON)
+import Data.ByteString (ByteString)
+import Data.Aeson.TH   (defaultOptions
+                       ,deriveJSON
+                       ,Options(fieldLabelModifier,omitNothingFields))
+import Data.Char       (toLower)
+import Data.Text       (Text)
+import GHC.Generics    (Generic)
 
 type CallbackURL = String
 

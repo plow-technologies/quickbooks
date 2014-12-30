@@ -1,25 +1,50 @@
-{-# LANGUAGE ImplicitParams     #-}
-{-# LANGUAGE OverloadedStrings  #-}
-{-# LANGUAGE QuasiQuotes        #-}
+{-# LANGUAGE ImplicitParams    #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes       #-}
+
+------------------------------------------------------------------------------
+-- |
+-- Module      : QuickBooks.Requests
+-- Description :
+-- Copyright   :
+-- License     :
+-- Maintainer  :
+-- Stability   :
+-- Portability :
+--
+--
+--
+------------------------------------------------------------------------------
 
 module QuickBooks.Requests
  ( createInvoiceRequest
  , readInvoiceRequest
  , updateInvoiceRequest
- , deleteInvoiceRequest
- ) where
+ , deleteInvoiceRequest)
+ where
 
+import QuickBooks.Types          (APIConfig(..)
+                                 ,Invoice
+                                 ,InvoiceId(..)
+                                 ,QuickBooksResponse
+                                 ,SyncToken(..))
 import QuickBooks.Authentication
-import QuickBooks.Types
-import Data.Aeson
-import Network.HTTP.Client
-import Network.HTTP.Types.Header
-import Data.String.Interpolate
+import Data.Aeson                (encode, eitherDecode, object, Value(String))
+import Data.String.Interpolate   (i)
+import Network.HTTP.Client       (Manager
+                                 ,httpLbs
+                                 ,parseUrl
+                                 ,Request(..)
+                                 ,RequestBody(..)
+                                 ,Response(responseBody))
+import Network.HTTP.Types.Header (hAccept,hContentType)
 
+-- | Create an invoice.
 createInvoiceRequest :: ( ?apiConfig :: APIConfig
                         , ?manager :: Manager
-                        ) => Invoice
-                          -> IO (Either String (QuickBooksResponse Invoice))
+                        )
+                     => Invoice
+                     -> IO (Either String (QuickBooksResponse Invoice))
 createInvoiceRequest invoice = do
   let apiConfig = ?apiConfig
   req  <- parseUrl [i|#{invoiceURITemplate apiConfig}|]
@@ -33,10 +58,12 @@ createInvoiceRequest invoice = do
   -- write log line ?fast-logger package? log response
   return $ eitherDecode $ responseBody resp
 
+-- | Update an invoice.
 updateInvoiceRequest :: ( ?apiConfig :: APIConfig
                         , ?manager :: Manager
-                        ) => Invoice
-                          -> IO (Either String (QuickBooksResponse Invoice))
+                        )
+                     => Invoice
+                     -> IO (Either String (QuickBooksResponse Invoice))
 updateInvoiceRequest invoice = do
   let apiConfig = ?apiConfig
   req  <-  oauthSignRequest =<< parseUrl [i|#{invoiceURITemplate apiConfig}|]
@@ -45,10 +72,12 @@ updateInvoiceRequest invoice = do
   -- write log line ?fast-logger package? log response
   return $ eitherDecode $ responseBody resp
 
+-- | Read an invoice.
 readInvoiceRequest :: ( ?apiConfig :: APIConfig
                       , ?manager :: Manager
-                      ) => InvoiceId
-                        -> IO (Either String (QuickBooksResponse Invoice))
+                      )
+                   => InvoiceId
+                   -> IO (Either String (QuickBooksResponse Invoice))
 readInvoiceRequest iId = do
   let apiConfig = ?apiConfig
   req  <-  oauthSignRequest =<< parseUrl [i|#{invoiceURITemplate apiConfig}#{unInvoiceId iId}|]
@@ -58,11 +87,13 @@ readInvoiceRequest iId = do
   -- write log line ?fast-logger package? log response
   return $ eitherDecode $ responseBody resp
 
+-- | Delete an invoice.
 deleteInvoiceRequest :: ( ?apiConfig :: APIConfig
                         , ?manager :: Manager
-                        ) => InvoiceId
-                          -> SyncToken
-                          -> IO (Either String (QuickBooksResponse Invoice))
+                        )
+                     => InvoiceId
+                     -> SyncToken
+                     -> IO (Either String (QuickBooksResponse Invoice))
 deleteInvoiceRequest iId syncToken = do
   let apiConfig = ?apiConfig
   req  <-  oauthSignRequest =<< parseUrl [i|#{invoiceURITemplate apiConfig}?operation=delete|]
