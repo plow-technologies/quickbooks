@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DeriveGeneric              #-}
 {-# LANGUAGE TypeFamilies               #-}
 {-# LANGUAGE GADTs                      #-}
@@ -28,20 +29,28 @@ data APIConfig = APIConfig
   }
 
 data family QuickBooksResponse a
-data instance QuickBooksResponse Invoice = QuickBooksInvoiceResponse { quickBooksResponseInvoice :: Invoice }
+
+data instance QuickBooksResponse Invoice = 
+  QuickBooksInvoiceResponse { quickBooksResponseInvoice :: Invoice }
+
+data instance QuickBooksResponse DeletedInvoice = 
+  QuickBooksDeletedInvoiceResponse { quickBooksResponseDeletedInvoice :: DeletedInvoice }
 
 instance FromJSON (QuickBooksResponse Invoice) where
   parseJSON (Object o) = QuickBooksInvoiceResponse `fmap` (o .: "Invoice")
   parseJSON _          = fail "Could not parse invoice response from QuickBooks"
 
-type QuickBooksQuery a = QuickBooksRequest a
+instance FromJSON (QuickBooksResponse DeletedInvoice) where
+  parseJSON (Object o) = QuickBooksDeletedInvoiceResponse `fmap` (o .: "Invoice")
+  parseJSON _          = fail "Could not parse deleted invoice response from QuickBooks"
+
+type QuickBooksQuery a = QuickBooksRequest (QuickBooksResponse a)
 
 data QuickBooksRequest a where
---  GetOAuthCredentials :: QuickBooksQuery (ByteString, ByteString)
-  CreateInvoice :: Invoice   -> QuickBooksRequest (QuickBooksResponse Invoice)
-  ReadInvoice   :: InvoiceId -> QuickBooksRequest (QuickBooksResponse Invoice)
-  UpdateInvoice :: Invoice   -> QuickBooksRequest (QuickBooksResponse Invoice)
-  DeleteInvoice :: InvoiceId -> SyncToken -> QuickBooksRequest (QuickBooksResponse Invoice)
+  CreateInvoice :: Invoice   -> QuickBooksQuery Invoice -- (QuickBooksResponse Invoice)
+  ReadInvoice   :: InvoiceId -> QuickBooksQuery Invoice -- (QuickBooksResponse Invoice)
+  UpdateInvoice :: Invoice   -> QuickBooksQuery Invoice -- (QuickBooksResponse Invoice)
+  DeleteInvoice :: InvoiceId -> SyncToken -> QuickBooksQuery DeletedInvoice  --(QuickBooksResponse DeletedInvoice)
 
 newtype InvoiceId = InvoiceId {unInvoiceId :: Text}
   deriving (Generic, Show, FromJSON, ToJSON)
@@ -98,6 +107,15 @@ data Line = Line
   , lineCustomField           :: !(Maybe [CustomField])
   }
   deriving (Show)
+
+newtype DeletedInvoiceId = DeletedInvoiceId { unDeletedInvoiceId :: Text }
+  deriving (Show, FromJSON, ToJSON)
+
+data DeletedInvoice = DeletedInvoice 
+  { deletedInvoiceId     :: !DeletedInvoiceId
+  , deletedInvoicedomain :: !Text
+  , deletedInvoicestatus :: !Text
+  } deriving (Show)
 
 data Reference = Reference
   { referenceName  :: !(Maybe Text)
@@ -314,3 +332,7 @@ $(deriveJSON defaultOptions
 $(deriveJSON defaultOptions
                { fieldLabelModifier = drop 12 }
              ''TxnTaxDetail)
+
+$(deriveJSON defaultOptions
+             { fieldLabelModifier = (drop (length ("deletedInvoice" :: String))) }
+             ''DeletedInvoice)

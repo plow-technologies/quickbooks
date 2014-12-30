@@ -56,23 +56,27 @@ readInvoiceRequest iId = do
   let req' = req{method = "GET", requestHeaders = oauthHeaders ++ [(hAccept, "application/json")]}
   resp <-  httpLbs req' ?manager
   -- write log line ?fast-logger package? log response
-  print $ responseBody resp
   return $ eitherDecode $ responseBody resp
 
 deleteInvoiceRequest :: ( ?apiConfig :: APIConfig
                         , ?manager :: Manager
                         ) => InvoiceId
                           -> SyncToken
-                          -> IO (Either String (QuickBooksResponse Invoice))
+                          -> IO (Either String (QuickBooksResponse DeletedInvoice))
 deleteInvoiceRequest iId syncToken = do
   let apiConfig = ?apiConfig
   req  <-  oauthSignRequest =<< parseUrl [i|#{invoiceURITemplate apiConfig}?operation=delete|]
-  let req' = req{method = "POST", requestBody = RequestBodyLBS $ encode body}
+  req' <- oauthSignRequest req{ method = "POST"
+                              , requestBody    = RequestBodyLBS $ encode body
+                              , requestHeaders = [ (hAccept, "application/json")
+                                                 , (hContentType, "application/json")
+                                                 ]
+                              }
   resp <-  httpLbs req' ?manager
   -- write log line ?fast-logger package? log response
   return $ eitherDecode $ responseBody resp
   where
-   body = object [ ("id", String (unInvoiceId iId))
+   body = object [ ("Id", String (unInvoiceId iId))
                  , ("SyncToken", String (unSyncToken syncToken))
                  ]
 

@@ -6,6 +6,8 @@ import QuickBooks
 import Test.Hspec
 import QuickBooks.Types
 import System.Environment
+import Data
+import Data.Maybe
 
 spec :: Spec
 spec = quickBooksAPISpec
@@ -27,22 +29,37 @@ setTestEnv = do
 createInvoiceTest :: Expectation
 createInvoiceTest = do
   setTestEnv
-  invoice <- readInvoice testInvoiceId
-  case invoice of
-    Left err ->  print err
-    Right (QuickBooksInvoiceResponse invc) -> do
-      let invc' = invc{invoiceId = Nothing}
-      resp <- createInvoice invc'
-      case  resp of
-        Left err -> print err
-        Right _  -> return ()
-  where testInvoiceId = InvoiceId "148"
+  quickBooksInvoiceResponse <- createInvoice testInvoice
+  case quickBooksInvoiceResponse of
+    Left err -> print err
+    Right (QuickBooksInvoiceResponse inv) ->
+      do  deleteInvoice (fromJust (invoiceId inv))
+                        (fromJust (invoiceSyncToken inv))
+          return ()
 
 readInvoiceTest :: Expectation
 readInvoiceTest = do
   setTestEnv
-  invoice <- readInvoice testInvoiceId
-  case invoice of
+  quickBooksInvoiceResponse <- createInvoice testInvoice
+  case quickBooksInvoiceResponse of
     Left err -> print err
-    Right _  -> return ()
-  where testInvoiceId = InvoiceId "148"
+    Right (QuickBooksInvoiceResponse inv) -> do
+      quickBooksInvoiceResponse'  <- readInvoice (fromJust (invoiceId inv))  
+      quickBooksInvioceResponse'' <- deleteInvoice (fromJust (invoiceId inv)) 
+                                                   (fromJust (invoiceSyncToken inv))
+      return ()
+
+deleteInvoiceTest :: Expectation
+deleteInvoiceTest = do
+  setTestEnv
+  quickBooksInvoiceResponse <- createInvoice testInvoice
+  case quickBooksInvoiceResponse of
+    Left err -> print ("Creat error: " ++ err)
+    Right (QuickBooksInvoiceResponse inv) ->
+      do  
+      del <- deleteInvoice (fromJust (invoiceId inv))
+                           (fromJust (invoiceSyncToken inv))
+      case del of 
+        Left err -> print ("Delete error: " ++ err)
+        Right _ ->  return ()
+

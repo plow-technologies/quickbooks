@@ -10,12 +10,7 @@ module QuickBooks
   ) where
 
 import QuickBooks.Requests
-import QuickBooks.Types (APIConfig(..)
-                        ,Invoice
-                        ,InvoiceId
-                        ,QuickBooksRequest(..)
-                        ,QuickBooksResponse(..)
-                        ,SyncToken)
+import QuickBooks.Types
 
 import Control.Applicative
 import Control.Arrow (second)
@@ -33,19 +28,19 @@ readInvoice = queryQuickBooks . ReadInvoice
 updateInvoice :: Invoice -> IO (Either String (QuickBooksResponse Invoice))
 updateInvoice = queryQuickBooks . UpdateInvoice
 
-deleteInvoice :: InvoiceId -> SyncToken -> IO (Either String (QuickBooksResponse Invoice))
+deleteInvoice :: InvoiceId -> SyncToken -> IO (Either String (QuickBooksResponse DeletedInvoice))
 deleteInvoice iId = queryQuickBooks . DeleteInvoice iId
 
-queryQuickBooks :: QuickBooksRequest (QuickBooksResponse Invoice) -> IO (Either String (QuickBooksResponse Invoice))
+queryQuickBooks :: QuickBooksRequest a -> IO (Either String a)
 queryQuickBooks query = do
   apiConfig <- readAPIConfig
   manager   <- newManager tlsManagerSettings
   let ?apiConfig = apiConfig
   let ?manager = manager
   case query of
-    (CreateInvoice invoice) -> createInvoiceRequest invoice
-    (UpdateInvoice invoice) -> updateInvoiceRequest invoice
-    (ReadInvoice invoiceId) -> readInvoiceRequest invoiceId
+    (CreateInvoice invoice)             -> createInvoiceRequest invoice
+    (UpdateInvoice invoice)             -> updateInvoiceRequest invoice
+    (ReadInvoice iId)                   -> readInvoiceRequest iId
     (DeleteInvoice invoiceId syncToken) -> deleteInvoiceRequest invoiceId syncToken
 
 readAPIConfig :: IO APIConfig
