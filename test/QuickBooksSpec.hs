@@ -2,6 +2,7 @@
 
 module QuickBooksSpec (spec) where
 
+import Control.Monad (void)
 import QuickBooks
 import Test.Hspec
 import QuickBooks.Types
@@ -14,12 +15,11 @@ spec = quickBooksAPISpec
 
 quickBooksAPISpec :: Spec
 quickBooksAPISpec = do
-  describe "invoices" $ do
+  describe "QuickBooks API" $ do
     it "queries an invoice given an invoice Identifier" readInvoiceTest
-    it "queries quickbooks to create a new invoice." createInvoiceTest
-  describe "authentication" $ do
-    it "gets temporary tokens." getTempTokensTest
-    it "exchange oauth_verifier for access tokens" getTempTokensTest
+    it "queries quickbooks to create a new invoice."    createInvoiceTest
+    it "queries quickbooks to delete and invoice."      deleteInvoiceTest
+    it "gets temporary tokens."                         getTempTokensTest
 
 setTestEnv :: IO ()
 setTestEnv = do
@@ -29,7 +29,6 @@ setTestEnv = do
  setEnv "INTUIT_TOKEN"           "lvprdeMmQMNWSSPzSkF65TGhC3C6NYSGiiDFuNB3q4Szs6TC"
  setEnv "INTUIT_SECRET"          "QOLKz5xg0wjGsdiqUbRE7wLZgrgmcs2X7Zy9JFpl"
  setEnv "INTUIT_HOSTNAME"        "sandbox-quickbooks.api.intuit.com"
-
 
 getTempTokensTest :: Expectation
 getTempTokensTest = do
@@ -46,10 +45,9 @@ createInvoiceTest = do
   case quickBooksInvoiceResponse of
     Left err -> print err
     Right (QuickBooksInvoiceResponse inv) ->
-      do  deleteInvoice (fromJust (invoiceId inv))
-                        (fromJust (invoiceSyncToken inv))
-          return ()
-
+      do  void $ deleteInvoice (fromJust (invoiceId inv))
+                               (fromJust (invoiceSyncToken inv))
+          
 readInvoiceTest :: Expectation
 readInvoiceTest = do
   setTestEnv
@@ -57,10 +55,11 @@ readInvoiceTest = do
   case quickBooksInvoiceResponse of
     Left err -> print err
     Right (QuickBooksInvoiceResponse inv) -> do
-      quickBooksInvoiceResponse'  <- readInvoice (fromJust (invoiceId inv))  
-      quickBooksInvioceResponse'' <- deleteInvoice (fromJust (invoiceId inv)) 
-                                                   (fromJust (invoiceSyncToken inv))
-      return ()
+      resp <- readInvoice (fromJust (invoiceId inv))  
+      case resp of
+        Left err -> print err
+        Right _ -> void $ deleteInvoice (fromJust (invoiceId inv)) 
+                                        (fromJust (invoiceSyncToken inv))
 
 deleteInvoiceTest :: Expectation
 deleteInvoiceTest = do
