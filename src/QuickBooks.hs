@@ -9,11 +9,17 @@ module QuickBooks
   , deleteInvoice
   ) where 
 
+import QuickBooks.Requests
+import QuickBooks.Types (APIConfig(..)
+                        ,Invoice
+                        ,InvoiceId
+                        ,QuickBooksRequest(..)
+                        ,QuickBooksResponse(..)
+                        ,SyncToken)
+
 import Control.Applicative
 import Control.Arrow (second)
 import Data.ByteString.Char8 (pack)
-import QuickBooks.Requests
-import QuickBooks.Types
 import Network.HTTP.Client.TLS (tlsManagerSettings)
 import Network.HTTP.Client
 import System.Environment (getEnvironment)
