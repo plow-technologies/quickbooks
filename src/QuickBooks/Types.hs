@@ -19,6 +19,9 @@ import           Data.Char (toLower)
 import           Data.Text (Text)
 import           GHC.Generics (Generic)
 
+newtype OAuthVerifier = OAuthVerifier { unOAuthVerifier :: Text }
+  deriving (Show)
+
 data APIConfig = APIConfig
   { companyId      :: !ByteString
   , consumerToken  :: !ByteString

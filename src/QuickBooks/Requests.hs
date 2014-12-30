@@ -9,12 +9,12 @@ module QuickBooks.Requests
  , deleteInvoiceRequest
  ) where
 
-import           QuickBooks.Types
-import           Data.Aeson
-import           Network.HTTP.Client
-import           Network.HTTP.Types.Header
-import           Web.Authenticate.OAuth hiding (delete)
-import           Data.String.Interpolate
+import QuickBooks.Authentication
+import QuickBooks.Types
+import Data.Aeson
+import Network.HTTP.Client
+import Network.HTTP.Types.Header
+import Data.String.Interpolate
 
 createInvoiceRequest :: ( ?apiConfig :: APIConfig
                         , ?manager :: Manager
@@ -71,13 +71,6 @@ deleteInvoiceRequest iId syncToken = do
                  , ("SyncToken", String (unSyncToken syncToken))
                  ]
 
-oauthSignRequest :: (?apiConfig :: APIConfig) => Request -> IO Request
-oauthSignRequest = signOAuth oauthApp credentials
-    where
-    credentials = newCredential (oauthToken ?apiConfig)
-                                (oauthSecret ?apiConfig)
-    oauthApp    = newOAuth { oauthConsumerKey    = consumerToken ?apiConfig
-                           , oauthConsumerSecret = consumerSecret ?apiConfig }
 
 invoiceURITemplate :: APIConfig -> String
 invoiceURITemplate apiConfig = [i|https://#{hostname apiConfig}/v3/company/#{companyId apiConfig}/invoice/|]
