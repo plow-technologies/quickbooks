@@ -2,7 +2,6 @@
 {-# LANGUAGE OverloadedStrings  #-}
 {-# LANGUAGE QuasiQuotes        #-}
 
-
 module QuickBooks.Requests
  ( createInvoiceRequest
  , readInvoiceRequest
@@ -69,7 +68,7 @@ deleteInvoiceRequest iId syncToken = do
   return $ eitherDecode $ responseBody resp
   where
    body = object [ ("id", String (unInvoiceId iId))
-                 , ("SyncToken", String $ (unSyncToken syncToken))
+                 , ("SyncToken", String (unSyncToken syncToken))
                  ]
 
 oauthSignRequest :: (?apiConfig :: APIConfig) => Request -> IO Request

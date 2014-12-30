@@ -103,7 +103,7 @@ data Line = Line
 data Reference = Reference
   { referenceName  :: !(Maybe Text)
   , referenceType  :: !(Maybe Text)
-  , referenceValue :: !(Text)
+  , referenceValue :: !Text
   }
   deriving (Show)
 
