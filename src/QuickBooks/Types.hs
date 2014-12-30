@@ -25,12 +25,14 @@
 
 module QuickBooks.Types where
 
-import           Data.Aeson
-import           Data.ByteString (ByteString)
-import           Data.Aeson.TH
-import           Data.Char (toLower)
-import           Data.Text (Text)
-import           GHC.Generics (Generic)
+import Data.Aeson      ((.:),FromJSON(..),Value(Object),ToJSON)
+import Data.ByteString (ByteString)
+import Data.Aeson.TH   (defaultOptions
+                       ,deriveJSON
+                       ,Options(fieldLabelModifier,omitNothingFields))
+import Data.Char       (toLower)
+import Data.Text       (Text)
+import GHC.Generics    (Generic)
 
 data APIConfig = APIConfig
   { companyId      :: !ByteString

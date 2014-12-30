@@ -20,15 +20,28 @@ module QuickBooks.Requests
  ( createInvoiceRequest
  , readInvoiceRequest
  , updateInvoiceRequest
- , deleteInvoiceRequest
- ) where
+ , deleteInvoiceRequest)
+ where
 
-import           QuickBooks.Types
-import           Data.Aeson
-import           Network.HTTP.Client
-import           Network.HTTP.Types.Header
-import           Web.Authenticate.OAuth hiding (delete)
-import           Data.String.Interpolate
+import QuickBooks.Types          (APIConfig(..)
+                                 ,Invoice
+                                 ,InvoiceId(..)
+                                 ,QuickBooksResponse
+                                 ,SyncToken(..))
+
+import Data.Aeson                (encode, eitherDecode, object, Value(String))
+import Data.String.Interpolate   (i)
+import Network.HTTP.Client       (Manager
+                                 ,httpLbs
+                                 ,parseUrl
+                                 ,Request(..)
+                                 ,RequestBody(..)
+                                 ,Response(responseBody))
+import Network.HTTP.Types.Header (hAccept,hContentType)
+import Web.Authenticate.OAuth    (newCredential
+                                 ,newOAuth
+                                 ,OAuth(oauthConsumerKey,oauthConsumerSecret)
+                                 ,signOAuth)
 
 createInvoiceRequest :: ( ?apiConfig :: APIConfig
                         , ?manager :: Manager

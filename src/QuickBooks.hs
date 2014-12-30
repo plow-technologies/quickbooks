@@ -20,23 +20,26 @@ module QuickBooks
   ( createInvoice
   , readInvoice
   , updateInvoice
-  , deleteInvoice
-  ) where
+  , deleteInvoice)
+  where
 
-import QuickBooks.Requests
-import QuickBooks.Types (APIConfig(..)
-                        ,Invoice
-                        ,InvoiceId
-                        ,QuickBooksRequest(..)
-                        ,QuickBooksResponse(..)
-                        ,SyncToken)
+import QuickBooks.Requests     (createInvoiceRequest
+                               ,deleteInvoiceRequest
+                               ,readInvoiceRequest
+                               ,updateInvoiceRequest)
+import QuickBooks.Types        (APIConfig(..)
+                               ,Invoice
+                               ,InvoiceId
+                               ,QuickBooksRequest(..)
+                               ,QuickBooksResponse(..)
+                               ,SyncToken)
 
-import Control.Applicative
-import Control.Arrow (second)
-import Data.ByteString.Char8 (pack)
+import Control.Applicative     ((<$>),(<*>))
+import Control.Arrow           (second)
+import Data.ByteString.Char8   (pack)
 import Network.HTTP.Client.TLS (tlsManagerSettings)
-import Network.HTTP.Client
-import System.Environment (getEnvironment)
+import Network.HTTP.Client     (newManager)
+import System.Environment      (getEnvironment)
 
 createInvoice :: Invoice -> IO (Either String (QuickBooksResponse Invoice))
 createInvoice = queryQuickBooks . CreateInvoice
