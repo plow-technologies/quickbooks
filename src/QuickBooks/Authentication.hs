@@ -1,5 +1,6 @@
 {-# LANGUAGE ImplicitParams     #-}
 {-# LANGUAGE OverloadedStrings  #-}
+{-# LANGUAGE RankNTypes         #-}
 
 module QuickBooks.Authentication
   ( getTempOAuthCredentialsRequest
@@ -9,6 +10,7 @@ module QuickBooks.Authentication
 
 import Control.Applicative
 import qualified Data.ByteString.Lazy as BSL
+import Data.Text (unpack)
 import QuickBooks.Types
 import Network.HTTP.Client (Manager, Request(..), RequestBody(RequestBodyLBS), responseBody, parseUrl, httpLbs)
 import Network.HTTP.Types.URI
@@ -21,21 +23,40 @@ getTempOAuthCredentialsRequest :: ( ?apiConfig :: APIConfig
                                   , ?logger    :: Logger                
                                   ) => CallbackURL
                                     -> IO (Either String (QuickBooksResponse OAuthToken)) -- ^ An OAuthToken with temporary credentials
-getTempOAuthCredentialsRequest callbackURL = do
-  request  <- parseUrl $ concat [temporaryTokenURL, "?oauth_callback=", callbackURL]
-  request' <- oauthSignRequestWithEmptyCredentials request {method="POST", requestBody = RequestBodyLBS ""}
-  logAPICall request'
-  response <- httpLbs request' ?manager
-  case tempTokensFromResponse (responseBody response) of
-    Just tempTokens -> return $ Right $ QuickBooksAuthResponse tempTokens
-    Nothing         -> return $ Left ("Couldn't find tokens in QuickBooks response" :: String)
+
+getTempOAuthCredentialsRequest callbackURL =
+  return.handleQuickBooksTokenResponse "Couldn't get temporary tokens" =<< tokensRequest
+    where tokensRequest = getTokens temporaryTokenURL "?oauth_callback=" callbackURL oauthSignRequestWithEmptyCredentials
 
 getAccessTokensRequest :: ( ?apiConfig :: APIConfig
                           , ?manager   :: Manager
+                          , ?logger    :: Logger  
                           ) => OAuthVerifier                                      -- ^ The OAuthVerifier provided to the callback
+                            -> OAuthToken                                         -- ^ The previously-acquired temp tokens to
+                                                                                  --   use in signing this request
                             -> IO (Either String (QuickBooksResponse OAuthToken)) -- ^ OAuthToken containing access tokens
                                                                                   --   for a resource-owner
-getAccessTokensRequest = undefined
+getAccessTokensRequest verifier tempToken =
+  let  ?apiConfig = ?apiConfig { oauthToken = token tempToken, oauthSecret = tokenSecret tempToken }
+       in return.handleQuickBooksTokenResponse "Couldn't get temporary tokens" =<< tokensRequest
+  where
+    tokensRequest = getTokens accessTokenURL "?oauth_verifier=" (unpack $ unOAuthVerifier verifier) oauthSignRequest
+
+
+getTokens :: ( ?apiConfig :: APIConfig
+             , ?manager   :: Manager
+             , ?logger    :: Logger 
+             ) => String                  -- ^ Endpoint to request the token
+               -> String                  -- ^ URL parameter name
+               -> String                  -- ^ URL parameter value
+               -> ((?apiConfig :: APIConfig) => Request -> IO Request) -- ^ Signing function
+               -> IO (Maybe OAuthToken)
+getTokens tokenURL parameterName parameterValue signRequest = do
+  request  <- parseUrl $ concat [tokenURL, parameterName, parameterValue]
+  request' <- signRequest request { method="POST", requestBody = RequestBodyLBS "" }
+  response <- httpLbs request' ?manager
+  logAPICall request'
+  return $ tokensFromResponse (responseBody response)
 
 
 oauthSignRequest :: (?apiConfig :: APIConfig) => Request -> IO Request
@@ -53,10 +74,17 @@ oauthSignRequestWithEmptyCredentials = signOAuth oauthApp credentials
     oauthApp    = newOAuth { oauthConsumerKey    = consumerToken ?apiConfig
                            , oauthConsumerSecret = consumerSecret ?apiConfig }
 
+accessTokenURL :: String
+accessTokenURL = "https://oauth.intuit.com/oauth/v1/get_access_token"
+
 temporaryTokenURL :: String
 temporaryTokenURL = "https://oauth.intuit.com/oauth/v1/get_request_token"
 
-tempTokensFromResponse :: BSL.ByteString -> Maybe OAuthToken
-tempTokensFromResponse response = OAuthToken <$> lookup "oauth_token" responseParams
-                                             <*> lookup "oauth_token_secret" responseParams
+handleQuickBooksTokenResponse :: String -> Maybe OAuthToken -> Either String (QuickBooksResponse OAuthToken)
+handleQuickBooksTokenResponse _ (Just tokensInResponse) = Right $ QuickBooksAuthResponse tokensInResponse
+handleQuickBooksTokenResponse errorMessage Nothing      = Left  $ errorMessage
+
+tokensFromResponse :: BSL.ByteString -> Maybe OAuthToken
+tokensFromResponse response = OAuthToken <$> lookup "oauth_token" responseParams
+                                         <*> lookup "oauth_token_secret" responseParams
   where responseParams = parseSimpleQuery (BSL.toStrict response)

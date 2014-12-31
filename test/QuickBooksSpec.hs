@@ -7,7 +7,6 @@ import QuickBooks
 import Test.Hspec
 import QuickBooks.Types
 import Data
-import System.Environment
 import Data.Maybe
 
 spec :: Spec
