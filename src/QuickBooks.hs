@@ -34,7 +34,7 @@ import QuickBooks.Types        ( APIConfig(..)
                                , SyncToken
                                , OAuthToken
                                , DeletedInvoice)
-import QuickBooks.Requests     ( createInvoiceRequest
+import QuickBooks.Invoice      ( createInvoiceRequest
                                , deleteInvoiceRequest
                                , readInvoiceRequest
                                , updateInvoiceRequest)
@@ -72,10 +72,10 @@ queryQuickBooks query = do
   let ?apiConfig = apiConfig
   let ?manager = manager
   case query of
-    (CreateInvoice invoice) -> createInvoiceRequest invoice
-    (UpdateInvoice invoice) -> updateInvoiceRequest invoice
-    (ReadInvoice invoiceId) -> readInvoiceRequest invoiceId
-    (DeleteInvoice invoiceId syncToken) -> deleteInvoiceRequest invoiceId syncToken
+    (CreateInvoice invoice)               -> createInvoiceRequest invoice
+    (UpdateInvoice invoice)               -> updateInvoiceRequest invoice
+    (ReadInvoice invoiceId)               -> readInvoiceRequest invoiceId
+    (DeleteInvoice invoiceId syncToken)   -> deleteInvoiceRequest invoiceId syncToken
     (GetTempOAuthCredentials callbackURL) -> getTempOAuthCredentialsRequest callbackURL
 
 readAPIConfig :: IO APIConfig

@@ -66,12 +66,12 @@ deleteInvoiceTest = do
   setTestEnv
   quickBooksInvoiceResponse <- createInvoice testInvoice
   case quickBooksInvoiceResponse of
-    Left err -> print ("Creat error: " ++ err)
+    Left err -> print err
     Right (QuickBooksInvoiceResponse inv) ->
       do  
       del <- deleteInvoice (fromJust (invoiceId inv))
                            (fromJust (invoiceSyncToken inv))
       case del of 
-        Left err -> print ("Delete error: " ++ err)
+        Left err -> print err 
         Right _ ->  return ()
 

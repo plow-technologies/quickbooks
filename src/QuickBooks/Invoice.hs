@@ -16,7 +16,7 @@
 --
 ------------------------------------------------------------------------------
 
-module QuickBooks.Requests
+module QuickBooks.Invoice
  ( createInvoiceRequest
  , readInvoiceRequest
  , updateInvoiceRequest
@@ -110,7 +110,6 @@ deleteInvoiceRequest iId syncToken = do
    body = object [ ("Id", String (unInvoiceId iId))
                  , ("SyncToken", String (unSyncToken syncToken))
                  ]
-
 
 invoiceURITemplate :: APIConfig -> String
 invoiceURITemplate apiConfig = [i|https://#{hostname apiConfig}/v3/company/#{companyId apiConfig}/invoice/|]
