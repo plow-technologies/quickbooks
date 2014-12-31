@@ -1,4 +1,3 @@
-{-# LANGUAGE DeriveGeneric            #-}
 {-# LANGUAGE GADTs                      #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ImplicitParams             #-}
@@ -32,7 +31,6 @@ import Data.Aeson.TH   (defaultOptions
                        ,Options(fieldLabelModifier,omitNothingFields))
 import Data.Char       (toLower)
 import Data.Text       (Text)
-import GHC.Generics    (Generic)
 
 type CallbackURL = String
 
@@ -69,17 +67,17 @@ instance FromJSON (QuickBooksResponse DeletedInvoice) where
 type QuickBooksQuery a = QuickBooksRequest (QuickBooksResponse a)
 
 data QuickBooksRequest a where
-  GetTempOAuthCredentials :: CallbackURL -> QuickBooksRequest (QuickBooksResponse OAuthToken)
-  CreateInvoice           :: Invoice     -> QuickBooksRequest (QuickBooksResponse Invoice)
-  ReadInvoice             :: InvoiceId   -> QuickBooksRequest (QuickBooksResponse Invoice)
-  UpdateInvoice           :: Invoice     -> QuickBooksRequest (QuickBooksResponse Invoice)
-  DeleteInvoice           :: InvoiceId   -> SyncToken -> QuickBooksRequest (QuickBooksResponse DeletedInvoice)
+  GetTempOAuthCredentials :: CallbackURL -> QuickBooksQuery OAuthToken
+  CreateInvoice           :: Invoice     -> QuickBooksQuery Invoice
+  ReadInvoice             :: InvoiceId   -> QuickBooksQuery Invoice
+  UpdateInvoice           :: Invoice     -> QuickBooksQuery Invoice
+  DeleteInvoice           :: InvoiceId   -> SyncToken -> QuickBooksQuery DeletedInvoice
 
 newtype InvoiceId = InvoiceId {unInvoiceId :: Text}
-  deriving (Generic, Show, FromJSON, ToJSON)
+  deriving (Show, FromJSON, ToJSON)
 
 newtype LineId    = LineId {unLineId :: Text}
-  deriving (Generic, Show, FromJSON, ToJSON)
+  deriving (Show, FromJSON, ToJSON)
 
 newtype SyncToken = SyncToken { unSyncToken :: Text }
   deriving (Show, FromJSON, ToJSON)
