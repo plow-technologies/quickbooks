@@ -32,9 +32,9 @@ getTempOAuthCredentialsRequest callbackURL = do
 
 getAccessTokensRequest :: ( ?apiConfig :: APIConfig
                           , ?manager   :: Manager
-                          ) => OAuthVerifier -- ^ The OAuthVerifier provided to the callback
-                            -> IO OAuthToken -- ^ OAuthToken containing access tokens
-                                             --   for a resource-owner
+                          ) => OAuthVerifier                                      -- ^ The OAuthVerifier provided to the callback
+                            -> IO (Either String (QuickBooksResponse OAuthToken)) -- ^ OAuthToken containing access tokens
+                                                                                  --   for a resource-owner
 getAccessTokensRequest = undefined
 
 

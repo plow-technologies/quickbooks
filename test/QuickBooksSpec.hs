@@ -7,6 +7,7 @@ import QuickBooks
 import Test.Hspec
 import QuickBooks.Types
 import Data
+import System.Environment
 import Data.Maybe
 
 spec :: Spec
@@ -19,7 +20,13 @@ quickBooksAPISpec = do
     it "queries an invoice given an invoice Identifier" readInvoiceTest
     it "queries quickbooks to update and invoice."      updateInvoiceTest
     it "queries quickbooks to delete and invoice."      deleteInvoiceTest
-    it "gets temporary tokens."                         getTempTokensTest
+    it "gets temporary tokens." getTempTokensTest
+    it "exchange oauth_verifier for access tokens" getAccessTokensFromOAuthVerifier
+
+
+
+getAccessTokensFromOAuthVerifier :: Expectation
+getAccessTokensFromOAuthVerifier = undefined
 
 getTempTokensTest :: Expectation
 getTempTokensTest = do
@@ -36,21 +43,21 @@ createInvoiceTest = do
     Right (QuickBooksInvoiceResponse inv) ->
       do  void $ deleteInvoice (fromJust (invoiceId inv))
                                (fromJust (invoiceSyncToken inv))
-          
+
 readInvoiceTest :: Expectation
 readInvoiceTest = do
   quickBooksInvoiceResponse <- createInvoice testInvoice
   case quickBooksInvoiceResponse of
     Left err -> print err
     Right (QuickBooksInvoiceResponse inv) -> do
-      resp <- readInvoice (fromJust (invoiceId inv))  
+      resp <- readInvoice (fromJust (invoiceId inv))
       case resp of
         Left err -> print err
-        Right _ -> void $ deleteInvoice (fromJust (invoiceId inv)) 
+        Right _ -> void $ deleteInvoice (fromJust (invoiceId inv))
                                         (fromJust (invoiceSyncToken inv))
 
 updateInvoiceTest :: Expectation
-updateInvoiceTest = do 
+updateInvoiceTest = do
   quickBooksInvoiceResponse <- createInvoice testInvoice
   case quickBooksInvoiceResponse of
     Left err -> print err
@@ -67,10 +74,10 @@ deleteInvoiceTest = do
   case quickBooksInvoiceResponse of
     Left err -> print err
     Right (QuickBooksInvoiceResponse inv) ->
-      do  
+      do
       del <- deleteInvoice (fromJust (invoiceId inv))
                            (fromJust (invoiceSyncToken inv))
-      case del of 
-        Left err -> print err 
+      case del of
+        Left err -> print err
         Right _ ->  return ()
 

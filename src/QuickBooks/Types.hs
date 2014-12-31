@@ -69,6 +69,7 @@ type QuickBooksQuery a = QuickBooksRequest (QuickBooksResponse a)
 
 data QuickBooksRequest a where
   GetTempOAuthCredentials :: CallbackURL -> QuickBooksQuery OAuthToken
+  GetAccessTokens         :: OAuthVerifier -> OAuthToken -> QuickBooksQuery OAuthToken
   CreateInvoice           :: Invoice     -> QuickBooksQuery Invoice
   ReadInvoice             :: InvoiceId   -> QuickBooksQuery Invoice
   UpdateInvoice           :: Invoice     -> QuickBooksQuery Invoice

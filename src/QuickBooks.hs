@@ -21,6 +21,7 @@ module QuickBooks
   , readInvoice
   , updateInvoice
   , deleteInvoice
+  , getAccessTokens
   , getTempTokens
   ) where
 
@@ -34,6 +35,7 @@ import QuickBooks.Types        ( APIConfig(..)
                                , SyncToken
                                , OAuthToken
                                , QuickBooksQuery
+                               , OAuthVerifier
                                , DeletedInvoice)
 import Control.Applicative     ((<$>),(<*>), (<|>))
 import Control.Arrow           (second)
@@ -66,8 +68,13 @@ updateInvoice = queryQuickBooks . UpdateInvoice
 deleteInvoice :: InvoiceId -> SyncToken -> IO (Either String (QuickBooksResponse DeletedInvoice))
 deleteInvoice iId = queryQuickBooks . DeleteInvoice iId
 
+-- | Get temporary tokens to request permission
 getTempTokens :: CallbackURL -> IO (Either String (QuickBooksResponse OAuthToken))
 getTempTokens = queryQuickBooks . GetTempOAuthCredentials
+
+-- | Exchange oauth_verifier for access tokens
+getAccessTokens :: OAuthVerifier -> OAuthToken -> IO (Either String (QuickBooksResponse OAuthToken))
+getAccessTokens oauthVerifier tempToken  = queryQuickBooks $ GetAccessTokens oauthVerifier tempToken
 
 queryQuickBooks :: QuickBooksQuery a -> IO (Either String (QuickBooksResponse a))
 queryQuickBooks query = do
@@ -78,11 +85,12 @@ queryQuickBooks query = do
   let ?manager   = manager
   let ?logger    = logger
   case query of
-    (CreateInvoice invoice)               -> createInvoiceRequest invoice
-    (UpdateInvoice invoice)               -> updateInvoiceRequest invoice
-    (ReadInvoice invoiceId)               -> readInvoiceRequest invoiceId
-    (DeleteInvoice invoiceId syncToken)   -> deleteInvoiceRequest invoiceId syncToken
-    (GetTempOAuthCredentials callbackURL) -> getTempOAuthCredentialsRequest callbackURL
+    (CreateInvoice invoice)                   -> createInvoiceRequest invoice
+    (UpdateInvoice invoice)                   -> updateInvoiceRequest invoice
+    (ReadInvoice invoiceId)                   -> readInvoiceRequest invoiceId
+    (DeleteInvoice invoiceId syncToken)       -> deleteInvoiceRequest invoiceId syncToken
+    (GetTempOAuthCredentials callbackURL)     -> getTempOAuthCredentialsRequest callbackURL
+    (GetAccessTokens oauthVerifier tempToken) -> getAccessTokensRequest oauthVerifier tempToken
 
 readAPIConfig :: IO APIConfig
 readAPIConfig = do
