@@ -33,6 +33,7 @@ import QuickBooks.Types        ( APIConfig(..)
                                , QuickBooksResponse(..)
                                , SyncToken
                                , OAuthToken
+                               , QuickBooksQuery
                                , DeletedInvoice)
 import QuickBooks.Invoice      ( createInvoiceRequest
                                , deleteInvoiceRequest
@@ -65,7 +66,7 @@ deleteInvoice iId = queryQuickBooks . DeleteInvoice iId
 getTempTokens :: CallbackURL -> IO (Either String (QuickBooksResponse OAuthToken))
 getTempTokens = queryQuickBooks . GetTempOAuthCredentials
 
-queryQuickBooks :: QuickBooksRequest (QuickBooksResponse a) -> IO (Either String (QuickBooksResponse a))
+queryQuickBooks :: QuickBooksQuery a -> IO (Either String (QuickBooksResponse a))
 queryQuickBooks query = do
   apiConfig <- readAPIConfig
   manager   <- newManager tlsManagerSettings

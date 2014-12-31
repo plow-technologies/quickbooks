@@ -1,4 +1,3 @@
-{-# LANGUAGE DeriveGeneric            #-}
 {-# LANGUAGE GADTs                      #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ImplicitParams             #-}
@@ -32,7 +31,6 @@ import Data.Aeson.TH   (defaultOptions
                        ,Options(fieldLabelModifier,omitNothingFields))
 import Data.Char       (toLower)
 import Data.Text       (Text)
-import GHC.Generics    (Generic)
 
 type CallbackURL = String
 
@@ -76,10 +74,10 @@ data QuickBooksRequest a where
   DeleteInvoice           :: InvoiceId   -> SyncToken -> QuickBooksRequest (QuickBooksResponse DeletedInvoice)
 
 newtype InvoiceId = InvoiceId {unInvoiceId :: Text}
-  deriving (Generic, Show, FromJSON, ToJSON)
+  deriving (Show, FromJSON, ToJSON)
 
 newtype LineId    = LineId {unLineId :: Text}
-  deriving (Generic, Show, FromJSON, ToJSON)
+  deriving (Show, FromJSON, ToJSON)
 
 newtype SyncToken = SyncToken { unSyncToken :: Text }
   deriving (Show, FromJSON, ToJSON)
