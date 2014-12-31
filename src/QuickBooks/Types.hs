@@ -67,11 +67,11 @@ instance FromJSON (QuickBooksResponse DeletedInvoice) where
 type QuickBooksQuery a = QuickBooksRequest (QuickBooksResponse a)
 
 data QuickBooksRequest a where
-  GetTempOAuthCredentials :: CallbackURL -> QuickBooksRequest (QuickBooksResponse OAuthToken)
-  CreateInvoice           :: Invoice     -> QuickBooksRequest (QuickBooksResponse Invoice)
-  ReadInvoice             :: InvoiceId   -> QuickBooksRequest (QuickBooksResponse Invoice)
-  UpdateInvoice           :: Invoice     -> QuickBooksRequest (QuickBooksResponse Invoice)
-  DeleteInvoice           :: InvoiceId   -> SyncToken -> QuickBooksRequest (QuickBooksResponse DeletedInvoice)
+  GetTempOAuthCredentials :: CallbackURL -> QuickBooksQuery OAuthToken
+  CreateInvoice           :: Invoice     -> QuickBooksQuery Invoice
+  ReadInvoice             :: InvoiceId   -> QuickBooksQuery Invoice
+  UpdateInvoice           :: Invoice     -> QuickBooksQuery Invoice
+  DeleteInvoice           :: InvoiceId   -> SyncToken -> QuickBooksQuery DeletedInvoice
 
 newtype InvoiceId = InvoiceId {unInvoiceId :: Text}
   deriving (Show, FromJSON, ToJSON)
