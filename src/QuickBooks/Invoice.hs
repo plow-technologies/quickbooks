@@ -67,8 +67,13 @@ updateInvoiceRequest :: ( ?apiConfig :: APIConfig
                      -> IO (Either String (QuickBooksResponse Invoice))
 updateInvoiceRequest invoice = do
   let apiConfig = ?apiConfig
-  req  <-  oauthSignRequest =<< parseUrl [i|#{invoiceURITemplate apiConfig}|]
-  let req' = req{method = "POST", requestBody = RequestBodyLBS $ encode invoice}
+  req <- parseUrl [i|#{invoiceURITemplate apiConfig}|]
+  req' <- oauthSignRequest req{method = "POST"
+                              , requestBody = RequestBodyLBS $ encode invoice
+                              , requestHeaders = [ (hAccept, "application/json")
+                                                 , (hContentType, "application/json")
+                                                 ]
+                              }
   resp <-  httpLbs req' ?manager
   -- write log line ?fast-logger package? log response
   return $ eitherDecode $ responseBody resp

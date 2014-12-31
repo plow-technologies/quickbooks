@@ -16,8 +16,9 @@ spec = quickBooksAPISpec
 quickBooksAPISpec :: Spec
 quickBooksAPISpec = do
   describe "QuickBooks API" $ do
-    it "queries an invoice given an invoice Identifier" readInvoiceTest
     it "queries quickbooks to create a new invoice."    createInvoiceTest
+    it "queries an invoice given an invoice Identifier" readInvoiceTest
+    it "queries quickbooks to update and invoice."      updateInvoiceTest
     it "queries quickbooks to delete and invoice."      deleteInvoiceTest
     it "gets temporary tokens."                         getTempTokensTest
 
@@ -59,6 +60,19 @@ readInvoiceTest = do
       case resp of
         Left err -> print err
         Right _ -> void $ deleteInvoice (fromJust (invoiceId inv)) 
+                                        (fromJust (invoiceSyncToken inv))
+
+updateInvoiceTest :: Expectation
+updateInvoiceTest = do 
+  setTestEnv
+  quickBooksInvoiceResponse <- createInvoice testInvoice
+  case quickBooksInvoiceResponse of
+    Left err -> print err
+    Right (QuickBooksInvoiceResponse inv) -> do
+      resp <- updateInvoice inv
+      case resp of
+        Left err -> print err
+        Right _ -> void $ deleteInvoice (fromJust (invoiceId inv))
                                         (fromJust (invoiceSyncToken inv))
 
 deleteInvoiceTest :: Expectation
