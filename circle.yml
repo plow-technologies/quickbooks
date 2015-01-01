@@ -11,10 +11,12 @@ dependencies:
 
   override:
     - cabal sandbox init
-    - cabal install --only-dependencies --enable-tests -j
+    - cabal install --only-dependencies --enable-tests -j2:
+        timeout: 3000    
     - cabal configure --enable-tests
 
 test:
   override:
-    - cabal build -j2
+    - cabal build -j2:
+        timeout: 3000    
     - cabal test --show-details=always -j2
