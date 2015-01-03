@@ -40,7 +40,7 @@ import QuickBooks.Invoice      ( createInvoiceRequest
                                , readInvoiceRequest
                                , updateInvoiceRequest)
 
-import Control.Applicative     ((<$>),(<*>))
+import Control.Applicative     ((<$>),(<*>), (<|>))
 import Control.Arrow           (second)
 import Data.ByteString.Char8   (pack)
 import Network.HTTP.Client.TLS (tlsManagerSettings)
@@ -102,4 +102,5 @@ lookupAPIConfig environment = APIConfig <$> lookup "INTUIT_COMPANY_ID" env
                                         <*> lookup "INTUIT_TOKEN" env
                                         <*> lookup "INTUIT_SECRET" env
                                         <*> lookup "INTUIT_HOSTNAME" env
+                                        <*> (lookup "INTUIT_API_LOGGING_ENABLED" env <|> Just "true")
     where env = map (second pack) environment

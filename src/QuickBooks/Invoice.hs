@@ -32,6 +32,8 @@ import QuickBooks.Types          (APIConfig(..)
                                  ,DeletedInvoice(..))
 import QuickBooks.Authentication
 import Data.Aeson                (encode, eitherDecode, object, Value(String))
+import qualified Data.ByteString.Char8 as BS
+import Data.Char                 (toLower)
 import Data.String.Interpolate   (i)
 import Network.HTTP.Client       (Manager
                                  ,httpLbs
@@ -58,7 +60,7 @@ createInvoiceRequest :: ( ?apiConfig :: APIConfig
 createInvoiceRequest invoice = do
   let apiConfig = ?apiConfig
   req  <- parseUrl [i|#{invoiceURITemplate apiConfig}|]
-  req' <- oauthSignRequest req{ method = "POST"
+  req' <- oauthSignRequest req{ method         = "POST"
                               , requestBody    = RequestBodyLBS $ encode invoice
                               , requestHeaders = [ (hAccept, "application/json")
                                                  , (hContentType, "application/json")
@@ -124,16 +126,24 @@ deleteInvoiceRequest iId syncToken = do
   logAPICall req'
   return $ eitherDecode $ responseBody resp
   where
-   body = object [ ("Id", String (unInvoiceId iId))
-                 , ("SyncToken", String (unSyncToken syncToken))
-                 ]
+    body = object [ ("Id", String (unInvoiceId iId))
+                  , ("SyncToken", String (unSyncToken syncToken))
+                  ]
 
-logAPICall :: (?logger :: LoggerSet) => Request -> IO ()
-logAPICall req = do 
-  now <- getCurrentTime
-  let formattedTime = fromString $ formatTime defaultTimeLocale rfc822DateFormat now
-  pushLogStr ?logger (requestLogLine req formattedTime)
-  flushLogStr ?logger
+logAPICall :: ( ?logger :: LoggerSet
+              , ?apiConfig :: APIConfig
+              ) => Request -> IO ()
+logAPICall req =
+  let isLoggingEnabled = BS.map toLower (loggingEnabled ?apiConfig) in
+  if isLoggingEnabled == "true"
+    then logAPICall'
+    else return ()
+  where
+    logAPICall' = do 
+      now <- getCurrentTime
+      let formattedTime = fromString $ formatTime defaultTimeLocale rfc822DateFormat now
+      pushLogStr ?logger (requestLogLine req formattedTime)
+      flushLogStr ?logger
 
 invoiceURITemplate :: APIConfig -> String
 invoiceURITemplate APIConfig{..} = [i|https://#{hostname}/v3/company/#{companyId}/invoice/|]
@@ -145,4 +155,4 @@ requestLogLine req formattedTime =
               (RequestBodyLBS bs) -> show bs 
               (RequestBodyBS bs)  -> show bs
               _                   -> ""
-  in formattedTime <> fromString [i|  [#{method req}] [#{getUri req}] [#{body}]\n|]
+  in formattedTime <> fromString [i| [INFO] [#{method req}] [#{getUri req}] [#{body}]\n|]
