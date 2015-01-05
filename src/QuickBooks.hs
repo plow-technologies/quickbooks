@@ -35,18 +35,21 @@ import QuickBooks.Types        ( APIConfig(..)
                                , OAuthToken
                                , QuickBooksQuery
                                , DeletedInvoice)
-import QuickBooks.Invoice      ( createInvoiceRequest
-                               , deleteInvoiceRequest
-                               , readInvoiceRequest
-                               , updateInvoiceRequest)
-
-import Control.Applicative     ((<$>),(<*>))
+import Control.Applicative     ((<$>),(<*>), (<|>))
 import Control.Arrow           (second)
 import Data.ByteString.Char8   (pack)
 import Network.HTTP.Client.TLS (tlsManagerSettings)
 import Network.HTTP.Client     (newManager)
 import System.Environment      (getEnvironment)
 
+
+import QuickBooks.Invoice      ( createInvoiceRequest
+                               , deleteInvoiceRequest
+                               , readInvoiceRequest
+                               , updateInvoiceRequest)
+import QuickBooks.Logging      (apiLogger, getLogger)
+
+   
 -- | Create an invoice.
 createInvoice :: Invoice -> IO (Either String (QuickBooksResponse Invoice))
 createInvoice = queryQuickBooks . CreateInvoice
@@ -70,8 +73,10 @@ queryQuickBooks :: QuickBooksQuery a -> IO (Either String (QuickBooksResponse a)
 queryQuickBooks query = do
   apiConfig <- readAPIConfig
   manager   <- newManager tlsManagerSettings
+  logger    <-  getLogger apiLogger
   let ?apiConfig = apiConfig
-  let ?manager = manager
+  let ?manager   = manager
+  let ?logger    = logger
   case query of
     (CreateInvoice invoice)               -> createInvoiceRequest invoice
     (UpdateInvoice invoice)               -> updateInvoiceRequest invoice
@@ -93,4 +98,5 @@ lookupAPIConfig environment = APIConfig <$> lookup "INTUIT_COMPANY_ID" env
                                         <*> lookup "INTUIT_TOKEN" env
                                         <*> lookup "INTUIT_SECRET" env
                                         <*> lookup "INTUIT_HOSTNAME" env
+                                        <*> (lookup "INTUIT_API_LOGGING_ENABLED" env <|> Just "true")
     where env = map (second pack) environment

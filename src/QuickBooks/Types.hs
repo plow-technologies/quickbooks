@@ -44,6 +44,7 @@ data APIConfig = APIConfig
   , oauthToken     :: !ByteString
   , oauthSecret    :: !ByteString
   , hostname       :: !ByteString
+  , loggingEnabled :: !ByteString 
   } deriving (Show)
 
 data OAuthToken = OAuthToken

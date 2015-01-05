@@ -30,6 +30,9 @@ library
                        , http-client-tls    == 0.2.*
                        , interpolate        == 0.1.*
                        , text
+                       , fast-logger        == 2.2.*
+                       , thyme              == 0.3.*
+                       , old-locale         == 1.0.*
 
 
 test-suite spec
@@ -50,3 +53,6 @@ test-suite spec
                    , http-types         == 0.8.*
                    , interpolate        == 0.1.*
                    , text
+                   , fast-logger        == 2.2.*
+                   , thyme              == 0.3.*
+                   , old-locale         == 1.0.*

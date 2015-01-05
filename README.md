@@ -10,11 +10,24 @@ Testing and Development should run against an Intuit QuickBooks API sandbox. You
 
 The following environment variable need to be exported:
 
-`INTUIT_COMPANY_ID`    
+`INTUIT_COMPANY_ID`
 `INTUIT_CONSUMER_KEY` 
 `INTUIT_CONSUMER_SECRET`
-`INTUIT_TOKEN`      
+`INTUIT_TOKEN`
 `INTUIT_SECRET`
 `INTUIT_HOSTNAME`
 
 You can gather these pieces of information by following the instructions found on QuickBooks web site.
+
+Logging
+-------
+
+If you would like to enable logging for a given environment. Please set the following environment variable as follows:
+
+`INTUIT_API_LOGGING_ENABLED=True`
+
+Logging is enabled by default.
+Setting the value to anything other than true `True` (case insensitive) will disable logging.
+
+
+

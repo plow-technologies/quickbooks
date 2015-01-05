@@ -14,13 +14,17 @@ import Network.HTTP.Client (Manager, Request(..), RequestBody(RequestBodyLBS), r
 import Network.HTTP.Types.URI
 import Web.Authenticate.OAuth (signOAuth, newCredential, emptyCredential, newOAuth, OAuth(..))
 
+import QuickBooks.Logging (logAPICall, Logger)
+
 getTempOAuthCredentialsRequest :: ( ?apiConfig :: APIConfig
                                   , ?manager   :: Manager
+                                  , ?logger    :: Logger                
                                   ) => CallbackURL
                                     -> IO (Either String (QuickBooksResponse OAuthToken)) -- ^ An OAuthToken with temporary credentials
 getTempOAuthCredentialsRequest callbackURL = do
   request  <- parseUrl $ concat [temporaryTokenURL, "?oauth_callback=", callbackURL]
   request' <- oauthSignRequestWithEmptyCredentials request {method="POST", requestBody = RequestBodyLBS ""}
+  logAPICall request'
   response <- httpLbs request' ?manager
   case tempTokensFromResponse (responseBody response) of
     Just tempTokens -> return $ Right $ QuickBooksAuthResponse tempTokens

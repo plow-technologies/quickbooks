@@ -21,7 +21,6 @@ quickBooksAPISpec = do
     it "queries quickbooks to delete and invoice."      deleteInvoiceTest
     it "gets temporary tokens."                         getTempTokensTest
 
-
 getTempTokensTest :: Expectation
 getTempTokensTest = do
   temporaryTokens <- getTempTokens "localhost"
