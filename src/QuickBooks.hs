@@ -35,24 +35,20 @@ import QuickBooks.Types        ( APIConfig(..)
                                , OAuthToken
                                , QuickBooksQuery
                                , DeletedInvoice)
-import QuickBooks.Invoice      ( createInvoiceRequest
-                               , deleteInvoiceRequest
-                               , readInvoiceRequest
-                               , updateInvoiceRequest)
-
 import Control.Applicative     ((<$>),(<*>), (<|>))
 import Control.Arrow           (second)
 import Data.ByteString.Char8   (pack)
 import Network.HTTP.Client.TLS (tlsManagerSettings)
 import Network.HTTP.Client     (newManager)
 import System.Environment      (getEnvironment)
-import System.Log.FastLogger
-import Data.IORef
-import System.IO.Unsafe
 
-apiLogger :: IORef LoggerSet
-apiLogger = unsafePerformIO $ do
-  newIORef =<< newStdoutLoggerSet 0
+
+import QuickBooks.Invoice      ( createInvoiceRequest
+                               , deleteInvoiceRequest
+                               , readInvoiceRequest
+                               , updateInvoiceRequest)
+import QuickBooks.Logging      (apiLogger, getLogger)
+
    
 -- | Create an invoice.
 createInvoice :: Invoice -> IO (Either String (QuickBooksResponse Invoice))
@@ -77,7 +73,7 @@ queryQuickBooks :: QuickBooksQuery a -> IO (Either String (QuickBooksResponse a)
 queryQuickBooks query = do
   apiConfig <- readAPIConfig
   manager   <- newManager tlsManagerSettings
-  logger    <- readIORef apiLogger
+  logger    <-  getLogger apiLogger
   let ?apiConfig = apiConfig
   let ?manager   = manager
   let ?logger    = logger

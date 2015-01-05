@@ -33,10 +33,9 @@ import Network.HTTP.Client       (Manager
                                  ,RequestBody(..)
                                  ,Response(responseBody))
 import Network.HTTP.Types.Header (hAccept,hContentType)
-import System.Log.FastLogger (LoggerSet)
 
 import QuickBooks.Authentication
-import QuickBooks.Logging (logAPICall)
+import QuickBooks.Logging (logAPICall, Logger)
 import QuickBooks.Types (APIConfig(..)
                         ,Invoice
                         ,InvoiceId(..)
@@ -48,7 +47,7 @@ import QuickBooks.Types (APIConfig(..)
 -- | Create an invoice.
 createInvoiceRequest :: ( ?apiConfig :: APIConfig
                         , ?manager   :: Manager
-                        , ?logger    :: LoggerSet
+                        , ?logger    :: Logger
                         )
                      => Invoice
                      -> IO (Either String (QuickBooksResponse Invoice))
@@ -68,7 +67,7 @@ createInvoiceRequest invoice = do
 -- | Update an invoice.
 updateInvoiceRequest :: ( ?apiConfig :: APIConfig
                         , ?manager :: Manager
-                        , ?logger    :: LoggerSet
+                        , ?logger    :: Logger
                         )
                      => Invoice
                      -> IO (Either String (QuickBooksResponse Invoice))
@@ -88,7 +87,7 @@ updateInvoiceRequest invoice = do
 -- | Read an invoice.
 readInvoiceRequest :: ( ?apiConfig :: APIConfig
                       , ?manager :: Manager
-                      , ?logger    :: LoggerSet
+                      , ?logger    :: Logger
                       )
                    => InvoiceId
                    -> IO (Either String (QuickBooksResponse Invoice))
@@ -104,7 +103,7 @@ readInvoiceRequest iId = do
 -- | Delete an invoice.
 deleteInvoiceRequest :: ( ?apiConfig :: APIConfig
                         , ?manager   :: Manager
-                        , ?logger    :: LoggerSet
+                        , ?logger    :: Logger
                         ) => InvoiceId
                           -> SyncToken
                           -> IO (Either String (QuickBooksResponse DeletedInvoice))

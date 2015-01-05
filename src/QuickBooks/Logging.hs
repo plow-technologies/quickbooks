@@ -3,22 +3,30 @@
 {-# LANGUAGE QuasiQuotes       #-}
 {-# LANGUAGE RecordWildCards   #-}
 
-module QuickBooks.Logging (logAPICall) where
-
+module QuickBooks.Logging (logAPICall, Logger, apiLogger, getLogger) where
 
 import Data.Char                 (toLower)
-import Data.String.Interpolate   (i)
-import Network.HTTP.Client       ( Request(..)
-                                 ,RequestBody(..)
-                                 ,getUri)
-import Data.String (fromString)
-import System.Log.FastLogger (LoggerSet, LogStr, pushLogStr, flushLogStr)
-import Data.Thyme
-import System.Locale 
+import Data.IORef
 import Data.Monoid ((<>))
-
+import Data.String (fromString)
+import Data.String.Interpolate   (i)
+import Data.Thyme
+import Network.HTTP.Client       ( Request(..),RequestBody(..),getUri)
+import System.IO.Unsafe
+import System.Locale 
+import System.Log.FastLogger (LoggerSet, LogStr, pushLogStr, flushLogStr, newStdoutLoggerSet)
 import qualified Data.ByteString.Char8 as BS
+
 import QuickBooks.Types (APIConfig(..))
+
+type Logger = LoggerSet
+
+apiLogger :: IORef LoggerSet
+apiLogger = unsafePerformIO $ do
+  newIORef =<< newStdoutLoggerSet 0
+
+getLogger :: IORef Logger -> IO Logger
+getLogger = readIORef
 
 logAPICall :: ( ?logger :: LoggerSet
               , ?apiConfig :: APIConfig
