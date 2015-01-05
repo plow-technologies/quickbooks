@@ -29,6 +29,7 @@ library
                        , http-types         == 0.8.*
                        , http-client-tls    == 0.2.*
                        , interpolate        == 0.1.*
+                       , utf8-string
                        , text
                        , fast-logger        == 2.2.*
                        , thyme              == 0.3.*
