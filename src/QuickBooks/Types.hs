@@ -34,7 +34,7 @@ import Data.Text       (Text)
 
 type CallbackURL = String
 
-newtype OAuthVerifier = OAuthVerifier { unOAuthVerifier :: Text }
+newtype OAuthVerifier = OAuthVerifier { unOAuthVerifier :: ByteString }
   deriving (Show)
 
 data APIConfig = APIConfig
@@ -69,6 +69,7 @@ type QuickBooksQuery a = QuickBooksRequest (QuickBooksResponse a)
 
 data QuickBooksRequest a where
   GetTempOAuthCredentials :: CallbackURL -> QuickBooksQuery OAuthToken
+  GetAccessTokens         :: OAuthVerifier -> OAuthToken -> QuickBooksQuery OAuthToken
   CreateInvoice           :: Invoice     -> QuickBooksQuery Invoice
   ReadInvoice             :: InvoiceId   -> QuickBooksQuery Invoice
   UpdateInvoice           :: Invoice     -> QuickBooksQuery Invoice
