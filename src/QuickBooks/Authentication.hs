@@ -10,8 +10,7 @@ module QuickBooks.Authentication
 
 import Control.Applicative
 import qualified Data.ByteString.Lazy as BSL
-import Data.ByteString.UTF8 (toString)
-import Data.Text.Encoding (encodeUtf8)
+import Data.ByteString.Char8 (unpack)
 import QuickBooks.Types
 import Network.HTTP.Client (Manager, Request(..), RequestBody(RequestBodyLBS), responseBody, parseUrl, httpLbs)
 import Network.HTTP.Types.URI
@@ -38,10 +37,10 @@ getAccessTokensRequest :: ( ?apiConfig :: APIConfig
                             -> IO (Either String (QuickBooksResponse OAuthToken)) -- ^ OAuthToken containing access tokens
                                                                                   --   for a resource-owner
 getAccessTokensRequest verifier tempToken =
-  let  ?apiConfig = ?apiConfig { oauthToken = token tempToken, oauthSecret = tokenSecret tempToken }
-       in return.handleQuickBooksTokenResponse "Couldn't get access tokens" =<< tokensRequest
+  return.handleQuickBooksTokenResponse "Couldn't get access tokens" =<< tokensRequest
   where
-    tokensRequest = getTokens accessTokenURL "?oauth_token=" (toString $ token tempToken) (oauthSignRequestWithVerifier verifier tempToken)
+    tokensRequest = getTokens accessTokenURL "?oauth_token=" (unpack $ token tempToken)
+                                                             (oauthSignRequestWithVerifier verifier tempToken)
 
 
 getTokens :: ( ?apiConfig :: APIConfig
@@ -55,7 +54,6 @@ getTokens :: ( ?apiConfig :: APIConfig
 getTokens tokenURL parameterName parameterValue signRequest = do
   request  <- parseUrl $ concat [tokenURL, parameterName, parameterValue]
   request' <- signRequest request { method="POST", requestBody = RequestBodyLBS "" }
-  print request'
   response <- httpLbs request' ?manager
   logAPICall request'
   return $ tokensFromResponse (responseBody response)
@@ -66,7 +64,7 @@ oauthSignRequestWithVerifier verifier tempTokens = signOAuth oauthApp credsWithV
   where
     credentials       = newCredential (token tempTokens)
                                       (tokenSecret tempTokens)
-    credsWithVerifier = injectVerifier (encodeUtf8 $ unOAuthVerifier verifier) credentials
+    credsWithVerifier = injectVerifier (unOAuthVerifier verifier) credentials
     oauthApp          = newOAuth { oauthConsumerKey    = consumerToken ?apiConfig
                                  , oauthConsumerSecret = consumerSecret ?apiConfig }
 

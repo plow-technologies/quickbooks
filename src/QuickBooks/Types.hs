@@ -34,7 +34,7 @@ import Data.Text       (Text)
 
 type CallbackURL = String
 
-newtype OAuthVerifier = OAuthVerifier { unOAuthVerifier :: Text }
+newtype OAuthVerifier = OAuthVerifier { unOAuthVerifier :: ByteString }
   deriving (Show)
 
 data APIConfig = APIConfig

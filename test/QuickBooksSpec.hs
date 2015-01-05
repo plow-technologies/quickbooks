@@ -20,12 +20,7 @@ quickBooksAPISpec = do
     it "queries quickbooks to update and invoice."      updateInvoiceTest
     it "queries quickbooks to delete and invoice."      deleteInvoiceTest
     it "gets temporary tokens." getTempTokensTest
-    it "exchange oauth_verifier for access tokens" getAccessTokensFromOAuthVerifier
 
-
-
-getAccessTokensFromOAuthVerifier :: Expectation
-getAccessTokensFromOAuthVerifier = undefined
 
 getTempTokensTest :: Expectation
 getTempTokensTest = do
