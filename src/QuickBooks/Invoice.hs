@@ -24,31 +24,26 @@ module QuickBooks.Invoice
  , deleteInvoiceRequest
  ) where
 
-import QuickBooks.Types          (APIConfig(..)
-                                 ,Invoice
-                                 ,InvoiceId(..)
-                                 ,QuickBooksResponse
-                                 ,SyncToken(..)
-                                 ,DeletedInvoice(..))
-import QuickBooks.Authentication
 import Data.Aeson                (encode, eitherDecode, object, Value(String))
-import qualified Data.ByteString.Char8 as BS
-import Data.Char                 (toLower)
 import Data.String.Interpolate   (i)
 import Network.HTTP.Client       (Manager
                                  ,httpLbs
                                  ,parseUrl
                                  ,Request(..)
                                  ,RequestBody(..)
-                                 ,Response(responseBody)
-                                 ,getUri)
+                                 ,Response(responseBody))
 import Network.HTTP.Types.Header (hAccept,hContentType)
-import Data.String (fromString)
-import System.Log.FastLogger (LoggerSet, LogStr, pushLogStr, flushLogStr)
-import Data.Thyme
-import System.Locale 
-import Data.Monoid ((<>))
+import System.Log.FastLogger (LoggerSet)
 
+import QuickBooks.Authentication
+import QuickBooks.Logging (logAPICall)
+import QuickBooks.Types (APIConfig(..)
+                        ,Invoice
+                        ,InvoiceId(..)
+                        ,QuickBooksResponse
+                        ,SyncToken(..)
+                        ,DeletedInvoice(..))
+    
 
 -- | Create an invoice.
 createInvoiceRequest :: ( ?apiConfig :: APIConfig
@@ -130,29 +125,5 @@ deleteInvoiceRequest iId syncToken = do
                   , ("SyncToken", String (unSyncToken syncToken))
                   ]
 
-logAPICall :: ( ?logger :: LoggerSet
-              , ?apiConfig :: APIConfig
-              ) => Request -> IO ()
-logAPICall req =
-  let isLoggingEnabled = BS.map toLower (loggingEnabled ?apiConfig) in
-  if isLoggingEnabled == "true"
-    then logAPICall'
-    else return ()
-  where
-    logAPICall' = do 
-      now <- getCurrentTime
-      let formattedTime = fromString $ formatTime defaultTimeLocale rfc822DateFormat now
-      pushLogStr ?logger (requestLogLine req formattedTime)
-      flushLogStr ?logger
-
 invoiceURITemplate :: APIConfig -> String
 invoiceURITemplate APIConfig{..} = [i|https://#{hostname}/v3/company/#{companyId}/invoice/|]
-
--- Log line format - TimeStamp [Request Method] [Request URL] [Request Body]
-requestLogLine :: Request -> LogStr -> LogStr
-requestLogLine req formattedTime =
-  let body = case requestBody req of
-              (RequestBodyLBS bs) -> show bs 
-              (RequestBodyBS bs)  -> show bs
-              _                   -> ""
-  in formattedTime <> fromString [i| [INFO] [#{method req}] [#{getUri req}] [#{body}]\n|]
