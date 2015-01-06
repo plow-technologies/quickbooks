@@ -24,6 +24,8 @@ module QuickBooks
   , sendInvoice
   , getAccessTokens
   , getTempTokens
+  , EmailAddress
+  , emailAddress
   ) where
 
 import QuickBooks.Authentication
@@ -44,13 +46,15 @@ import Data.ByteString.Char8   (pack)
 import Network.HTTP.Client.TLS (tlsManagerSettings)
 import Network.HTTP.Client     (newManager)
 import System.Environment      (getEnvironment)
-import Text.Email.Validate
+import Text.Email.Validate     (EmailAddress, emailAddress)
 
 
 import QuickBooks.Invoice      ( createInvoiceRequest
                                , deleteInvoiceRequest
                                , readInvoiceRequest
-                               , updateInvoiceRequest)
+                               , updateInvoiceRequest
+                               , sendInvoiceRequest
+                               )
 import QuickBooks.Logging      (apiLogger, getLogger)
 
    
@@ -70,8 +74,8 @@ updateInvoice = queryQuickBooks . UpdateInvoice
 deleteInvoice :: InvoiceId -> SyncToken -> IO (Either String (QuickBooksResponse DeletedInvoice))
 deleteInvoice iId = queryQuickBooks . DeleteInvoice iId
 
-sendInvoice :: Invoice -> EmailAddress -> IO (Either String (QuickBooksResponse Invoice))
-sendInvoice = undefined
+sendInvoice :: InvoiceId -> EmailAddress -> IO (Either String (QuickBooksResponse Invoice))
+sendInvoice invId = queryQuickBooks . SendInvoice invId
 
 -- | Get temporary tokens to request permission
 getTempTokens :: CallbackURL -> IO (Either String (QuickBooksResponse OAuthToken))
@@ -94,9 +98,10 @@ queryQuickBooks query = do
     (UpdateInvoice invoice)                   -> updateInvoiceRequest invoice
     (ReadInvoice invoiceId)                   -> readInvoiceRequest invoiceId
     (DeleteInvoice invoiceId syncToken)       -> deleteInvoiceRequest invoiceId syncToken
+    (SendInvoice invoiceId emailAddr)         -> sendInvoiceRequest invoiceId emailAddr
     (GetTempOAuthCredentials callbackURL)     -> getTempOAuthCredentialsRequest callbackURL
     (GetAccessTokens oauthVerifier tempToken) -> getAccessTokensRequest oauthVerifier tempToken
-
+   
 readAPIConfig :: IO APIConfig
 readAPIConfig = do
   env <- getEnvironment

@@ -22,6 +22,7 @@ module QuickBooks.Invoice
  , readInvoiceRequest
  , updateInvoiceRequest
  , deleteInvoiceRequest
+ , sendInvoiceRequest
  ) where
 
 import Data.Aeson                (encode, eitherDecode, object, Value(String))
@@ -42,15 +43,17 @@ import QuickBooks.Types (APIConfig(..)
                         ,QuickBooksResponse
                         ,SyncToken(..)
                         ,DeletedInvoice(..))
-    
+
+import Text.Email.Validate (EmailAddress, toByteString)
+
+
 
 -- | Create an invoice.
-createInvoiceRequest :: ( ?apiConfig :: APIConfig
-                        , ?manager   :: Manager
-                        , ?logger    :: Logger
-                        )
-                     => Invoice
-                     -> IO (Either String (QuickBooksResponse Invoice))
+createInvoiceRequest ::  ( ?apiConfig :: APIConfig
+                         , ?manager   :: Manager
+                         , ?logger   :: Logger
+                         ) => Invoice
+                           -> IO (Either String (QuickBooksResponse Invoice))
 createInvoiceRequest invoice = do
   let apiConfig = ?apiConfig
   req  <- parseUrl [i|#{invoiceURITemplate apiConfig}|]
@@ -68,9 +71,8 @@ createInvoiceRequest invoice = do
 updateInvoiceRequest :: ( ?apiConfig :: APIConfig
                         , ?manager :: Manager
                         , ?logger    :: Logger
-                        )
-                     => Invoice
-                     -> IO (Either String (QuickBooksResponse Invoice))
+                        ) => Invoice
+                          -> IO (Either String (QuickBooksResponse Invoice))
 updateInvoiceRequest invoice = do
   let apiConfig = ?apiConfig
   req <- parseUrl [i|#{invoiceURITemplate apiConfig}|]
@@ -86,11 +88,10 @@ updateInvoiceRequest invoice = do
 
 -- | Read an invoice.
 readInvoiceRequest :: ( ?apiConfig :: APIConfig
-                      , ?manager :: Manager
+                      , ?manager   :: Manager
                       , ?logger    :: Logger
-                      )
-                   => InvoiceId
-                   -> IO (Either String (QuickBooksResponse Invoice))
+                      ) => InvoiceId
+                        -> IO (Either String (QuickBooksResponse Invoice))
 readInvoiceRequest iId = do
   let apiConfig = ?apiConfig
   req  <-  oauthSignRequest =<< parseUrl [i|#{invoiceURITemplate apiConfig}#{unInvoiceId iId}|]
@@ -109,7 +110,7 @@ deleteInvoiceRequest :: ( ?apiConfig :: APIConfig
                           -> IO (Either String (QuickBooksResponse DeletedInvoice))
 deleteInvoiceRequest iId syncToken = do
   let apiConfig = ?apiConfig
-  req  <-  oauthSignRequest =<< parseUrl [i|#{invoiceURITemplate apiConfig}?operation=delete|]
+  req  <- oauthSignRequest =<< parseUrl [i|#{invoiceURITemplate apiConfig}?operation=delete|]
   req' <- oauthSignRequest req{ method = "POST"
                               , requestBody    = RequestBodyLBS $ encode body
                               , requestHeaders = [ (hAccept, "application/json")
@@ -123,6 +124,23 @@ deleteInvoiceRequest iId syncToken = do
     body = object [ ("Id", String (unInvoiceId iId))
                   , ("SyncToken", String (unSyncToken syncToken))
                   ]
+
+sendInvoiceRequest :: ( ?apiConfig :: APIConfig
+                      , ?manager   :: Manager
+                      , ?logger    :: Logger
+                      ) => InvoiceId 
+                        -> EmailAddress 
+                        -> IO (Either String (QuickBooksResponse Invoice))
+sendInvoiceRequest iId emailAddr =  do
+  let apiConfig = ?apiConfig
+  req  <- oauthSignRequest =<< parseUrl [i|#{invoiceURITemplate apiConfig}#{unInvoiceId iId}/send?sendTo=#{toByteString emailAddr}|]
+  req' <- oauthSignRequest req{ method = "POST"
+                              , requestHeaders = [ (hAccept, "application/json")
+                                                 ]
+                              }
+  logAPICall req'
+  resp <-  httpLbs req' ?manager
+  return $ eitherDecode $ responseBody resp
 
 invoiceURITemplate :: APIConfig -> String
 invoiceURITemplate APIConfig{..} = [i|https://#{hostname}/v3/company/#{companyId}/invoice/|]

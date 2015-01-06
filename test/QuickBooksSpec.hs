@@ -6,10 +6,9 @@ import Control.Exception (bracket)
 import Control.Monad (void)
 import QuickBooks
 import Test.Hspec
-import QuickBooks.Types hiding (EmailAddress)
+import QuickBooks.Types hiding (EmailAddress, emailAddress)
 import Data
 import Data.Maybe
-import Text.Email.Validate
 
 spec :: Spec
 spec = quickBooksAPISpec
@@ -22,7 +21,7 @@ quickBooksAPISpec = do
     it "queries quickbooks to update and invoice."      updateInvoiceTest
     it "queries quickbooks to delete and invoice."      deleteInvoiceTest
     it "gets temporary tokens."                         getTempTokensTest
-    it "emails invoices"                                (invoiceTest sendInvoiceTest)
+    it "emails invoices"                                sendInvoiceTest
 
 
 getTempTokensTest :: Expectation
@@ -78,16 +77,19 @@ deleteInvoiceTest = do
         Left err -> print err
         Right _ ->  return ()
 
-sendInvoiceTest :: Either String (QuickBooksResponse Invoice) -> Expectation
-sendInvoiceTest (Left err) = error err
-sendInvoiceTest (Right (QuickBooksInvoiceResponse inv)) = do
-  sendInvoiceResponse <- sendInvoice inv testEmail
+sendInvoiceTest :: Expectation
+sendInvoiceTest = invoiceTest sendInvoiceTest'
+
+sendInvoiceTest' :: Either String (QuickBooksResponse Invoice) -> Expectation
+sendInvoiceTest' (Left err) = error err
+sendInvoiceTest' (Right (QuickBooksInvoiceResponse inv)) = do
+  let invId = fromJust (invoiceId inv)
+  sendInvoiceResponse <- sendInvoice invId testEmail
   case sendInvoiceResponse of
     Left err -> print err
     Right _ -> return ()
-
-testEmail :: EmailAddress
-testEmail = undefined
+ where 
+   testEmail = fromJust $ emailAddress "xvh221@sharklasers.com"
 
 invoiceTest :: (Either String (QuickBooksResponse Invoice) -> Expectation) -> Expectation
 invoiceTest test = bracket acquireInvoice

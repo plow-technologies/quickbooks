@@ -31,6 +31,7 @@ import Data.Aeson.TH   (defaultOptions
                        ,Options(fieldLabelModifier,omitNothingFields))
 import Data.Char       (toLower)
 import Data.Text       (Text)
+import qualified Text.Email.Validate as E (EmailAddress)
 
 type CallbackURL = String
 
@@ -74,6 +75,7 @@ data QuickBooksRequest a where
   ReadInvoice             :: InvoiceId   -> QuickBooksQuery Invoice
   UpdateInvoice           :: Invoice     -> QuickBooksQuery Invoice
   DeleteInvoice           :: InvoiceId   -> SyncToken -> QuickBooksQuery DeletedInvoice
+  SendInvoice             :: InvoiceId   -> E.EmailAddress -> QuickBooksQuery Invoice
 
 newtype InvoiceId = InvoiceId {unInvoiceId :: Text}
   deriving (Show, FromJSON, ToJSON)

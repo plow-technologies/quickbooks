@@ -28,7 +28,7 @@ apiLogger = unsafePerformIO $ do
 getLogger :: IORef Logger -> IO Logger
 getLogger = readIORef
 
-logAPICall :: ( ?logger :: LoggerSet
+logAPICall :: ( ?logger :: Logger
               , ?apiConfig :: APIConfig
               ) => Request -> IO ()
 logAPICall req =
