@@ -43,7 +43,6 @@ logAPICall req =
       pushLogStr ?logger (requestLogLine req formattedTime)
       flushLogStr ?logger
 
--- Log line format - TimeStamp [Request Method] [Request URL] [Request Body]
 requestLogLine :: Request -> LogStr -> LogStr
 requestLogLine req formattedTime =
   let body = case requestBody req of
