@@ -21,6 +21,7 @@ module QuickBooks
   , readInvoice
   , updateInvoice
   , deleteInvoice
+  , sendInvoice
   , getAccessTokens
   , getTempTokens
   ) where
@@ -43,6 +44,7 @@ import Data.ByteString.Char8   (pack)
 import Network.HTTP.Client.TLS (tlsManagerSettings)
 import Network.HTTP.Client     (newManager)
 import System.Environment      (getEnvironment)
+import Text.Email.Validate
 
 
 import QuickBooks.Invoice      ( createInvoiceRequest
@@ -67,6 +69,9 @@ updateInvoice = queryQuickBooks . UpdateInvoice
 -- | Delete an invoice.
 deleteInvoice :: InvoiceId -> SyncToken -> IO (Either String (QuickBooksResponse DeletedInvoice))
 deleteInvoice iId = queryQuickBooks . DeleteInvoice iId
+
+sendInvoice :: Invoice -> EmailAddress -> IO (Either String (QuickBooksResponse Invoice))
+sendInvoice = undefined
 
 -- | Get temporary tokens to request permission
 getTempTokens :: CallbackURL -> IO (Either String (QuickBooksResponse OAuthToken))
