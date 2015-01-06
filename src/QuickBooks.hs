@@ -22,6 +22,7 @@ module QuickBooks
   , updateInvoice
   , deleteInvoice
   , sendInvoice
+  , sendInvoice'
   , getAccessTokens
   , getTempTokens
   , EmailAddress
@@ -54,6 +55,7 @@ import QuickBooks.Invoice      ( createInvoiceRequest
                                , readInvoiceRequest
                                , updateInvoiceRequest
                                , sendInvoiceRequest
+                               , sendInvoiceRequest'
                                )
 import QuickBooks.Logging      (apiLogger, getLogger)
 
@@ -76,6 +78,9 @@ deleteInvoice iId = queryQuickBooks . DeleteInvoice iId
 
 sendInvoice :: InvoiceId -> EmailAddress -> IO (Either String (QuickBooksResponse Invoice))
 sendInvoice invId = queryQuickBooks . SendInvoice invId
+
+sendInvoice' :: InvoiceId -> IO (Either String (QuickBooksResponse Invoice))
+sendInvoice' = queryQuickBooks . SendInvoice'
 
 -- | Get temporary tokens to request permission
 getTempTokens :: CallbackURL -> IO (Either String (QuickBooksResponse OAuthToken))
@@ -101,6 +106,7 @@ queryQuickBooks query = do
     (SendInvoice invoiceId emailAddr)         -> sendInvoiceRequest invoiceId emailAddr
     (GetTempOAuthCredentials callbackURL)     -> getTempOAuthCredentialsRequest callbackURL
     (GetAccessTokens oauthVerifier tempToken) -> getAccessTokensRequest oauthVerifier tempToken
+    (SendInvoice' invoiceId)                  -> sendInvoiceRequest' invoiceId
    
 readAPIConfig :: IO APIConfig
 readAPIConfig = do

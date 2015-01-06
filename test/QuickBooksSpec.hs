@@ -16,12 +16,13 @@ spec = quickBooksAPISpec
 quickBooksAPISpec :: Spec
 quickBooksAPISpec = do
   describe "QuickBooks API Binding" $ do
-    it "queries quickbooks to create a new invoice."    createInvoiceTest
-    it "queries an invoice given an invoice Identifier" readInvoiceTest
-    it "queries quickbooks to update and invoice."      updateInvoiceTest
-    it "queries quickbooks to delete and invoice."      deleteInvoiceTest
-    it "gets temporary tokens."                         getTempTokensTest
-    it "emails invoices"                                sendInvoiceTest
+    it "queries quickbooks to create a new invoice."     createInvoiceTest
+    it "queries an invoice given an invoice Identifier." readInvoiceTest
+    it "queries quickbooks to update and invoice."       updateInvoiceTest
+    it "queries quickbooks to delete and invoice."       deleteInvoiceTest
+    it "gets temporary tokens."                          getTempTokensTest
+    it "emails invoices given an address."               sendInvoiceTest
+    it "emails invoice with emails supplied by invoice." sendInvoiceWithoutMessageTest
 
 
 getTempTokensTest :: Expectation
@@ -80,6 +81,18 @@ deleteInvoiceTest = do
 sendInvoiceTest :: Expectation
 sendInvoiceTest = invoiceTest sendInvoiceTest'
 
+sendInvoiceWithoutMessageTest :: Expectation
+sendInvoiceWithoutMessageTest = invoiceTest sendInvoiceWithoutMessageTest'
+
+sendInvoiceWithoutMessageTest' :: Either String (QuickBooksResponse Invoice) -> Expectation
+sendInvoiceWithoutMessageTest' (Left err) = error err
+sendInvoiceWithoutMessageTest' (Right (QuickBooksInvoiceResponse inv)) = do
+  let invId = fromJust (invoiceId inv)
+  sendInvoiceResponse <- sendInvoice' invId
+  case sendInvoiceResponse of
+    Left err -> print err
+    Right _ -> return ()
+
 sendInvoiceTest' :: Either String (QuickBooksResponse Invoice) -> Expectation
 sendInvoiceTest' (Left err) = error err
 sendInvoiceTest' (Right (QuickBooksInvoiceResponse inv)) = do
@@ -88,8 +101,6 @@ sendInvoiceTest' (Right (QuickBooksInvoiceResponse inv)) = do
   case sendInvoiceResponse of
     Left err -> print err
     Right _ -> return ()
- where 
-   testEmail = fromJust $ emailAddress "xvh221@sharklasers.com"
 
 invoiceTest :: (Either String (QuickBooksResponse Invoice) -> Expectation) -> Expectation
 invoiceTest test = bracket acquireInvoice

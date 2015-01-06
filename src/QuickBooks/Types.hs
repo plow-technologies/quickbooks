@@ -76,6 +76,7 @@ data QuickBooksRequest a where
   UpdateInvoice           :: Invoice     -> QuickBooksQuery Invoice
   DeleteInvoice           :: InvoiceId   -> SyncToken -> QuickBooksQuery DeletedInvoice
   SendInvoice             :: InvoiceId   -> E.EmailAddress -> QuickBooksQuery Invoice
+  SendInvoice'            :: InvoiceId   -> QuickBooksQuery Invoice
 
 newtype InvoiceId = InvoiceId {unInvoiceId :: Text}
   deriving (Show, FromJSON, ToJSON)

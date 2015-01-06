@@ -23,6 +23,7 @@ module QuickBooks.Invoice
  , updateInvoiceRequest
  , deleteInvoiceRequest
  , sendInvoiceRequest
+ , sendInvoiceRequest'
  ) where
 
 import Data.Aeson                (encode, eitherDecode, object, Value(String))
@@ -134,6 +135,22 @@ sendInvoiceRequest :: ( ?apiConfig :: APIConfig
 sendInvoiceRequest iId emailAddr =  do
   let apiConfig = ?apiConfig
   req  <- oauthSignRequest =<< parseUrl [i|#{invoiceURITemplate apiConfig}#{unInvoiceId iId}/send?sendTo=#{toByteString emailAddr}|]
+  req' <- oauthSignRequest req{ method = "POST"
+                              , requestHeaders = [ (hAccept, "application/json")
+                                                 ]
+                              }
+  logAPICall req'
+  resp <-  httpLbs req' ?manager
+  return $ eitherDecode $ responseBody resp
+
+sendInvoiceRequest' :: ( ?apiConfig :: APIConfig
+                       , ?manager   :: Manager
+                       , ?logger    :: Logger
+                       ) => InvoiceId                         
+                         -> IO (Either String (QuickBooksResponse Invoice))
+sendInvoiceRequest' iId =  do
+  let apiConfig = ?apiConfig
+  req  <- oauthSignRequest =<< parseUrl [i|#{invoiceURITemplate apiConfig}#{unInvoiceId iId}/send|]
   req' <- oauthSignRequest req{ method = "POST"
                               , requestHeaders = [ (hAccept, "application/json")
                                                  ]
