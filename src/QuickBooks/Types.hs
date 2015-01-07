@@ -360,5 +360,5 @@ $(deriveJSON defaultOptions
              ''TxnTaxDetail)
 
 $(deriveJSON defaultOptions
-             { fieldLabelModifier = (drop (length ("deletedInvoice" :: String))) }
+               { fieldLabelModifier = drop (length ("deletedInvoice" :: String)) }
              ''DeletedInvoice)

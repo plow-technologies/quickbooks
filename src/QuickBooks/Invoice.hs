@@ -54,7 +54,7 @@ createInvoiceRequest :: ( ?apiConfig :: APIConfig
                         , ?logger    :: Logger
                         ) => Invoice
                           -> IO (Either String (QuickBooksResponse Invoice))
-createInvoiceRequest invoice = postInvoice invoice
+createInvoiceRequest = postInvoice
   
 
 -- | Update an invoice.
@@ -63,7 +63,7 @@ updateInvoiceRequest :: ( ?apiConfig :: APIConfig
                         , ?logger    :: Logger
                         ) => Invoice
                           -> IO (Either String (QuickBooksResponse Invoice))
-updateInvoiceRequest invoice = postInvoice invoice
+updateInvoiceRequest = postInvoice
 
 -- | Read an invoice.
 readInvoiceRequest :: ( ?apiConfig :: APIConfig
