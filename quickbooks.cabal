@@ -19,7 +19,9 @@ library
   hs-source-dirs:      src
   default-language:    Haskell2010
   ghc-options:         -Wall
-  -- other-modules:
+  other-modules:       QuickBooks.Authentication
+                       QuickBooks.Invoice
+                       QuickBooks.Logging
   -- other-extensions:
   build-depends:         base               >= 4.7   && < 4.8
                        , aeson              >= 0.7   && <= 0.8
