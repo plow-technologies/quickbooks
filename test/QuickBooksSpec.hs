@@ -24,7 +24,6 @@ quickBooksAPISpec = do
     it "emails invoices given an address."               sendInvoiceTest
     it "emails invoice with emails supplied by invoice." sendInvoiceWithoutMessageTest
 
-
 getTempTokensTest :: Expectation
 getTempTokensTest = do
   temporaryTokens <- getTempTokens "localhost"
@@ -42,28 +41,11 @@ createInvoiceTest = do
                                (fromJust (invoiceSyncToken inv))
 
 readInvoiceTest :: Expectation
-readInvoiceTest = do
-  quickBooksInvoiceResponse <- createInvoice testInvoice
-  case quickBooksInvoiceResponse of
-    Left err -> print err
-    Right (QuickBooksInvoiceResponse inv) -> do
-      resp <- readInvoice (fromJust (invoiceId inv))
-      case resp of
-        Left err -> print err
-        Right _ -> void $ deleteInvoice (fromJust (invoiceId inv))
-                                        (fromJust (invoiceSyncToken inv))
+readInvoiceTest = 
+  void $ invoiceTest (\inv -> readInvoice (fromJust (invoiceId inv)))
 
 updateInvoiceTest :: Expectation
-updateInvoiceTest = do
-  quickBooksInvoiceResponse <- createInvoice testInvoice
-  case quickBooksInvoiceResponse of
-    Left err -> print err
-    Right (QuickBooksInvoiceResponse inv) -> do
-      resp <- updateInvoice inv
-      case resp of
-        Left err -> print err
-        Right _ -> void $ deleteInvoice (fromJust (invoiceId inv))
-                                        (fromJust (invoiceSyncToken inv))
+updateInvoiceTest = void $ invoiceTest updateInvoice
 
 deleteInvoiceTest :: Expectation
 deleteInvoiceTest = do
@@ -78,37 +60,34 @@ deleteInvoiceTest = do
         Left err -> print err
         Right _ ->  return ()
 
-sendInvoiceTest :: Expectation
-sendInvoiceTest = invoiceTest sendInvoiceTest'
-
 sendInvoiceWithoutMessageTest :: Expectation
 sendInvoiceWithoutMessageTest = invoiceTest sendInvoiceWithoutMessageTest'
 
-sendInvoiceWithoutMessageTest' :: Either String (QuickBooksResponse Invoice) -> Expectation
-sendInvoiceWithoutMessageTest' (Left err) = error err
-sendInvoiceWithoutMessageTest' (Right (QuickBooksInvoiceResponse inv)) = do
+sendInvoiceWithoutMessageTest' :: Invoice -> Expectation
+sendInvoiceWithoutMessageTest' inv = do
   let invId = fromJust (invoiceId inv)
   sendInvoiceResponse <- sendInvoice' invId
-  case sendInvoiceResponse of
-    Left err -> print err
-    Right _ -> return ()
+  either print (return . return ()) sendInvoiceResponse
 
-sendInvoiceTest' :: Either String (QuickBooksResponse Invoice) -> Expectation
-sendInvoiceTest' (Left err) = error err
-sendInvoiceTest' (Right (QuickBooksInvoiceResponse inv)) = do
+sendInvoiceTest :: Expectation
+sendInvoiceTest = invoiceTest sendInvoiceTest'
+
+sendInvoiceTest' :: Invoice -> Expectation
+sendInvoiceTest' inv = do
   let invId = fromJust (invoiceId inv)
   sendInvoiceResponse <- sendInvoice invId testEmail
-  case sendInvoiceResponse of
-    Left err -> print err
-    Right _ -> return ()
+  either print (return . return ()) sendInvoiceResponse
 
-invoiceTest :: (Either String (QuickBooksResponse Invoice) -> Expectation) -> Expectation
+invoiceTest :: (Invoice -> IO c) -> IO c
 invoiceTest test = bracket acquireInvoice
                            releaseInvoice
                            test
   where
-    acquireInvoice = createInvoice testInvoice
-    releaseInvoice (Left err) = error err
-    releaseInvoice (Right (QuickBooksInvoiceResponse inv)) =
+    acquireInvoice = do 
+     resp <- createInvoice testInvoice
+     let (QuickBooksInvoiceResponse inv) = either (error) (id) resp 
+     return inv
+
+    releaseInvoice inv = 
       void $ deleteInvoice (fromJust (invoiceId inv))
                            (fromJust (invoiceSyncToken inv))
