@@ -48,25 +48,14 @@ import QuickBooks.Types (APIConfig(..)
 import Text.Email.Validate (EmailAddress, toByteString)
 
 
-
 -- | Create an invoice.
-createInvoiceRequest ::  ( ?apiConfig :: APIConfig
-                         , ?manager   :: Manager
-                         , ?logger   :: Logger
-                         ) => Invoice
-                           -> IO (Either String (QuickBooksResponse Invoice))
-createInvoiceRequest invoice = do
-  let apiConfig = ?apiConfig
-  req  <- parseUrl [i|#{invoiceURITemplate apiConfig}|]
-  req' <- oauthSignRequest req{ method         = "POST"
-                              , requestBody    = RequestBodyLBS $ encode invoice
-                              , requestHeaders = [ (hAccept, "application/json")
-                                                 , (hContentType, "application/json")
-                                                 ]
-                              }
-  resp <-  httpLbs req' ?manager
-  logAPICall req'
-  return $ eitherDecode $ responseBody resp
+createInvoiceRequest :: ( ?apiConfig :: APIConfig
+                        , ?manager   :: Manager
+                        , ?logger    :: Logger
+                        ) => Invoice
+                          -> IO (Either String (QuickBooksResponse Invoice))
+createInvoiceRequest invoice = postInvoice invoice
+  
 
 -- | Update an invoice.
 updateInvoiceRequest :: ( ?apiConfig :: APIConfig
@@ -74,18 +63,7 @@ updateInvoiceRequest :: ( ?apiConfig :: APIConfig
                         , ?logger    :: Logger
                         ) => Invoice
                           -> IO (Either String (QuickBooksResponse Invoice))
-updateInvoiceRequest invoice = do
-  let apiConfig = ?apiConfig
-  req <- parseUrl [i|#{invoiceURITemplate apiConfig}|]
-  req' <- oauthSignRequest req{method = "POST"
-                              , requestBody = RequestBodyLBS $ encode invoice
-                              , requestHeaders = [ (hAccept, "application/json")
-                                                 , (hContentType, "application/json")
-                                                 ]
-                              }
-  resp <-  httpLbs req' ?manager
-  logAPICall req'
-  return $ eitherDecode $ responseBody resp
+updateInvoiceRequest invoice = postInvoice invoice
 
 -- | Read an invoice.
 readInvoiceRequest :: ( ?apiConfig :: APIConfig
@@ -126,6 +104,7 @@ deleteInvoiceRequest iId syncToken = do
                   , ("SyncToken", String (unSyncToken syncToken))
                   ]
 
+-- | email and invoice
 sendInvoiceRequest :: ( ?apiConfig :: APIConfig
                       , ?manager   :: Manager
                       , ?logger    :: Logger
@@ -143,6 +122,7 @@ sendInvoiceRequest iId emailAddr =  do
   resp <-  httpLbs req' ?manager
   return $ eitherDecode $ responseBody resp
 
+-- | email an invoice
 sendInvoiceRequest' :: ( ?apiConfig :: APIConfig
                        , ?manager   :: Manager
                        , ?logger    :: Logger
@@ -159,5 +139,25 @@ sendInvoiceRequest' iId =  do
   resp <-  httpLbs req' ?manager
   return $ eitherDecode $ responseBody resp
 
+
 invoiceURITemplate :: APIConfig -> String
 invoiceURITemplate APIConfig{..} = [i|https://#{hostname}/v3/company/#{companyId}/invoice/|]
+
+
+postInvoice :: ( ?apiConfig :: APIConfig
+               , ?manager   :: Manager
+               , ?logger    :: Logger
+               ) => Invoice
+                 -> IO (Either String (QuickBooksResponse Invoice))
+postInvoice invoice = do
+  let apiConfig = ?apiConfig
+  req <- parseUrl [i|#{invoiceURITemplate apiConfig}|]
+  req' <- oauthSignRequest req{ method         = "POST"
+                              , requestBody    = RequestBodyLBS $ encode invoice
+                              , requestHeaders = [ (hAccept, "application/json")
+                                                 , (hContentType, "application/json")
+                                                 ]
+                              } 
+  resp <- httpLbs req' ?manager
+  logAPICall req'
+  return $ eitherDecode $ responseBody resp
