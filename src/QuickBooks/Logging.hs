@@ -5,6 +5,7 @@
 
 module QuickBooks.Logging (logAPICall, Logger, apiLogger, getLogger) where
 
+import Control.Monad (when)
 import Data.Char                 (toLower)
 import Data.IORef
 import Data.Monoid ((<>))
@@ -22,8 +23,7 @@ import QuickBooks.Types (APIConfig(..))
 type Logger = LoggerSet
 
 apiLogger :: IORef LoggerSet
-apiLogger = unsafePerformIO $ do
-  newIORef =<< newStdoutLoggerSet 0
+apiLogger = unsafePerformIO $ newIORef =<< newStdoutLoggerSet 0
 
 getLogger :: IORef Logger -> IO Logger
 getLogger = readIORef
@@ -32,10 +32,8 @@ logAPICall :: ( ?logger :: Logger
               , ?apiConfig :: APIConfig
               ) => Request -> IO ()
 logAPICall req =
-  let isLoggingEnabled = BS.map toLower (loggingEnabled ?apiConfig) in
-  if isLoggingEnabled == "true"
-    then logAPICall'
-    else return ()
+  let isLoggingEnabled = BS.map toLower (loggingEnabled ?apiConfig)
+      in when (isLoggingEnabled == "true") logAPICall'
   where
     logAPICall' = do 
       now <- getCurrentTime

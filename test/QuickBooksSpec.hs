@@ -14,7 +14,7 @@ spec :: Spec
 spec = quickBooksAPISpec
 
 quickBooksAPISpec :: Spec
-quickBooksAPISpec = do
+quickBooksAPISpec =
   describe "QuickBooks API Binding" $ do
     it "queries quickbooks to create a new invoice."     createInvoiceTest
     it "queries an invoice given an invoice identifier." readInvoiceTest
@@ -37,12 +37,12 @@ createInvoiceTest = do
   case quickBooksInvoiceResponse of
     Left err -> print err
     Right (QuickBooksInvoiceResponse inv) ->
-      do  void $ deleteInvoice (fromJust (invoiceId inv))
-                               (fromJust (invoiceSyncToken inv))
+      void $ deleteInvoice (fromJust (invoiceId inv))
+                           (fromJust (invoiceSyncToken inv))
 
 readInvoiceTest :: Expectation
 readInvoiceTest = 
-  void $ invoiceTest (\inv -> readInvoice (fromJust (invoiceId inv)))
+  void $ invoiceTest (readInvoice . fromJust . invoiceId)
 
 updateInvoiceTest :: Expectation
 updateInvoiceTest = void $ invoiceTest updateInvoice
@@ -79,13 +79,11 @@ sendInvoiceTest' inv = do
   either print (return . return ()) sendInvoiceResponse
 
 invoiceTest :: (Invoice -> IO c) -> IO c
-invoiceTest test = bracket acquireInvoice
-                           releaseInvoice
-                           test
+invoiceTest = bracket acquireInvoice releaseInvoice
   where
     acquireInvoice = do 
      resp <- createInvoice testInvoice
-     let (QuickBooksInvoiceResponse inv) = either (error) (id) resp 
+     let (QuickBooksInvoiceResponse inv) = either error id resp
      return inv
 
     releaseInvoice inv = 
