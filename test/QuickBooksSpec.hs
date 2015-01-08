@@ -17,9 +17,9 @@ quickBooksAPISpec :: Spec
 quickBooksAPISpec = do
   describe "QuickBooks API Binding" $ do
     it "queries quickbooks to create a new invoice."     createInvoiceTest
-    it "queries an invoice given an invoice Identifier." readInvoiceTest
-    it "queries quickbooks to update and invoice."       updateInvoiceTest
-    it "queries quickbooks to delete and invoice."       deleteInvoiceTest
+    it "queries an invoice given an invoice identifier." readInvoiceTest
+    it "queries quickbooks to update an invoice."        updateInvoiceTest
+    it "queries quickbooks to delete an invoice."        deleteInvoiceTest
     it "gets temporary tokens."                          getTempTokensTest
     it "emails invoices given an address."               sendInvoiceTest
     it "emails invoice with emails supplied by invoice." sendInvoiceWithoutMessageTest
