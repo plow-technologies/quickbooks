@@ -3,6 +3,15 @@
 module Data where
 
 import QuickBooks.Types
+import qualified Text.Email.Validate as E (EmailAddress, emailAddress)
+import Data.Maybe (fromJust)
+import Data.String
+
+trashEmailAccount :: (IsString a) => a
+trashEmailAccount = "xvh221@sharklasers.com"
+
+testEmail :: E.EmailAddress
+testEmail = fromJust $ E.emailAddress trashEmailAccount 
 
 testLine :: Line
 testLine = Line
@@ -81,7 +90,7 @@ testInvoice =
           Nothing
           Nothing
           Nothing
-          Nothing
+          (Just $ EmailAddress trashEmailAccount)
           Nothing
           Nothing
           Nothing

@@ -21,8 +21,12 @@ module QuickBooks
   , readInvoice
   , updateInvoice
   , deleteInvoice
+  , sendInvoice
+  , sendInvoice'
   , getAccessTokens
   , getTempTokens
+  , EmailAddress
+  , emailAddress
   ) where
 
 import QuickBooks.Authentication
@@ -43,12 +47,16 @@ import Data.ByteString.Char8   (pack)
 import Network.HTTP.Client.TLS (tlsManagerSettings)
 import Network.HTTP.Client     (newManager)
 import System.Environment      (getEnvironment)
+import Text.Email.Validate     (EmailAddress, emailAddress)
 
 
 import QuickBooks.Invoice      ( createInvoiceRequest
                                , deleteInvoiceRequest
                                , readInvoiceRequest
-                               , updateInvoiceRequest)
+                               , updateInvoiceRequest
+                               , sendInvoiceRequest
+                               , sendInvoiceRequest'
+                               )
 import QuickBooks.Logging      (apiLogger, getLogger)
 
    
@@ -67,6 +75,12 @@ updateInvoice = queryQuickBooks . UpdateInvoice
 -- | Delete an invoice.
 deleteInvoice :: InvoiceId -> SyncToken -> IO (Either String (QuickBooksResponse DeletedInvoice))
 deleteInvoice iId = queryQuickBooks . DeleteInvoice iId
+
+sendInvoice :: InvoiceId -> EmailAddress -> IO (Either String (QuickBooksResponse Invoice))
+sendInvoice invId = queryQuickBooks . SendInvoice invId
+
+sendInvoice' :: InvoiceId -> IO (Either String (QuickBooksResponse Invoice))
+sendInvoice' = queryQuickBooks . SendInvoice'
 
 -- | Get temporary tokens to request permission
 getTempTokens :: CallbackURL -> IO (Either String (QuickBooksResponse OAuthToken))
@@ -89,9 +103,11 @@ queryQuickBooks query = do
     (UpdateInvoice invoice)                   -> updateInvoiceRequest invoice
     (ReadInvoice invoiceId)                   -> readInvoiceRequest invoiceId
     (DeleteInvoice invoiceId syncToken)       -> deleteInvoiceRequest invoiceId syncToken
+    (SendInvoice invoiceId emailAddr)         -> sendInvoiceRequest invoiceId emailAddr
     (GetTempOAuthCredentials callbackURL)     -> getTempOAuthCredentialsRequest callbackURL
     (GetAccessTokens oauthVerifier tempToken) -> getAccessTokensRequest oauthVerifier tempToken
-
+    (SendInvoice' invoiceId)                  -> sendInvoiceRequest' invoiceId
+   
 readAPIConfig :: IO APIConfig
 readAPIConfig = do
   env <- getEnvironment
