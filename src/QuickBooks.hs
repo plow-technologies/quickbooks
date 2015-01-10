@@ -27,6 +27,7 @@ module QuickBooks
   , getTempTokens
   , EmailAddress
   , emailAddress
+  , authorizationURLForToken
   ) where
 
 import QuickBooks.Authentication
