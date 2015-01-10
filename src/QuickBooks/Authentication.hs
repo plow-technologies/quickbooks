@@ -6,11 +6,13 @@ module QuickBooks.Authentication
   ( getTempOAuthCredentialsRequest
   , getAccessTokensRequest
   , oauthSignRequest
+  , authorizationURLForToken
   ) where
 
 import Control.Applicative
+import Data.Monoid ((<>))
 import qualified Data.ByteString.Lazy as BSL
-import Data.ByteString.Char8 (unpack)
+import Data.ByteString.Char8 (unpack, ByteString)
 import QuickBooks.Types
 import Network.HTTP.Client (Manager, Request(..), RequestBody(RequestBodyLBS), responseBody, parseUrl, httpLbs)
 import Network.HTTP.Types.URI
@@ -90,6 +92,12 @@ accessTokenURL = "https://oauth.intuit.com/oauth/v1/get_access_token"
 temporaryTokenURL :: String
 temporaryTokenURL = "https://oauth.intuit.com/oauth/v1/get_request_token"
 
+authorizationURL :: ByteString
+authorizationURL = "https://appcenter.intuit.com/Connect/Begin"
+
+authorizationURLForToken :: OAuthToken -> ByteString 
+authorizationURLForToken oatoken = authorizationURL <> "?oauth_token=" <> (token oatoken)
+ 
 handleQuickBooksTokenResponse :: String -> Maybe OAuthToken -> Either String (QuickBooksResponse OAuthToken)
 handleQuickBooksTokenResponse _ (Just tokensInResponse) = Right $ QuickBooksAuthResponse tokensInResponse
 handleQuickBooksTokenResponse errorMessage Nothing      = Left errorMessage
