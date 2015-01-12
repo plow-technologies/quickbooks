@@ -43,7 +43,8 @@ import QuickBooks.Types (APIConfig(..)
                         ,InvoiceId(..)
                         ,QuickBooksResponse
                         ,SyncToken(..)
-                        ,DeletedInvoice(..))
+                        ,DeletedInvoice(..)
+                        , OAuthToken)
 
 import Text.Email.Validate (EmailAddress, toByteString)
 
@@ -52,28 +53,31 @@ import Text.Email.Validate (EmailAddress, toByteString)
 createInvoiceRequest :: ( ?apiConfig :: APIConfig
                         , ?manager   :: Manager
                         , ?logger    :: Logger
-                        ) => Invoice
+                        ) => OAuthToken
+                          -> Invoice                         
                           -> IO (Either String (QuickBooksResponse Invoice))
-createInvoiceRequest = postInvoice
+createInvoiceRequest tok = postInvoice tok
   
 
 -- | Update an invoice.
 updateInvoiceRequest :: ( ?apiConfig :: APIConfig
                         , ?manager :: Manager
                         , ?logger    :: Logger
-                        ) => Invoice
+                        ) => OAuthToken
+                          -> Invoice
                           -> IO (Either String (QuickBooksResponse Invoice))
-updateInvoiceRequest = postInvoice
+updateInvoiceRequest tok = postInvoice tok
 
 -- | Read an invoice.
 readInvoiceRequest :: ( ?apiConfig :: APIConfig
                       , ?manager   :: Manager
                       , ?logger    :: Logger
-                      ) => InvoiceId
+                      ) => OAuthToken
+                        -> InvoiceId
                         -> IO (Either String (QuickBooksResponse Invoice))
-readInvoiceRequest iId = do
+readInvoiceRequest tok iId = do
   let apiConfig = ?apiConfig
-  req  <-  oauthSignRequest =<< parseUrl [i|#{invoiceURITemplate apiConfig}#{unInvoiceId iId}|]
+  req  <- oauthSignRequest tok =<< parseUrl [i|#{invoiceURITemplate apiConfig}#{unInvoiceId iId}|]
   let oauthHeaders = requestHeaders req
   let req' = req{method = "GET", requestHeaders = oauthHeaders ++ [(hAccept, "application/json")]}
   resp <-  httpLbs req' ?manager
@@ -84,18 +88,19 @@ readInvoiceRequest iId = do
 deleteInvoiceRequest :: ( ?apiConfig :: APIConfig
                         , ?manager   :: Manager
                         , ?logger    :: Logger
-                        ) => InvoiceId
+                        ) => OAuthToken
+                          -> InvoiceId
                           -> SyncToken
                           -> IO (Either String (QuickBooksResponse DeletedInvoice))
-deleteInvoiceRequest iId syncToken = do
+deleteInvoiceRequest tok iId syncToken = do
   let apiConfig = ?apiConfig
-  req  <- oauthSignRequest =<< parseUrl [i|#{invoiceURITemplate apiConfig}?operation=delete|]
-  req' <- oauthSignRequest req{ method = "POST"
-                              , requestBody    = RequestBodyLBS $ encode body
-                              , requestHeaders = [ (hAccept, "application/json")
-                                                 , (hContentType, "application/json")
-                                                 ]
-                              }
+  req  <- parseUrl [i|#{invoiceURITemplate apiConfig}?operation=delete|]
+  req' <- oauthSignRequest tok req{ method = "POST"
+                                  , requestBody    = RequestBodyLBS $ encode body
+                                  , requestHeaders = [ (hAccept, "application/json")
+                                                     , (hContentType, "application/json")
+                                                     ]
+                                  }
   resp <-  httpLbs req' ?manager
   logAPICall req'
   return $ eitherDecode $ responseBody resp
@@ -108,16 +113,17 @@ deleteInvoiceRequest iId syncToken = do
 sendInvoiceRequest :: ( ?apiConfig :: APIConfig
                       , ?manager   :: Manager
                       , ?logger    :: Logger
-                      ) => InvoiceId 
+                      ) => OAuthToken
+                        -> InvoiceId 
                         -> EmailAddress 
                         -> IO (Either String (QuickBooksResponse Invoice))
-sendInvoiceRequest iId emailAddr =  do
+sendInvoiceRequest tok iId emailAddr =  do
   let apiConfig = ?apiConfig
-  req  <- oauthSignRequest =<< parseUrl [i|#{invoiceURITemplate apiConfig}#{unInvoiceId iId}/send?sendTo=#{toByteString emailAddr}|]
-  req' <- oauthSignRequest req{ method = "POST"
-                              , requestHeaders = [ (hAccept, "application/json")
-                                                 ]
-                              }
+  req  <- parseUrl [i|#{invoiceURITemplate apiConfig}#{unInvoiceId iId}/send?sendTo=#{toByteString emailAddr}|]
+  req' <- oauthSignRequest tok req{ method = "POST"
+                                  , requestHeaders = [ (hAccept, "application/json")
+                                                     ]
+                                  }
   logAPICall req'
   resp <-  httpLbs req' ?manager
   return $ eitherDecode $ responseBody resp
@@ -126,15 +132,16 @@ sendInvoiceRequest iId emailAddr =  do
 sendInvoiceRequest' :: ( ?apiConfig :: APIConfig
                        , ?manager   :: Manager
                        , ?logger    :: Logger
-                       ) => InvoiceId                         
+                       ) => OAuthToken
+                         -> InvoiceId                         
                          -> IO (Either String (QuickBooksResponse Invoice))
-sendInvoiceRequest' iId =  do
+sendInvoiceRequest' tok iId =  do
   let apiConfig = ?apiConfig
-  req  <- oauthSignRequest =<< parseUrl [i|#{invoiceURITemplate apiConfig}#{unInvoiceId iId}/send|]
-  req' <- oauthSignRequest req{ method = "POST"
-                              , requestHeaders = [ (hAccept, "application/json")
-                                                 ]
-                              }
+  req  <- parseUrl [i|#{invoiceURITemplate apiConfig}#{unInvoiceId iId}/send|]
+  req' <- oauthSignRequest tok req{ method = "POST"
+                                  , requestHeaders = [ (hAccept, "application/json")
+                                                     ]
+                                  }
   logAPICall req'
   resp <-  httpLbs req' ?manager
   return $ eitherDecode $ responseBody resp
@@ -147,17 +154,18 @@ invoiceURITemplate APIConfig{..} = [i|https://#{hostname}/v3/company/#{companyId
 postInvoice :: ( ?apiConfig :: APIConfig
                , ?manager   :: Manager
                , ?logger    :: Logger
-               ) => Invoice
+               ) => OAuthToken
+                 -> Invoice
                  -> IO (Either String (QuickBooksResponse Invoice))
-postInvoice invoice = do
+postInvoice tok invoice = do
   let apiConfig = ?apiConfig
   req <- parseUrl [i|#{invoiceURITemplate apiConfig}|]
-  req' <- oauthSignRequest req{ method         = "POST"
-                              , requestBody    = RequestBodyLBS $ encode invoice
-                              , requestHeaders = [ (hAccept, "application/json")
-                                                 , (hContentType, "application/json")
-                                                 ]
-                              } 
+  req' <- oauthSignRequest tok req{ method         = "POST"
+                                  , requestBody    = RequestBodyLBS $ encode invoice
+                                  , requestHeaders = [ (hAccept, "application/json")
+                                                     , (hContentType, "application/json")
+                                                     ]
+                                  } 
   resp <- httpLbs req' ?manager
   logAPICall req'
   return $ eitherDecode $ responseBody resp

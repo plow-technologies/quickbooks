@@ -57,6 +57,7 @@ data family QuickBooksResponse a
 data instance QuickBooksResponse Invoice = QuickBooksInvoiceResponse { quickBooksResponseInvoice :: Invoice }
 data instance QuickBooksResponse DeletedInvoice = QuickBooksDeletedInvoiceResponse DeletedInvoice
 data instance QuickBooksResponse OAuthToken = QuickBooksAuthResponse { tokens :: OAuthToken }
+data instance QuickBooksResponse () = QuickBooksVoidResponse 
 
 instance FromJSON (QuickBooksResponse Invoice) where
   parseJSON (Object o) = QuickBooksInvoiceResponse `fmap` (o .: "Invoice")
@@ -70,13 +71,14 @@ type QuickBooksQuery a = QuickBooksRequest (QuickBooksResponse a)
 
 data QuickBooksRequest a where
   GetTempOAuthCredentials :: CallbackURL -> QuickBooksQuery OAuthToken
-  GetAccessTokens         :: OAuthVerifier -> OAuthToken -> QuickBooksQuery OAuthToken
+  GetAccessTokens         :: OAuthVerifier -> QuickBooksQuery OAuthToken
   CreateInvoice           :: Invoice     -> QuickBooksQuery Invoice
   ReadInvoice             :: InvoiceId   -> QuickBooksQuery Invoice
   UpdateInvoice           :: Invoice     -> QuickBooksQuery Invoice
   DeleteInvoice           :: InvoiceId   -> SyncToken -> QuickBooksQuery DeletedInvoice
   SendInvoice             :: InvoiceId   -> E.EmailAddress -> QuickBooksQuery Invoice
   SendInvoice'            :: InvoiceId   -> QuickBooksQuery Invoice
+  DisconnectQuickBooks    :: QuickBooksQuery ()
 
 newtype InvoiceId = InvoiceId {unInvoiceId :: Text}
   deriving (Show, FromJSON, ToJSON)

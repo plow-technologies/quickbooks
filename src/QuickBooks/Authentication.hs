@@ -7,9 +7,10 @@ module QuickBooks.Authentication
   , getAccessTokensRequest
   , oauthSignRequest
   , authorizationURLForToken
+  , disconnectRequest
   ) where
 
-import Control.Applicative
+import Control.Monad (void, liftM, ap)
 import Data.Monoid ((<>))
 import qualified Data.ByteString.Lazy as BSL
 import Data.ByteString.Char8 (unpack, ByteString)
@@ -33,18 +34,29 @@ getTempOAuthCredentialsRequest callbackURL =
 getAccessTokensRequest :: ( ?apiConfig :: APIConfig
                           , ?manager   :: Manager
                           , ?logger    :: Logger  
-                          ) => OAuthVerifier                                      -- ^ The OAuthVerifier provided to the callback
-                            -> OAuthToken                                         -- ^ The previously-acquired temp tokens to
-                                                                                  --   use in signing this request
-                            -> IO (Either String (QuickBooksResponse OAuthToken)) -- ^ OAuthToken containing access tokens
-                                                                                  --   for a resource-owner
-getAccessTokensRequest verifier tempToken =
+                          )  => OAuthToken                                         -- ^ The previously-acquired temp tokens to
+                                                                                   --   use in signing this request
+                             -> OAuthVerifier                                      -- ^ The OAuthVerifier provided to the callback
+                             -> IO (Either String (QuickBooksResponse OAuthToken)) -- ^ OAuthToken containing access tokens
+                                                                                   --   for a resource-owner
+getAccessTokensRequest tempToken verifier =
   return.handleQuickBooksTokenResponse "Couldn't get access tokens" =<< tokensRequest
   where
     tokensRequest = getTokens accessTokenURL "?oauth_token=" (unpack $ token tempToken)
                                                              (oauthSignRequestWithVerifier verifier tempToken)
 
-
+disconnectRequest :: ( ?apiConfig :: APIConfig
+                     , ?manager   :: Manager
+                     , ?logger    :: Logger                
+                     ) => OAuthToken -> IO (Either String (QuickBooksResponse ()))
+disconnectRequest tok = do
+  req  <- parseUrl $ disconnectURL
+  req' <- oauthSignRequest tok req
+  void $ httpLbs req' ?manager
+  logAPICall req'
+  return $ Right QuickBooksVoidResponse
+  
+  
 getTokens :: ( ?apiConfig :: APIConfig
              , ?manager   :: Manager
              , ?logger    :: Logger 
@@ -71,11 +83,11 @@ oauthSignRequestWithVerifier verifier tempTokens = signOAuth oauthApp credsWithV
                                  , oauthConsumerSecret = consumerSecret ?apiConfig }
 
 
-oauthSignRequest :: (?apiConfig :: APIConfig) => Request -> IO Request
-oauthSignRequest = signOAuth oauthApp credentials
+oauthSignRequest :: (?apiConfig :: APIConfig) => OAuthToken -> Request -> IO Request
+oauthSignRequest tok req = signOAuth oauthApp credentials req
   where
-    credentials = newCredential (oauthToken ?apiConfig)
-                                (oauthSecret ?apiConfig)
+    credentials = newCredential (token tok)
+                                (tokenSecret tok)
     oauthApp    = newOAuth { oauthConsumerKey    = consumerToken ?apiConfig
                            , oauthConsumerSecret = consumerSecret ?apiConfig }
 
@@ -85,6 +97,9 @@ oauthSignRequestWithEmptyCredentials = signOAuth oauthApp credentials
     credentials = emptyCredential
     oauthApp    = newOAuth { oauthConsumerKey    = consumerToken ?apiConfig
                            , oauthConsumerSecret = consumerSecret ?apiConfig }
+
+disconnectURL :: String
+disconnectURL = "https://appcenter.intuit.com/api/v1/connection/disconnect"
 
 accessTokenURL :: String
 accessTokenURL = "https://oauth.intuit.com/oauth/v1/get_access_token"
@@ -103,6 +118,6 @@ handleQuickBooksTokenResponse _ (Just tokensInResponse) = Right $ QuickBooksAuth
 handleQuickBooksTokenResponse errorMessage Nothing      = Left errorMessage
 
 tokensFromResponse :: BSL.ByteString -> Maybe OAuthToken
-tokensFromResponse response = OAuthToken <$> lookup "oauth_token" responseParams
-                                         <*> lookup "oauth_token_secret" responseParams
+tokensFromResponse response = OAuthToken `liftM` lookup "oauth_token" responseParams
+                                         `ap` lookup "oauth_token_secret" responseParams
   where responseParams = parseSimpleQuery (BSL.toStrict response)
