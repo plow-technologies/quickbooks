@@ -22,7 +22,6 @@ quickBooksAPISpec tok =
     it "queries quickbooks to delete an invoice."        (deleteInvoiceTest tok)
     it "gets temporary tokens."                          getTempTokensTest
     it "emails invoices given an address."               (sendInvoiceTest tok)
-    it "emails invoice with emails supplied by invoice." (sendInvoiceWithoutMessageTest tok)
 
 spec :: Spec
 spec = do
@@ -77,15 +76,6 @@ deleteInvoiceTest testOAuthToken = do
       case del of
         Left err -> print err
         Right _ ->  return ()
-
-sendInvoiceWithoutMessageTest :: OAuthToken -> Expectation
-sendInvoiceWithoutMessageTest testOAuthToken = invoiceTest testOAuthToken (sendInvoiceWithoutMessageTest' testOAuthToken)
-
-sendInvoiceWithoutMessageTest' :: OAuthToken -> Invoice -> Expectation
-sendInvoiceWithoutMessageTest' testOAuthToken inv = do
-  let invId = fromJust (invoiceId inv)
-  sendInvoiceResponse <- sendInvoice' testOAuthToken invId
-  either print (return . return ()) sendInvoiceResponse
 
 sendInvoiceTest :: OAuthToken -> Expectation
 sendInvoiceTest tok = invoiceTest tok (sendInvoiceTest' tok)
