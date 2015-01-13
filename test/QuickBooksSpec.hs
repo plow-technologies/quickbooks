@@ -33,28 +33,30 @@ getTempTokensTest = do
 
 createInvoiceTest :: Expectation
 createInvoiceTest = do
-  quickBooksInvoiceResponse <- createInvoice testInvoice
+  quickBooksInvoiceResponse <- createInvoice testOAuthToken testInvoice
   case quickBooksInvoiceResponse of
     Left err -> print err
     Right (QuickBooksInvoiceResponse inv) ->
-      void $ deleteInvoice (fromJust (invoiceId inv))
+      void $ deleteInvoice testOAuthToken
+                           (fromJust (invoiceId inv))
                            (fromJust (invoiceSyncToken inv))
 
 readInvoiceTest :: Expectation
 readInvoiceTest = 
-  void $ invoiceTest (readInvoice . fromJust . invoiceId)
+  void $ invoiceTest (readInvoice testOAuthToken . fromJust . invoiceId)
 
 updateInvoiceTest :: Expectation
-updateInvoiceTest = void $ invoiceTest updateInvoice
+updateInvoiceTest = void $ invoiceTest (updateInvoice testOAuthToken)
 
 deleteInvoiceTest :: Expectation
 deleteInvoiceTest = do
-  quickBooksInvoiceResponse <- createInvoice testInvoice
+  quickBooksInvoiceResponse <- createInvoice testOAuthToken testInvoice
   case quickBooksInvoiceResponse of
     Left err -> print err
     Right (QuickBooksInvoiceResponse inv) ->
       do
-      del <- deleteInvoice (fromJust (invoiceId inv))
+      del <- deleteInvoice testOAuthToken
+                           (fromJust (invoiceId inv))
                            (fromJust (invoiceSyncToken inv))
       case del of
         Left err -> print err
@@ -66,7 +68,7 @@ sendInvoiceWithoutMessageTest = invoiceTest sendInvoiceWithoutMessageTest'
 sendInvoiceWithoutMessageTest' :: Invoice -> Expectation
 sendInvoiceWithoutMessageTest' inv = do
   let invId = fromJust (invoiceId inv)
-  sendInvoiceResponse <- sendInvoice' invId
+  sendInvoiceResponse <- sendInvoice' testOAuthToken invId
   either print (return . return ()) sendInvoiceResponse
 
 sendInvoiceTest :: Expectation
@@ -75,17 +77,18 @@ sendInvoiceTest = invoiceTest sendInvoiceTest'
 sendInvoiceTest' :: Invoice -> Expectation
 sendInvoiceTest' inv = do
   let invId = fromJust (invoiceId inv)
-  sendInvoiceResponse <- sendInvoice invId testEmail
+  sendInvoiceResponse <- sendInvoice testOAuthToken invId testEmail
   either print (return . return ()) sendInvoiceResponse
 
 invoiceTest :: (Invoice -> IO c) -> IO c
 invoiceTest = bracket acquireInvoice releaseInvoice
   where
     acquireInvoice = do 
-     resp <- createInvoice testInvoice
+     resp <- createInvoice testOAuthToken testInvoice
      let (QuickBooksInvoiceResponse inv) = either error id resp
      return inv
 
     releaseInvoice inv = 
-      void $ deleteInvoice (fromJust (invoiceId inv))
+      void $ deleteInvoice testOAuthToken
+                           (fromJust (invoiceId inv))
                            (fromJust (invoiceSyncToken inv))
