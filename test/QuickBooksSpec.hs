@@ -3,26 +3,42 @@
 module QuickBooksSpec (spec) where
 
 import Control.Exception (bracket)
-import Control.Monad (void)
+import Data.ByteString.Char8 (pack)
+import Control.Monad (void, liftM, ap)
 import QuickBooks
 import Test.Hspec
 import QuickBooks.Types hiding (EmailAddress, emailAddress)
 import Data
 import Data.Maybe
+import System.IO.Unsafe
+import System.Environment (getEnvironment)
+
+quickBooksAPISpec :: OAuthToken -> Spec
+quickBooksAPISpec tok =
+  describe "QuickBooks API Binding" $ do
+    it "queries quickbooks to create a new invoice."     (createInvoiceTest tok)
+    it "queries an invoice given an invoice identifier." (readInvoiceTest tok)
+    it "queries quickbooks to update an invoice."        (updateInvoiceTest tok)
+    it "queries quickbooks to delete an invoice."        (deleteInvoiceTest tok)
+    it "gets temporary tokens."                          getTempTokensTest
+    it "emails invoices given an address."               (sendInvoiceTest tok)
+    it "emails invoice with emails supplied by invoice." (sendInvoiceWithoutMessageTest tok)
 
 spec :: Spec
-spec = quickBooksAPISpec
+spec = do
+  let maybeTestToken = unsafePerformIO $ lookupTestOAuthTokenFromEnv
+  maybe (error tokenLookupError) quickBooksAPISpec maybeTestToken
+  where
+   tokenLookupError = "Error looking up credentials from environment. \
+                      \Please ensure that the environment variables \ 
+                      \'INTUIT_TOKEN' 'INTUIT_SECRET' are set in order \ 
+                      \to run tests against your sandbox."
 
-quickBooksAPISpec :: Spec
-quickBooksAPISpec =
-  describe "QuickBooks API Binding" $ do
-    it "queries quickbooks to create a new invoice."     createInvoiceTest
-    it "queries an invoice given an invoice identifier." readInvoiceTest
-    it "queries quickbooks to update an invoice."        updateInvoiceTest
-    it "queries quickbooks to delete an invoice."        deleteInvoiceTest
-    it "gets temporary tokens."                          getTempTokensTest
-    it "emails invoices given an address."               sendInvoiceTest
-    it "emails invoice with emails supplied by invoice." sendInvoiceWithoutMessageTest
+lookupTestOAuthTokenFromEnv :: IO (Maybe OAuthToken)
+lookupTestOAuthTokenFromEnv = do
+  env <- getEnvironment
+  return $ OAuthToken `liftM` (pack `fmap` (lookup "INTUIT_TOKEN" env))
+                      `ap`    (pack `fmap` (lookup "INTUIT_SECRET" env))
 
 getTempTokensTest :: Expectation
 getTempTokensTest = do
@@ -31,8 +47,8 @@ getTempTokensTest = do
     Left err -> print err
     Right _  -> return ()
 
-createInvoiceTest :: Expectation
-createInvoiceTest = do
+createInvoiceTest :: OAuthToken -> Expectation
+createInvoiceTest testOAuthToken = do
   quickBooksInvoiceResponse <- createInvoice testOAuthToken testInvoice
   case quickBooksInvoiceResponse of
     Left err -> print err
@@ -41,15 +57,15 @@ createInvoiceTest = do
                            (fromJust (invoiceId inv))
                            (fromJust (invoiceSyncToken inv))
 
-readInvoiceTest :: Expectation
-readInvoiceTest = 
-  void $ invoiceTest (readInvoice testOAuthToken . fromJust . invoiceId)
+readInvoiceTest :: OAuthToken -> Expectation
+readInvoiceTest testOAuthToken = 
+  void $ invoiceTest testOAuthToken (readInvoice testOAuthToken . fromJust . invoiceId)
 
-updateInvoiceTest :: Expectation
-updateInvoiceTest = void $ invoiceTest (updateInvoice testOAuthToken)
+updateInvoiceTest :: OAuthToken -> Expectation
+updateInvoiceTest testOAuthToken = void $ invoiceTest testOAuthToken (updateInvoice testOAuthToken)
 
-deleteInvoiceTest :: Expectation
-deleteInvoiceTest = do
+deleteInvoiceTest :: OAuthToken -> Expectation
+deleteInvoiceTest testOAuthToken = do
   quickBooksInvoiceResponse <- createInvoice testOAuthToken testInvoice
   case quickBooksInvoiceResponse of
     Left err -> print err
@@ -62,26 +78,26 @@ deleteInvoiceTest = do
         Left err -> print err
         Right _ ->  return ()
 
-sendInvoiceWithoutMessageTest :: Expectation
-sendInvoiceWithoutMessageTest = invoiceTest sendInvoiceWithoutMessageTest'
+sendInvoiceWithoutMessageTest :: OAuthToken -> Expectation
+sendInvoiceWithoutMessageTest testOAuthToken = invoiceTest testOAuthToken (sendInvoiceWithoutMessageTest' testOAuthToken)
 
-sendInvoiceWithoutMessageTest' :: Invoice -> Expectation
-sendInvoiceWithoutMessageTest' inv = do
+sendInvoiceWithoutMessageTest' :: OAuthToken -> Invoice -> Expectation
+sendInvoiceWithoutMessageTest' testOAuthToken inv = do
   let invId = fromJust (invoiceId inv)
   sendInvoiceResponse <- sendInvoice' testOAuthToken invId
   either print (return . return ()) sendInvoiceResponse
 
-sendInvoiceTest :: Expectation
-sendInvoiceTest = invoiceTest sendInvoiceTest'
+sendInvoiceTest :: OAuthToken -> Expectation
+sendInvoiceTest tok = invoiceTest tok (sendInvoiceTest' tok)
 
-sendInvoiceTest' :: Invoice -> Expectation
-sendInvoiceTest' inv = do
+sendInvoiceTest' :: OAuthToken -> Invoice -> Expectation
+sendInvoiceTest' testOAuthToken inv = do
   let invId = fromJust (invoiceId inv)
   sendInvoiceResponse <- sendInvoice testOAuthToken invId testEmail
   either print (return . return ()) sendInvoiceResponse
 
-invoiceTest :: (Invoice -> IO c) -> IO c
-invoiceTest = bracket acquireInvoice releaseInvoice
+invoiceTest :: OAuthToken -> (Invoice -> IO c) -> IO c
+invoiceTest testOAuthToken fn = bracket acquireInvoice releaseInvoice fn
   where
     acquireInvoice = do 
      resp <- createInvoice testOAuthToken testInvoice

@@ -7,9 +7,6 @@ import qualified Text.Email.Validate as E (EmailAddress, emailAddress)
 import Data.Maybe (fromJust)
 import Data.String
 
-testOAuthToken :: OAuthToken
-testOAuthToken = OAuthToken "" ""
-
 trashEmailAccount :: (IsString a) => a
 trashEmailAccount = "xvh221@sharklasers.com"
 
