@@ -22,7 +22,6 @@ module QuickBooks
   , updateInvoice
   , deleteInvoice
   , sendInvoice
-  , sendInvoice'
   , getAccessTokens
   , getTempTokens
   , EmailAddress
@@ -58,7 +57,6 @@ import QuickBooks.Invoice      ( createInvoiceRequest
                                , readInvoiceRequest
                                , updateInvoiceRequest
                                , sendInvoiceRequest
-                               , sendInvoiceRequest'
                                )
 import QuickBooks.Logging      (apiLogger, getLogger)
 
@@ -82,10 +80,6 @@ deleteInvoice tok iId = (queryQuickBooks tok) . DeleteInvoice iId
 -- | Send an invoice
 sendInvoice ::  OAuthToken -> InvoiceId -> EmailAddress -> IO (Either String (QuickBooksResponse Invoice))
 sendInvoice tok invId = (queryQuickBooks tok) . SendInvoice invId
-
--- | Like sendInvoice but expects address to be found inside the invoice 
-sendInvoice' ::  OAuthToken -> InvoiceId -> IO (Either String (QuickBooksResponse Invoice))
-sendInvoice' tok = (queryQuickBooks tok) . SendInvoice'
 
 -- | Get temporary tokens to request permission
 getTempTokens :: CallbackURL -> IO (Either String (QuickBooksResponse OAuthToken))
@@ -114,7 +108,6 @@ queryQuickBooks tok query = do
     (SendInvoice invoiceId emailAddr)         -> sendInvoiceRequest tok invoiceId emailAddr
     (GetTempOAuthCredentials callbackURL)     -> getTempOAuthCredentialsRequest callbackURL
     (GetAccessTokens oauthVerifier)           -> getAccessTokensRequest tok oauthVerifier
-    (SendInvoice' invoiceId)                  -> sendInvoiceRequest' tok invoiceId
     (DisconnectQuickBooks)                    -> disconnectRequest tok
    
 readAPIConfig :: IO APIConfig
