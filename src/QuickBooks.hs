@@ -4,17 +4,7 @@
 
 ------------------------------------------------------------------------------
 -- |
--- Module      : QuickBooks
--- Description :
--- Copyright   :
--- License     :
--- Maintainer  :
--- Stability   :
--- Portability :
---
---
--- >>> 0 == 0
--- True
+-- Module: QuickBooks
 --
 ------------------------------------------------------------------------------
 
@@ -31,12 +21,15 @@ module QuickBooks
   , authorizationURLForToken
   , cancelOAuthAuthorization
   , OAuthToken
+  , SalesItemLineDetail(..)
+  , Invoice(..)
+  , InvoiceId
   ) where
 
 import QuickBooks.Authentication
 import QuickBooks.Types        ( APIConfig(..)
                                , CallbackURL
-                               , Invoice
+                               , Invoice(..)
                                , InvoiceId
                                , QuickBooksRequest(..)
                                , QuickBooksResponse(..)
@@ -44,7 +37,8 @@ import QuickBooks.Types        ( APIConfig(..)
                                , OAuthToken(..)
                                , QuickBooksQuery
                                , OAuthVerifier
-                               , DeletedInvoice)
+                               , DeletedInvoice
+                               , SalesItemLineDetail(..))
 import Control.Applicative     ((<$>),(<*>), (<|>))
 import Control.Arrow           (second)
 import Data.ByteString.Char8   (pack)
@@ -65,13 +59,21 @@ import QuickBooks.Logging      (apiLogger, getLogger)
 -- $setup
 --
 -- >>> import QuickBooksSpec
+-- >>> import Data
 --
+-- >>> :set -XOverloadedStrings
 -- >>> maybeTestOAuthToken <- lookupTestOAuthTokenFromEnv
--- >>> let testOAuthToken = maybe (error "") id maybeTestOAuthToken
+-- >>> let oAuthToken = maybe (error "") id maybeTestOAuthToken
 
-
--- |
--- >>> createInvoice testOAuthToken testInvoice
+-- | 
+-- >>> :{
+-- do  
+--   resp <- createInvoice oAuthToken testInvoice
+--   case resp of
+--     Right (QuickBooksInvoiceResponse invoice) -> putStrLn "I created an invoice!"
+--     Left err -> putStrLn $ "My custom error message: " ++ err
+-- :}
+-- I created an invoice!
 
 -- | Create an invoice.
 createInvoice :: OAuthToken -> Invoice -> IO (Either String (QuickBooksResponse Invoice))
