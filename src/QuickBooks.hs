@@ -162,7 +162,18 @@ deleteInvoice tok iId = (queryQuickBooks tok) . DeleteInvoice iId
 sendInvoice ::  OAuthToken -> InvoiceId -> EmailAddress -> IO (Either String (QuickBooksResponse Invoice))
 sendInvoice tok invId = (queryQuickBooks tok) . SendInvoice invId
 
--- | Get temporary tokens to request permission
+-- | Get temporary tokens to request permission.
+--
+-- Example:
+--
+-- >>> :{
+-- do eitherTempTokens <- getTempTokens "localhost"
+--    case eitherTempTokens of
+--      Left e -> putStrLn e
+--      Right _ -> putStrLn "I got my request tokens!"
+-- :}
+-- I got my request tokens!
+
 getTempTokens :: CallbackURL -> IO (Either String (QuickBooksResponse OAuthToken))
 getTempTokens = (queryQuickBooks (OAuthToken "" "")) . GetTempOAuthCredentials
 
