@@ -30,7 +30,7 @@ import QuickBooks.Authentication
 import QuickBooks.Types        ( APIConfig(..)
                                , CallbackURL
                                , Invoice(..)
-                               , InvoiceId
+                               , InvoiceId(..)
                                , QuickBooksRequest(..)
                                , QuickBooksResponse(..)
                                , SyncToken
@@ -79,7 +79,30 @@ import QuickBooks.Logging      (apiLogger, getLogger)
 createInvoice :: OAuthToken -> Invoice -> IO (Either String (QuickBooksResponse Invoice))
 createInvoice tok = (queryQuickBooks tok) . CreateInvoice
 
--- | Read an invoice.
+-- | Retrieve the details of an invoice that has been previously created.
+--
+-- Example:
+--
+-- First, we create an invoice:
+--
+-- >>> import Data.Maybe (fromJust)
+-- >>> Right (QuickBooksInvoiceResponse cInvoice) <- createInvoice oAuthToken testInvoice
+--
+-- Then, we read the invoice and test that it is the same invoice we created:
+--
+-- >>> let cInvoiceId = fromJust (invoiceId cInvoice)
+-- >>> :{
+-- do eitherReadInvoice <- readInvoice oAuthToken cInvoiceId
+--    case eitherReadInvoice of
+--      Left _ -> return False
+--      Right (QuickBooksInvoiceResponse rInvoice) -> return (cInvoice == rInvoice)
+-- :}
+-- True
+--
+-- Finally, we delete the invoice we created:
+--
+-- >>> deleteInvoice oAuthToken cInvoiceId (fromJust (invoiceSyncToken cInvoice))
+
 readInvoice ::  OAuthToken -> InvoiceId -> IO (Either String (QuickBooksResponse Invoice))
 readInvoice tok = (queryQuickBooks tok) . ReadInvoice
 
