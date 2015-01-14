@@ -134,7 +134,31 @@ updateInvoice tok = (queryQuickBooks tok) . UpdateInvoice
 deleteInvoice ::  OAuthToken -> InvoiceId -> SyncToken -> IO (Either String (QuickBooksResponse DeletedInvoice))
 deleteInvoice tok iId = (queryQuickBooks tok) . DeleteInvoice iId
 
--- | Send an invoice
+-- | Send an invoice via email.
+--
+-- Example:
+--
+-- First, we create an invoice:
+--
+-- >>> import Data.Maybe (fromJust)
+-- >>> Right (QuickBooksInvoiceResponse cInvoice) <- createInvoice oAuthToken testInvoice
+--
+-- Then, we send the invoice via email:
+--
+-- >>> let cInvoiceId = fromJust (invoiceId cInvoice)
+-- >>> let testEmail = fromJust (emailAddress "test@test.com")
+-- >>> :{
+-- do eitherSendInvoice <- sendInvoice oAuthToken cInvoiceId testEmail
+--    case eitherSendInvoice of
+--      Left e -> putStrLn e
+--      Right _ -> putStrLn "I sent an invoice!"
+-- :}
+-- I sent an invoice!
+--
+-- Finally, we delete the invoice we created:
+--
+-- >>> deleteInvoice oAuthToken cInvoiceId (fromJust (invoiceSyncToken cInvoice))
+
 sendInvoice ::  OAuthToken -> InvoiceId -> EmailAddress -> IO (Either String (QuickBooksResponse Invoice))
 sendInvoice tok invId = (queryQuickBooks tok) . SendInvoice invId
 
