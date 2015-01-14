@@ -38,7 +38,8 @@ import QuickBooks.Types        ( APIConfig(..)
                                , QuickBooksQuery
                                , OAuthVerifier
                                , DeletedInvoice
-                               , SalesItemLineDetail(..))
+                               , SalesItemLineDetail(..)
+                               , Reference(..))
 import Control.Applicative     ((<$>),(<*>), (<|>))
 import Control.Arrow           (second)
 import Data.ByteString.Char8   (pack)
@@ -107,6 +108,30 @@ readInvoice ::  OAuthToken -> InvoiceId -> IO (Either String (QuickBooksResponse
 readInvoice tok = (queryQuickBooks tok) . ReadInvoice
 
 -- | Update an invoice.
+--
+-- Example:
+--
+-- First, we create an invoice:
+--
+-- >>> import Data.Maybe (fromJust)
+-- >>> Right (QuickBooksInvoiceResponse cInvoice) <- createInvoice oAuthToken testInvoice
+--
+-- Then, we update the customer reference of the invoice:
+--
+-- >>> let nInvoice = cInvoice { invoiceCustomerRef = Reference Nothing Nothing "1" }
+-- >>> :{
+-- do eitherUpdateInvoice <- updateInvoice oAuthToken nInvoice
+--    case eitherUpdateInvoice of
+--      Left _ -> return False
+--      Right (QuickBooksInvoiceResponse uInvoice) ->
+--        return (invoiceCustomerRef cInvoice == invoiceCustomerRef uInvoice)
+-- :}
+-- False
+--
+-- Finally, we delete the invoice we created:
+--
+-- >>> deleteInvoice oAuthToken (fromJust (invoiceId cInvoice)) (fromJust (invoiceSyncToken cInvoice))
+
 updateInvoice ::  OAuthToken -> Invoice -> IO (Either String (QuickBooksResponse Invoice))
 updateInvoice tok = (queryQuickBooks tok) . UpdateInvoice
 
