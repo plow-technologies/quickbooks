@@ -111,6 +111,26 @@ updateInvoice ::  OAuthToken -> Invoice -> IO (Either String (QuickBooksResponse
 updateInvoice tok = (queryQuickBooks tok) . UpdateInvoice
 
 -- | Delete an invoice.
+--
+-- Example:
+--
+-- First, we create an invoice:
+--
+-- >>> import Data.Maybe (fromJust)
+-- >>> Right (QuickBooksInvoiceResponse cInvoice) <- createInvoice oAuthToken testInvoice
+--
+-- Then, we delete it:
+--
+-- >>> let cInvoiceId = fromJust (invoiceId cInvoice)
+-- >>> let cInvoiceSyncToken = fromJust (invoiceSyncToken cInvoice)
+-- >>> :{
+-- do eitherDeleteInvoice <- deleteInvoice oAuthToken cInvoiceId cInvoiceSyncToken
+--    case eitherDeleteInvoice of
+--      Left e -> putStrLn e
+--      Right _ -> putStrLn "I deleted an invoice!"
+-- :}
+-- I deleted an invoice!
+
 deleteInvoice ::  OAuthToken -> InvoiceId -> SyncToken -> IO (Either String (QuickBooksResponse DeletedInvoice))
 deleteInvoice tok iId = (queryQuickBooks tok) . DeleteInvoice iId
 
