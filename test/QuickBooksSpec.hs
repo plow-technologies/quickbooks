@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module QuickBooksSpec (spec) where
+module QuickBooksSpec where
 
 import Control.Exception (bracket)
 import Data.ByteString.Char8 (pack)

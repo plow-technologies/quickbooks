@@ -282,6 +282,46 @@ data Invoice = Invoice
   }
   deriving (Show)
 
+minimalInvoice :: [Line] -> CustomerRef -> Invoice
+minimalInvoice lines customerRef =
+  Invoice Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          lines
+          Nothing
+          customerRef
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+
 data InvoiceResponse = InvoiceResponse
   { invoiceResponseInvoice :: Invoice }
   deriving (Show)

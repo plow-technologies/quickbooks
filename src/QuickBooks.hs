@@ -13,6 +13,8 @@
 -- Portability :
 --
 --
+-- >>> 0 == 0
+-- True
 --
 ------------------------------------------------------------------------------
 
@@ -60,7 +62,17 @@ import QuickBooks.Invoice      ( createInvoiceRequest
                                )
 import QuickBooks.Logging      (apiLogger, getLogger)
 
-   
+-- $setup
+--
+-- >>> import QuickBooksSpec
+--
+-- >>> maybeTestOAuthToken <- lookupTestOAuthTokenFromEnv
+-- >>> let testOAuthToken = maybe (error "") id maybeTestOAuthToken
+
+
+-- |
+-- >>> createInvoice testOAuthToken testInvoice
+
 -- | Create an invoice.
 createInvoice :: OAuthToken -> Invoice -> IO (Either String (QuickBooksResponse Invoice))
 createInvoice tok = (queryQuickBooks tok) . CreateInvoice

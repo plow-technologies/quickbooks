@@ -1,4 +1,4 @@
 import Test.DocTest
 
 main :: IO ()
-main = doctest ["-isrc", "src/QuickBooks.hs"]
+main = doctest ["-isrc", "test/Data.hs", "test/QuickBooksSpec.hs", "src/QuickBooks.hs"]
