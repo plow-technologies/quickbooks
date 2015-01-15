@@ -6,24 +6,34 @@
 -- |
 -- Module: QuickBooks
 --
+-- For more information, see:
+--
+--   * QuickBooks API Reference:
+--     <https://developer.intuit.com/docs/api/accounting>.
+--
 ------------------------------------------------------------------------------
 
 module QuickBooks
-  ( createInvoice
+  ( -- * Authentication and authorization
+    OAuthToken
+  , getAccessTokens
+  , getTempTokens
+  , authorizationURLForToken
+  , cancelOAuthAuthorization
+    -- * Transaction entities
+    -- ** Invoices
+  , Invoice(..)
+  , InvoiceId
+  , SalesItemLineDetail(..)
+    -- *** CRUD an invoice
+  , createInvoice
   , readInvoice
   , updateInvoice
   , deleteInvoice
-  , sendInvoice
-  , getAccessTokens
-  , getTempTokens
+    -- *** Send an invoice via email
   , EmailAddress
   , emailAddress
-  , authorizationURLForToken
-  , cancelOAuthAuthorization
-  , OAuthToken
-  , SalesItemLineDetail(..)
-  , Invoice(..)
-  , InvoiceId
+  , sendInvoice
   ) where
 
 import QuickBooks.Authentication
