@@ -76,17 +76,21 @@ import QuickBooks.Logging      (apiLogger, getLogger)
 -- >>> maybeTestOAuthToken <- lookupTestOAuthTokenFromEnv
 -- >>> let oAuthToken = maybe (error "") id maybeTestOAuthToken
 
--- | 
+-- | Create an invoice.
+--
+-- Example:
+--
+-- >>> import Data.Maybe (fromJust)
 -- >>> :{
--- do  
---   resp <- createInvoice oAuthToken testInvoice
---   case resp of
---     Right (QuickBooksInvoiceResponse invoice) -> putStrLn "I created an invoice!"
---     Left err -> putStrLn $ "My custom error message: " ++ err
+-- do resp <- createInvoice oAuthToken testInvoice
+--    case resp of
+--      Left err -> putStrLn $ "My custom error message: " ++ err
+--      Right (QuickBooksInvoiceResponse invoice) -> do
+--        deleteInvoice oAuthToken (fromJust (invoiceId invoice)) (fromJust (invoiceSyncToken invoice))
+--        putStrLn "I created an invoice!"
 -- :}
 -- I created an invoice!
 
--- | Create an invoice.
 createInvoice :: OAuthToken -> Invoice -> IO (Either String (QuickBooksResponse Invoice))
 createInvoice tok = (queryQuickBooks tok) . CreateInvoice
 
