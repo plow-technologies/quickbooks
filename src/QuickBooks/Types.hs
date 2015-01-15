@@ -241,6 +241,16 @@ data GlobalTaxModel
   | TaxInclusive
   deriving (Show, Eq)
 
+-- | An invoice transaction entity, that is, a sales form where the customer
+-- pays for a product or service later.
+--
+-- Business rules:
+--
+--   * An invoice must have at least one 'Line' that describes an item.
+--   * An invoice must have a 'CustomerRef'.
+--
+-- In order to create an invoice, use the 'defaultInvoice' function.
+
 data Invoice = Invoice
   { invoiceId                    :: !(Maybe InvoiceId)
   , invoiceSyncToken             :: !(Maybe SyncToken)
