@@ -82,12 +82,6 @@ import QuickBooks.Invoice      ( createInvoiceRequest
                                )
 import QuickBooks.Logging      (apiLogger, getLogger)
 
-lookupTestOAuthTokenFromEnv :: IO (Maybe OAuthToken)
-lookupTestOAuthTokenFromEnv = do
-  env <- getEnvironment
-  return $ OAuthToken `liftM` (pack `fmap` (lookup "INTUIT_TOKEN" env))
-                      `ap`    (pack `fmap` (lookup "INTUIT_SECRET" env))
-
 -- $setup
 --
 -- >>> import Data

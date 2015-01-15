@@ -4,8 +4,17 @@ module Data where
 
 import QuickBooks.Types
 import qualified Text.Email.Validate as E (EmailAddress, emailAddress)
+import Control.Monad (ap,liftM)
+import Data.ByteString.Char8 (pack)
 import Data.Maybe (fromJust)
 import Data.String
+import System.Environment (getEnvironment)
+
+lookupTestOAuthTokenFromEnv :: IO (Maybe OAuthToken)
+lookupTestOAuthTokenFromEnv = do
+  env <- getEnvironment
+  return $ OAuthToken `liftM` (pack `fmap` (lookup "INTUIT_TOKEN" env))
+                      `ap`    (pack `fmap` (lookup "INTUIT_SECRET" env))
 
 trashEmailAccount :: (IsString a) => a
 trashEmailAccount = "xvh221@sharklasers.com"
