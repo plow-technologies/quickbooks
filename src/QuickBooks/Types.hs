@@ -110,6 +110,7 @@ data DiscountLineDetail = DiscountLineDetail
   deriving (Show, Eq)
 
 -- | Details of a sales item line.
+-- In order to create a sales item line detail, use 'salesItemLineDetail'.
 
 data SalesItemLineDetail = SalesItemLineDetail
   { salesItemLineDetailItemRef         :: !(Maybe ItemRef)
@@ -124,6 +125,27 @@ data SalesItemLineDetail = SalesItemLineDetail
   , salesItemLineDetailTaxInclusiveAmt :: !(Maybe Double)
   }
   deriving (Show, Eq)
+
+-- | Create a sales item line detail with a reference to an item.
+--
+-- Example:
+--
+-- >>> let aSalesItemLineDetail = salesItemLineDetail ((reference "1") {referenceName = Just "Services"})
+-- >>> salesItemLineDetailItemRef aSalesItemLineDetail
+-- Just (Reference {referenceName = Just "Services", referenceType = Nothing, referenceValue = "1"})
+
+salesItemLineDetail :: ItemRef -> SalesItemLineDetail
+salesItemLineDetail itemRef =
+  SalesItemLineDetail (Just itemRef)
+                      Nothing
+                      Nothing
+                      Nothing
+                      Nothing
+                      Nothing
+                      Nothing
+                      Nothing
+                      Nothing
+                      Nothing
 
 -- | Details of a subtotal line.
 
@@ -148,6 +170,29 @@ data Line = Line
   }
   deriving (Show, Eq)
 
+-- | Create a sales item line with amount and details.
+--
+-- Example:
+--
+-- >>> let aSalesItemLineDetail = salesItemLineDetail ((reference "1") {referenceName = Just "Services"})
+-- >>> let aSalesItemLine = salesItemLine 100.0 aSalesItemLineDetail
+
+salesItemLine :: Double
+              -> SalesItemLineDetail
+              -> Line
+salesItemLine amount detail =
+  Line Nothing
+       Nothing
+       Nothing
+       amount
+       Nothing
+       "SalesItemLineDetail"
+       Nothing
+       Nothing
+       (Just detail)
+       Nothing
+       Nothing
+
 newtype DeletedInvoiceId = DeletedInvoiceId { unDeletedInvoiceId :: Text }
   deriving (Show, Eq, FromJSON, ToJSON)
 
@@ -157,6 +202,9 @@ data DeletedInvoice = DeletedInvoice
   , deletedInvoicestatus :: !Text
   } deriving (Show, Eq)
 
+-- | A reference.
+-- In order to create a reference, use 'reference'.
+
 data Reference = Reference
   { referenceName  :: !(Maybe Text)
   , referenceType  :: !(Maybe Text)
@@ -164,12 +212,28 @@ data Reference = Reference
   }
   deriving (Show, Eq)
 
+-- | Create a reference with a value.
+--
+-- Example:
+--
+-- >>> reference "21"
+-- Reference {referenceName = Nothing, referenceType = Nothing, referenceValue = "21"}
+
 reference :: Text -> Reference
 reference = Reference Nothing Nothing
 
 type ClassRef            = Reference
 type CurrencyRef         = Reference
+
+-- | A reference to a customer or a job.
+--
+-- Example:
+--
+-- >>> (reference "21") {referenceName = Just "John Doe"} :: CustomerRef
+-- Reference {referenceName = Just "John Doe", referenceType = Nothing, referenceValue = "21"}
+
 type CustomerRef         = Reference
+
 type DepartmentRef       = Reference
 type DepositToAccountRef = Reference
 type DiscountAccountRef  = Reference
@@ -264,7 +328,7 @@ data GlobalTaxModel
 --   * An invoice must have at least one 'Line' that describes an item.
 --   * An invoice must have a 'CustomerRef'.
 --
--- In order to create an invoice, use the 'defaultInvoice' function.
+-- In order to create an invoice, use 'defaultInvoice'.
 
 data Invoice = Invoice
   { invoiceId                    :: !(Maybe InvoiceId)
@@ -309,6 +373,14 @@ data Invoice = Invoice
   deriving (Show, Eq)
 
 -- | Create an 'Invoice' with the minimum elements.
+--
+-- Example:
+--
+-- >>> let customer21 = reference "21" :: CustomerRef
+-- >>> let aSalesItemLineDetail = salesItemLineDetail ((reference "1") {referenceName = Just "Services"})
+-- >>> let aSalesItemLine = salesItemLine 100.0 aSalesItemLineDetail
+--
+-- >>> let anInvoice = defaultInvoice [aSalesItemLine] customer21
 
 defaultInvoice :: [Line]      -- ^ The line items of a transaction
                -> CustomerRef -- ^ Reference to a customer or a job

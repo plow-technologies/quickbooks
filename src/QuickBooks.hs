@@ -25,7 +25,13 @@ module QuickBooks
   , Invoice(..)
   , defaultInvoice
   , InvoiceId
+  , Reference
+  , reference
+  , CustomerRef
+  , Line
   , SalesItemLineDetail(..)
+  , salesItemLineDetail
+  , salesItemLine
     -- *** CRUD an invoice
   , createInvoice
   , readInvoice
@@ -50,8 +56,13 @@ import QuickBooks.Types        ( APIConfig(..)
                                , OAuthVerifier
                                , DeletedInvoice
                                , SalesItemLineDetail(..)
+                               , salesItemLineDetail
                                , Reference(..)
-                               , defaultInvoice)
+                               , reference
+                               , defaultInvoice
+                               , CustomerRef
+                               , Line
+                               , salesItemLine)
 import Control.Applicative     ((<$>),(<*>), (<|>))
 import Control.Arrow           (second)
 import Data.ByteString.Char8   (pack)
