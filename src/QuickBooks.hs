@@ -23,6 +23,7 @@ module QuickBooks
     -- * Transaction entities
     -- ** Invoices
   , Invoice(..)
+  , defaultInvoice
   , InvoiceId
   , SalesItemLineDetail(..)
     -- *** CRUD an invoice
@@ -49,7 +50,8 @@ import QuickBooks.Types        ( APIConfig(..)
                                , OAuthVerifier
                                , DeletedInvoice
                                , SalesItemLineDetail(..)
-                               , Reference(..))
+                               , Reference(..)
+                               , defaultInvoice)
 import Control.Applicative     ((<$>),(<*>), (<|>))
 import Control.Arrow           (second)
 import Data.ByteString.Char8   (pack)

@@ -164,6 +164,9 @@ data Reference = Reference
   }
   deriving (Show, Eq)
 
+reference :: Text -> Reference
+reference = Reference Nothing Nothing
+
 type ClassRef            = Reference
 type CurrencyRef         = Reference
 type CustomerRef         = Reference
@@ -305,7 +308,12 @@ data Invoice = Invoice
   }
   deriving (Show, Eq)
 
-defaultInvoice :: [Line] -> CustomerRef -> Invoice
+-- | Create an 'Invoice' with the minimum elements.
+
+defaultInvoice :: [Line]      -- ^ The line items of a transaction
+               -> CustomerRef -- ^ Reference to a customer or a job
+               -> Invoice
+defaultInvoice [] _ = error "Bad invoice"
 defaultInvoice lines customerRef =
   Invoice Nothing
           Nothing
