@@ -66,6 +66,7 @@ import QuickBooks.Types        ( APIConfig(..)
                                , salesItemLine)
 import Control.Applicative     ((<$>),(<*>), (<|>))
 import Control.Arrow           (second)
+import Control.Monad           (ap, liftM)
 import Data.ByteString.Char8   (pack)
 import Network.HTTP.Client.TLS (tlsManagerSettings)
 import Network.HTTP.Client     (newManager)
@@ -81,9 +82,14 @@ import QuickBooks.Invoice      ( createInvoiceRequest
                                )
 import QuickBooks.Logging      (apiLogger, getLogger)
 
+lookupTestOAuthTokenFromEnv :: IO (Maybe OAuthToken)
+lookupTestOAuthTokenFromEnv = do
+  env <- getEnvironment
+  return $ OAuthToken `liftM` (pack `fmap` (lookup "INTUIT_TOKEN" env))
+                      `ap`    (pack `fmap` (lookup "INTUIT_SECRET" env))
+
 -- $setup
 --
--- >>> import QuickBooksSpec
 -- >>> import Data
 --
 -- >>> :set -XOverloadedStrings
