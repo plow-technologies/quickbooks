@@ -22,6 +22,7 @@ module QuickBooks
   , cancelOAuthAuthorization
     -- * Transaction entities
     -- ** Invoices
+    -- *** Types
   , Invoice(..)
   , defaultInvoice
   , InvoiceId
