@@ -107,7 +107,7 @@ import QuickBooks.Logging      (apiLogger, getLogger)
 -- Note that we deleted the item we created using 'deleteInvoice'.
 
 createInvoice :: OAuthToken -> Invoice -> IO (Either String (QuickBooksResponse Invoice))
-createInvoice tok = (queryQuickBooks tok) . CreateInvoice
+createInvoice tok = queryQuickBooks tok . CreateInvoice
 
 -- | Retrieve the details of an invoice that has been previously created.
 --
@@ -134,7 +134,7 @@ createInvoice tok = (queryQuickBooks tok) . CreateInvoice
 -- >>> deleteInvoice oAuthToken cInvoiceId (fromJust (invoiceSyncToken cInvoice))
 
 readInvoice ::  OAuthToken -> InvoiceId -> IO (Either String (QuickBooksResponse Invoice))
-readInvoice tok = (queryQuickBooks tok) . ReadInvoice
+readInvoice tok = queryQuickBooks tok . ReadInvoice
 
 -- | Update an invoice.
 --
@@ -162,7 +162,7 @@ readInvoice tok = (queryQuickBooks tok) . ReadInvoice
 -- >>> deleteInvoice oAuthToken (fromJust (invoiceId cInvoice)) (fromJust (invoiceSyncToken cInvoice))
 
 updateInvoice ::  OAuthToken -> Invoice -> IO (Either String (QuickBooksResponse Invoice))
-updateInvoice tok = (queryQuickBooks tok) . UpdateInvoice
+updateInvoice tok = queryQuickBooks tok . UpdateInvoice
 
 -- | Delete an invoice.
 --
@@ -186,7 +186,7 @@ updateInvoice tok = (queryQuickBooks tok) . UpdateInvoice
 -- I deleted an invoice!
 
 deleteInvoice ::  OAuthToken -> InvoiceId -> SyncToken -> IO (Either String (QuickBooksResponse DeletedInvoice))
-deleteInvoice tok iId = (queryQuickBooks tok) . DeleteInvoice iId
+deleteInvoice tok iId = queryQuickBooks tok . DeleteInvoice iId
 
 -- | Send an invoice via email.
 --
@@ -214,7 +214,7 @@ deleteInvoice tok iId = (queryQuickBooks tok) . DeleteInvoice iId
 -- >>> deleteInvoice oAuthToken cInvoiceId (fromJust (invoiceSyncToken cInvoice))
 
 sendInvoice ::  OAuthToken -> InvoiceId -> EmailAddress -> IO (Either String (QuickBooksResponse Invoice))
-sendInvoice tok invId = (queryQuickBooks tok) . SendInvoice invId
+sendInvoice tok invId = queryQuickBooks tok . SendInvoice invId
 
 -- | Get temporary tokens to request permission.
 --
@@ -229,15 +229,15 @@ sendInvoice tok invId = (queryQuickBooks tok) . SendInvoice invId
 -- I got my request tokens!
 
 getTempTokens :: CallbackURL -> IO (Either String (QuickBooksResponse OAuthToken))
-getTempTokens = (queryQuickBooks (OAuthToken "" "")) . GetTempOAuthCredentials
+getTempTokens = queryQuickBooks (OAuthToken "" "") . GetTempOAuthCredentials
 
 -- | Exchange oauth_verifier for access tokens
 getAccessTokens :: OAuthToken -> OAuthVerifier -> IO (Either String (QuickBooksResponse OAuthToken))
-getAccessTokens tempToken oauthVerifier  = (queryQuickBooks tempToken) $ GetAccessTokens oauthVerifier
+getAccessTokens tempToken = queryQuickBooks tempToken . GetAccessTokens
 
 -- | Invalidate an OAuth access token and disconnect from QuickBooks.
 cancelOAuthAuthorization :: OAuthToken -> IO (Either String (QuickBooksResponse ()))
-cancelOAuthAuthorization tok = (queryQuickBooks tok) $ DisconnectQuickBooks
+cancelOAuthAuthorization tok = queryQuickBooks tok DisconnectQuickBooks
 
 queryQuickBooks :: OAuthToken -> QuickBooksQuery a -> IO (Either String (QuickBooksResponse a))
 queryQuickBooks tok query = do
