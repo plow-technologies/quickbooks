@@ -49,6 +49,8 @@ data APIConfig = APIConfig
   , loggingEnabled :: !ByteString 
   } deriving (Show, Eq)
 
+-- | A request or access OAuth token.
+
 data OAuthToken = OAuthToken
   { token         :: ByteString
   , tokenSecret   :: ByteString
@@ -89,11 +91,15 @@ newtype LineId    = LineId {unLineId :: Text}
 newtype SyncToken = SyncToken { unSyncToken :: Text }
   deriving (Show, Eq, FromJSON, ToJSON)
 
+-- | Details of a description line.
+
 data DescriptionLineDetail = DescriptionLineDetail
   { descriptionLineDetailServiceDate :: !(Maybe Text)
   , descriptionLineDetailTaxCodeRef  :: !(Maybe TaxCodeRef)
   }
   deriving (Show, Eq)
+
+-- | Details of a discount line.
 
 data DiscountLineDetail = DiscountLineDetail
   { discountLineDetailDiscountRef        :: !(Maybe DiscountRef)
@@ -102,6 +108,8 @@ data DiscountLineDetail = DiscountLineDetail
   , discountLineDetailDiscountAccountRef :: !(Maybe DiscountAccountRef)
   }
   deriving (Show, Eq)
+
+-- | Details of a sales item line.
 
 data SalesItemLineDetail = SalesItemLineDetail
   { salesItemLineDetailItemRef         :: !(Maybe ItemRef)
@@ -117,9 +125,13 @@ data SalesItemLineDetail = SalesItemLineDetail
   }
   deriving (Show, Eq)
 
+-- | Details of a subtotal line.
+
 data SubTotalLineDetail = SubTotalLineDetail
   { subtotalLineDetailItemRef :: !(Maybe ItemRef) }
   deriving (Show, Eq)
+
+-- | An individual line item of a transaction.
 
 data Line = Line
   { lineId                    :: !(Maybe LineId)

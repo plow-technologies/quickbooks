@@ -15,7 +15,7 @@
 
 module QuickBooks
   ( -- * Authentication and authorization
-    OAuthToken
+    OAuthToken(..)
   , getAccessTokens
   , getTempTokens
   , authorizationURLForToken
@@ -216,6 +216,7 @@ getTempTokens = (queryQuickBooks (OAuthToken "" "")) . GetTempOAuthCredentials
 getAccessTokens :: OAuthToken -> OAuthVerifier -> IO (Either String (QuickBooksResponse OAuthToken))
 getAccessTokens tempToken oauthVerifier  = (queryQuickBooks tempToken) $ GetAccessTokens oauthVerifier
 
+-- | Invalidate an OAuth access token and disconnect from QuickBooks.
 cancelOAuthAuthorization :: OAuthToken -> IO (Either String (QuickBooksResponse ()))
 cancelOAuthAuthorization tok = (queryQuickBooks tok) $ DisconnectQuickBooks
 
