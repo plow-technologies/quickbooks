@@ -2,7 +2,7 @@ name:                quickbooks
 version:             0.0.0.0
 synopsis:            QuickBooks API binding.
 -- description:
-license:             AllRightsReserved
+license:             BSD3
 license-file:        LICENSE
 author:              Juan Villa
 maintainer:          jvilla@stackbuilders.com
