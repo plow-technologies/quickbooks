@@ -90,6 +90,8 @@ import QuickBooks.Logging      (apiLogger, getLogger)
 --        putStrLn "I created an invoice!"
 -- :}
 -- I created an invoice!
+--
+-- Note that we deleted the item we created using 'deleteInvoice'.
 
 createInvoice :: OAuthToken -> Invoice -> IO (Either String (QuickBooksResponse Invoice))
 createInvoice tok = (queryQuickBooks tok) . CreateInvoice
@@ -98,7 +100,7 @@ createInvoice tok = (queryQuickBooks tok) . CreateInvoice
 --
 -- Example:
 --
--- First, we create an invoice:
+-- First, we create an invoice (see 'createInvoice'):
 --
 -- >>> import Data.Maybe (fromJust)
 -- >>> Right (QuickBooksInvoiceResponse cInvoice) <- createInvoice oAuthToken testInvoice
@@ -125,7 +127,7 @@ readInvoice tok = (queryQuickBooks tok) . ReadInvoice
 --
 -- Example:
 --
--- First, we create an invoice:
+-- First, we create an invoice (see 'createInvoice'):
 --
 -- >>> import Data.Maybe (fromJust)
 -- >>> Right (QuickBooksInvoiceResponse cInvoice) <- createInvoice oAuthToken testInvoice
@@ -153,7 +155,7 @@ updateInvoice tok = (queryQuickBooks tok) . UpdateInvoice
 --
 -- Example:
 --
--- First, we create an invoice:
+-- First, we create an invoice (see 'createInvoice'):
 --
 -- >>> import Data.Maybe (fromJust)
 -- >>> Right (QuickBooksInvoiceResponse cInvoice) <- createInvoice oAuthToken testInvoice
@@ -177,7 +179,7 @@ deleteInvoice tok iId = (queryQuickBooks tok) . DeleteInvoice iId
 --
 -- Example:
 --
--- First, we create an invoice:
+-- First, we create an invoice (see 'createInvoice'):
 --
 -- >>> import Data.Maybe (fromJust)
 -- >>> Right (QuickBooksInvoiceResponse cInvoice) <- createInvoice oAuthToken testInvoice
