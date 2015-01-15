@@ -4,47 +4,69 @@
 
 ------------------------------------------------------------------------------
 -- |
--- Module      : QuickBooks
--- Description :
--- Copyright   :
--- License     :
--- Maintainer  :
--- Stability   :
--- Portability :
+-- Module: QuickBooks
 --
+-- For more information, see:
 --
+--   * QuickBooks API Reference:
+--     <https://developer.intuit.com/docs/api/accounting>.
 --
 ------------------------------------------------------------------------------
 
 module QuickBooks
-  ( createInvoice
+  ( -- * Authentication and authorization
+    OAuthToken(..)
+  , getAccessTokens
+  , getTempTokens
+  , authorizationURLForToken
+  , cancelOAuthAuthorization
+    -- * Transaction entities
+    -- ** Invoices
+    -- *** Types
+  , Invoice(..)
+  , defaultInvoice
+  , InvoiceId
+  , Reference
+  , reference
+  , CustomerRef
+  , Line
+  , SalesItemLineDetail(..)
+  , salesItemLineDetail
+  , salesItemLine
+    -- *** CRUD an invoice
+  , createInvoice
   , readInvoice
   , updateInvoice
   , deleteInvoice
-  , sendInvoice
-  , getAccessTokens
-  , getTempTokens
+    -- *** Send an invoice via email
   , EmailAddress
   , emailAddress
-  , authorizationURLForToken
-  , cancelOAuthAuthorization
-  , OAuthToken
+  , sendInvoice
   ) where
 
 import QuickBooks.Authentication
 import QuickBooks.Types        ( APIConfig(..)
                                , CallbackURL
-                               , Invoice
-                               , InvoiceId
+                               , Invoice(..)
+                               , InvoiceId(..)
                                , QuickBooksRequest(..)
                                , QuickBooksResponse(..)
                                , SyncToken
                                , OAuthToken(..)
                                , QuickBooksQuery
                                , OAuthVerifier
-                               , DeletedInvoice)
+                               , DeletedInvoice
+                               , SalesItemLineDetail(..)
+                               , salesItemLineDetail
+                               , Reference(..)
+                               , reference
+                               , defaultInvoice
+                               , CustomerRef
+                               , Line
+                               , salesItemLine)
 import Control.Applicative     ((<$>),(<*>), (<|>))
 import Control.Arrow           (second)
+import Control.Monad           (ap, liftM)
 import Data.ByteString.Char8   (pack)
 import Network.HTTP.Client.TLS (tlsManagerSettings)
 import Network.HTTP.Client     (newManager)
@@ -60,37 +82,163 @@ import QuickBooks.Invoice      ( createInvoiceRequest
                                )
 import QuickBooks.Logging      (apiLogger, getLogger)
 
-   
--- | Create an invoice.
-createInvoice :: OAuthToken -> Invoice -> IO (Either String (QuickBooksResponse Invoice))
-createInvoice tok = (queryQuickBooks tok) . CreateInvoice
+-- $setup
+--
+-- >>> import Data
+--
+-- >>> :set -XOverloadedStrings
+-- >>> maybeTestOAuthToken <- lookupTestOAuthTokenFromEnv
+-- >>> let oAuthToken = maybe (error "") id maybeTestOAuthToken
 
--- | Read an invoice.
+-- | Create an invoice.
+--
+-- Example:
+--
+-- >>> import Data.Maybe (fromJust)
+-- >>> :{
+-- do resp <- createInvoice oAuthToken testInvoice
+--    case resp of
+--      Left err -> putStrLn $ "My custom error message: " ++ err
+--      Right (QuickBooksInvoiceResponse invoice) -> do
+--        deleteInvoice oAuthToken (fromJust (invoiceId invoice)) (fromJust (invoiceSyncToken invoice))
+--        putStrLn "I created an invoice!"
+-- :}
+-- I created an invoice!
+--
+-- Note that we deleted the item we created using 'deleteInvoice'.
+
+createInvoice :: OAuthToken -> Invoice -> IO (Either String (QuickBooksResponse Invoice))
+createInvoice tok = queryQuickBooks tok . CreateInvoice
+
+-- | Retrieve the details of an invoice that has been previously created.
+--
+-- Example:
+--
+-- First, we create an invoice (see 'createInvoice'):
+--
+-- >>> import Data.Maybe (fromJust)
+-- >>> Right (QuickBooksInvoiceResponse cInvoice) <- createInvoice oAuthToken testInvoice
+--
+-- Then, we read the invoice and test that it is the same invoice we created:
+--
+-- >>> let cInvoiceId = fromJust (invoiceId cInvoice)
+-- >>> :{
+-- do eitherReadInvoice <- readInvoice oAuthToken cInvoiceId
+--    case eitherReadInvoice of
+--      Left _ -> return False
+--      Right (QuickBooksInvoiceResponse rInvoice) -> return (cInvoice == rInvoice)
+-- :}
+-- True
+--
+-- Finally, we delete the invoice we created:
+--
+-- >>> deleteInvoice oAuthToken cInvoiceId (fromJust (invoiceSyncToken cInvoice))
+
 readInvoice ::  OAuthToken -> InvoiceId -> IO (Either String (QuickBooksResponse Invoice))
-readInvoice tok = (queryQuickBooks tok) . ReadInvoice
+readInvoice tok = queryQuickBooks tok . ReadInvoice
 
 -- | Update an invoice.
+--
+-- Example:
+--
+-- First, we create an invoice (see 'createInvoice'):
+--
+-- >>> import Data.Maybe (fromJust)
+-- >>> Right (QuickBooksInvoiceResponse cInvoice) <- createInvoice oAuthToken testInvoice
+--
+-- Then, we update the customer reference of the invoice:
+--
+-- >>> let nInvoice = cInvoice { invoiceCustomerRef = Reference Nothing Nothing "1" }
+-- >>> :{
+-- do eitherUpdateInvoice <- updateInvoice oAuthToken nInvoice
+--    case eitherUpdateInvoice of
+--      Left _ -> return False
+--      Right (QuickBooksInvoiceResponse uInvoice) ->
+--        return (invoiceCustomerRef cInvoice == invoiceCustomerRef uInvoice)
+-- :}
+-- False
+--
+-- Finally, we delete the invoice we created:
+--
+-- >>> deleteInvoice oAuthToken (fromJust (invoiceId cInvoice)) (fromJust (invoiceSyncToken cInvoice))
+
 updateInvoice ::  OAuthToken -> Invoice -> IO (Either String (QuickBooksResponse Invoice))
-updateInvoice tok = (queryQuickBooks tok) . UpdateInvoice
+updateInvoice tok = queryQuickBooks tok . UpdateInvoice
 
 -- | Delete an invoice.
+--
+-- Example:
+--
+-- First, we create an invoice (see 'createInvoice'):
+--
+-- >>> import Data.Maybe (fromJust)
+-- >>> Right (QuickBooksInvoiceResponse cInvoice) <- createInvoice oAuthToken testInvoice
+--
+-- Then, we delete it:
+--
+-- >>> let cInvoiceId = fromJust (invoiceId cInvoice)
+-- >>> let cInvoiceSyncToken = fromJust (invoiceSyncToken cInvoice)
+-- >>> :{
+-- do eitherDeleteInvoice <- deleteInvoice oAuthToken cInvoiceId cInvoiceSyncToken
+--    case eitherDeleteInvoice of
+--      Left e -> putStrLn e
+--      Right _ -> putStrLn "I deleted an invoice!"
+-- :}
+-- I deleted an invoice!
+
 deleteInvoice ::  OAuthToken -> InvoiceId -> SyncToken -> IO (Either String (QuickBooksResponse DeletedInvoice))
-deleteInvoice tok iId = (queryQuickBooks tok) . DeleteInvoice iId
+deleteInvoice tok iId = queryQuickBooks tok . DeleteInvoice iId
 
--- | Send an invoice
+-- | Send an invoice via email.
+--
+-- Example:
+--
+-- First, we create an invoice (see 'createInvoice'):
+--
+-- >>> import Data.Maybe (fromJust)
+-- >>> Right (QuickBooksInvoiceResponse cInvoice) <- createInvoice oAuthToken testInvoice
+--
+-- Then, we send the invoice via email:
+--
+-- >>> let cInvoiceId = fromJust (invoiceId cInvoice)
+-- >>> let testEmail = fromJust (emailAddress "test@test.com")
+-- >>> :{
+-- do eitherSendInvoice <- sendInvoice oAuthToken cInvoiceId testEmail
+--    case eitherSendInvoice of
+--      Left e -> putStrLn e
+--      Right _ -> putStrLn "I sent an invoice!"
+-- :}
+-- I sent an invoice!
+--
+-- Finally, we delete the invoice we created:
+--
+-- >>> deleteInvoice oAuthToken cInvoiceId (fromJust (invoiceSyncToken cInvoice))
+
 sendInvoice ::  OAuthToken -> InvoiceId -> EmailAddress -> IO (Either String (QuickBooksResponse Invoice))
-sendInvoice tok invId = (queryQuickBooks tok) . SendInvoice invId
+sendInvoice tok invId = queryQuickBooks tok . SendInvoice invId
 
--- | Get temporary tokens to request permission
+-- | Get temporary tokens to request permission.
+--
+-- Example:
+--
+-- >>> :{
+-- do eitherTempTokens <- getTempTokens "localhost"
+--    case eitherTempTokens of
+--      Left e -> putStrLn e
+--      Right _ -> putStrLn "I got my request tokens!"
+-- :}
+-- I got my request tokens!
+
 getTempTokens :: CallbackURL -> IO (Either String (QuickBooksResponse OAuthToken))
-getTempTokens = (queryQuickBooks (OAuthToken "" "")) . GetTempOAuthCredentials
+getTempTokens = queryQuickBooks (OAuthToken "" "") . GetTempOAuthCredentials
 
 -- | Exchange oauth_verifier for access tokens
 getAccessTokens :: OAuthToken -> OAuthVerifier -> IO (Either String (QuickBooksResponse OAuthToken))
-getAccessTokens tempToken oauthVerifier  = (queryQuickBooks tempToken) $ GetAccessTokens oauthVerifier
+getAccessTokens tempToken = queryQuickBooks tempToken . GetAccessTokens
 
+-- | Invalidate an OAuth access token and disconnect from QuickBooks.
 cancelOAuthAuthorization :: OAuthToken -> IO (Either String (QuickBooksResponse ()))
-cancelOAuthAuthorization tok = (queryQuickBooks tok) $ DisconnectQuickBooks
+cancelOAuthAuthorization tok = queryQuickBooks tok DisconnectQuickBooks
 
 queryQuickBooks :: OAuthToken -> QuickBooksQuery a -> IO (Either String (QuickBooksResponse a))
 queryQuickBooks tok query = do

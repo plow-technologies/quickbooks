@@ -32,11 +32,12 @@ import Data.Aeson.TH   (defaultOptions
 import Data.Char       (toLower)
 import Data.Text       (Text)
 import qualified Text.Email.Validate as E (EmailAddress)
+import Prelude hiding (lines)
 
 type CallbackURL = String
 
 newtype OAuthVerifier = OAuthVerifier { unOAuthVerifier :: ByteString }
-  deriving (Show)
+  deriving (Show, Eq)
 
 data APIConfig = APIConfig
   { companyId      :: !ByteString
@@ -46,12 +47,14 @@ data APIConfig = APIConfig
   , oauthSecret    :: !ByteString
   , hostname       :: !ByteString
   , loggingEnabled :: !ByteString 
-  } deriving (Show)
+  } deriving (Show, Eq)
+
+-- | A request or access OAuth token.
 
 data OAuthToken = OAuthToken
   { token         :: ByteString
   , tokenSecret   :: ByteString
-  } deriving (Show)
+  } deriving (Show, Eq)
 
 data family QuickBooksResponse a
 data instance QuickBooksResponse Invoice = QuickBooksInvoiceResponse { quickBooksResponseInvoice :: Invoice }
@@ -80,19 +83,23 @@ data QuickBooksRequest a where
   DisconnectQuickBooks    :: QuickBooksQuery ()
 
 newtype InvoiceId = InvoiceId {unInvoiceId :: Text}
-  deriving (Show, FromJSON, ToJSON)
+  deriving (Show, Eq, FromJSON, ToJSON)
 
 newtype LineId    = LineId {unLineId :: Text}
-  deriving (Show, FromJSON, ToJSON)
+  deriving (Show, Eq, FromJSON, ToJSON)
 
 newtype SyncToken = SyncToken { unSyncToken :: Text }
-  deriving (Show, FromJSON, ToJSON)
+  deriving (Show, Eq, FromJSON, ToJSON)
+
+-- | Details of a description line.
 
 data DescriptionLineDetail = DescriptionLineDetail
   { descriptionLineDetailServiceDate :: !(Maybe Text)
   , descriptionLineDetailTaxCodeRef  :: !(Maybe TaxCodeRef)
   }
-  deriving (Show)
+  deriving (Show, Eq)
+
+-- | Details of a discount line.
 
 data DiscountLineDetail = DiscountLineDetail
   { discountLineDetailDiscountRef        :: !(Maybe DiscountRef)
@@ -100,7 +107,10 @@ data DiscountLineDetail = DiscountLineDetail
   , discountLineDetailDiscountPercent    :: !(Maybe Double)
   , discountLineDetailDiscountAccountRef :: !(Maybe DiscountAccountRef)
   }
-  deriving (Show)
+  deriving (Show, Eq)
+
+-- | Details of a sales item line.
+-- In order to create a sales item line detail, use 'salesItemLineDetail'.
 
 data SalesItemLineDetail = SalesItemLineDetail
   { salesItemLineDetailItemRef         :: !(Maybe ItemRef)
@@ -114,11 +124,36 @@ data SalesItemLineDetail = SalesItemLineDetail
   , salesItemLineDetailServiceData     :: !(Maybe Text)
   , salesItemLineDetailTaxInclusiveAmt :: !(Maybe Double)
   }
-  deriving (Show)
+  deriving (Show, Eq)
+
+-- | Create a sales item line detail with a reference to an item.
+--
+-- Example:
+--
+-- >>> let aSalesItemLineDetail = salesItemLineDetail ((reference "1") {referenceName = Just "Services"})
+-- >>> salesItemLineDetailItemRef aSalesItemLineDetail
+-- Just (Reference {referenceName = Just "Services", referenceType = Nothing, referenceValue = "1"})
+
+salesItemLineDetail :: ItemRef -> SalesItemLineDetail
+salesItemLineDetail itemRef =
+  SalesItemLineDetail (Just itemRef)
+                      Nothing
+                      Nothing
+                      Nothing
+                      Nothing
+                      Nothing
+                      Nothing
+                      Nothing
+                      Nothing
+                      Nothing
+
+-- | Details of a subtotal line.
 
 data SubTotalLineDetail = SubTotalLineDetail
   { subtotalLineDetailItemRef :: !(Maybe ItemRef) }
-  deriving (Show)
+  deriving (Show, Eq)
+
+-- | An individual line item of a transaction.
 
 data Line = Line
   { lineId                    :: !(Maybe LineId)
@@ -133,27 +168,72 @@ data Line = Line
   , lineSubTotalLineDetail    :: !(Maybe SubTotalLineDetail)
   , lineCustomField           :: !(Maybe [CustomField])
   }
-  deriving (Show)
+  deriving (Show, Eq)
+
+-- | Create a sales item line with amount and details.
+--
+-- Example:
+--
+-- >>> let aSalesItemLineDetail = salesItemLineDetail ((reference "1") {referenceName = Just "Services"})
+-- >>> let aSalesItemLine = salesItemLine 100.0 aSalesItemLineDetail
+
+salesItemLine :: Double
+              -> SalesItemLineDetail
+              -> Line
+salesItemLine amount detail =
+  Line Nothing
+       Nothing
+       Nothing
+       amount
+       Nothing
+       "SalesItemLineDetail"
+       Nothing
+       Nothing
+       (Just detail)
+       Nothing
+       Nothing
 
 newtype DeletedInvoiceId = DeletedInvoiceId { unDeletedInvoiceId :: Text }
-  deriving (Show, FromJSON, ToJSON)
+  deriving (Show, Eq, FromJSON, ToJSON)
 
 data DeletedInvoice = DeletedInvoice 
   { deletedInvoiceId     :: !DeletedInvoiceId
   , deletedInvoicedomain :: !Text
   , deletedInvoicestatus :: !Text
-  } deriving (Show)
+  } deriving (Show, Eq)
+
+-- | A reference.
+-- In order to create a reference, use 'reference'.
 
 data Reference = Reference
   { referenceName  :: !(Maybe Text)
   , referenceType  :: !(Maybe Text)
   , referenceValue :: !Text
   }
-  deriving (Show)
+  deriving (Show, Eq)
+
+-- | Create a reference with a value.
+--
+-- Example:
+--
+-- >>> reference "21"
+-- Reference {referenceName = Nothing, referenceType = Nothing, referenceValue = "21"}
+
+reference :: Text -> Reference
+reference = Reference Nothing Nothing
 
 type ClassRef            = Reference
 type CurrencyRef         = Reference
+
+-- | A reference to a customer or a job.
+--
+-- Example:
+--
+-- >>> (reference "21") {referenceName = Just "John Doe"} :: CustomerRef
+-- Reference {referenceName = Just "John Doe", referenceType = Nothing, referenceValue = "21"}
+
 type CustomerRef         = Reference
+
 type DepartmentRef       = Reference
 type DepositToAccountRef = Reference
 type DiscountAccountRef  = Reference
@@ -169,7 +249,7 @@ data ModificationMetaData = ModificationMetaData
   { modificationMetaDataCreateTime      :: !Text
   , modificationMetaDataLastUpdatedTime :: !Text
   }
-  deriving (Show)
+  deriving (Show, Eq)
 
 data PhysicalAddress = PhysicalAddress
   { physicalAddressId                     :: !Text
@@ -186,7 +266,7 @@ data PhysicalAddress = PhysicalAddress
   , physicalAddressLat                    :: !(Maybe Text)
   , physicalAddressLong                   :: !(Maybe Text)
   }
-  deriving (Show)
+  deriving (Show, Eq)
 
 type BillAddr = PhysicalAddress
 type ShipAddr = PhysicalAddress
@@ -194,27 +274,27 @@ type ShipAddr = PhysicalAddress
 data EmailAddress = EmailAddress
   { emailAddress :: !Text
   }
-  deriving (Show)
+  deriving (Show, Eq)
 
 data TxnTaxDetail = TxnTaxDetail
   { txnTaxDetailTxnTaxCodeRef :: !(Maybe TxnTaxCodeRef)
   , txnTaxDetailTotalTax      :: !Double
   , txnTaxDetailTaxLine       :: !(Maybe Line)
   }
-  deriving (Show)
+  deriving (Show, Eq)
 
 data DeliveryInfo = DeliveryInfo
   { deliveryInfoDeliveryType :: !(Maybe Text)
   , deliveryInfoDeliveryTime :: !(Maybe Text)
   }
-  deriving (Show)
+  deriving (Show, Eq)
 
 data LinkedTxn = LinkedTxn
   { linkedTxnId     :: !(Maybe Text)
   , linkedTxnType   :: !(Maybe Text)
   , linkedTxnLineId :: !(Maybe Text)
   }
-  deriving (Show)
+  deriving (Show, Eq)
 
 data CustomField = CustomField
   { customFieldDefinitionId :: !Text
@@ -225,20 +305,30 @@ data CustomField = CustomField
   , customFieldDateValue    :: !(Maybe Text)
   , customFieldNumberValue  :: !(Maybe Double)
   }
-  deriving (Show)
+  deriving (Show, Eq)
 
 data CustomFieldType
   = BooleanType
   | DateType
   | NumberType
   | StringType
-  deriving (Show)
+  deriving (Show, Eq)
 
 data GlobalTaxModel
   = NotApplicable
   | TaxExcluded
   | TaxInclusive
-  deriving (Show)
+  deriving (Show, Eq)
+
+-- | An invoice transaction entity, that is, a sales form where the customer
+-- pays for a product or service later.
+--
+-- Business rules:
+--
+--   * An invoice must have at least one 'Line' that describes an item.
+--   * An invoice must have a 'CustomerRef'.
+--
+-- In order to create an invoice, use 'defaultInvoice'.
 
 data Invoice = Invoice
   { invoiceId                    :: !(Maybe InvoiceId)
@@ -280,11 +370,64 @@ data Invoice = Invoice
   , invoiceDomain                :: !(Maybe Text)
   , invoiceSparse                :: !(Maybe Bool)
   }
-  deriving (Show)
+  deriving (Show, Eq)
+
+-- | Create an 'Invoice' with the minimum elements.
+--
+-- Example:
+--
+-- >>> let customer21 = reference "21" :: CustomerRef
+-- >>> let aSalesItemLineDetail = salesItemLineDetail ((reference "1") {referenceName = Just "Services"})
+-- >>> let aSalesItemLine = salesItemLine 100.0 aSalesItemLineDetail
+--
+-- >>> let anInvoice = defaultInvoice [aSalesItemLine] customer21
+
+defaultInvoice :: [Line]      -- ^ The line items of a transaction
+               -> CustomerRef -- ^ Reference to a customer or a job
+               -> Invoice
+defaultInvoice [] _ = error "Bad invoice"
+defaultInvoice lines customerRef =
+  Invoice Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          lines
+          Nothing
+          customerRef
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
 
 data InvoiceResponse = InvoiceResponse
   { invoiceResponseInvoice :: Invoice }
-  deriving (Show)
+  deriving (Show, Eq)
 
 $(deriveJSON defaultOptions
                { fieldLabelModifier = drop 11
