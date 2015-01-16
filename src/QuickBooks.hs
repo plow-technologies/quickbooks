@@ -42,7 +42,7 @@ module QuickBooks
   , EmailAddress
   , emailAddress
   , sendInvoice
-  , OAuthVerifier
+  , OAuthVerifier(..)
   , QuickBooksResponse(..)  
   ) where
 
@@ -56,7 +56,7 @@ import QuickBooks.Types        ( APIConfig(..)
                                , SyncToken
                                , OAuthToken(..)
                                , QuickBooksQuery
-                               , OAuthVerifier
+                               , OAuthVerifier(..)
                                , DeletedInvoice
                                , SalesItemLineDetail(..)
                                , salesItemLineDetail
