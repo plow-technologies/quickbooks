@@ -42,6 +42,8 @@ module QuickBooks
   , EmailAddress
   , emailAddress
   , sendInvoice
+  , OAuthVerifier
+  , QuickBooksResponse(..)  
   ) where
 
 import QuickBooks.Authentication
@@ -66,7 +68,6 @@ import QuickBooks.Types        ( APIConfig(..)
                                , salesItemLine)
 import Control.Applicative     ((<$>),(<*>), (<|>))
 import Control.Arrow           (second)
-import Control.Monad           (ap, liftM)
 import Data.ByteString.Char8   (pack)
 import Network.HTTP.Client.TLS (tlsManagerSettings)
 import Network.HTTP.Client     (newManager)
