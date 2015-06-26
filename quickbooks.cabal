@@ -52,6 +52,9 @@ description: This package is a binding to the QuickBooks API. The
              
              You can now run verify the documentation using  `cabal test`.
 
+source-repository head
+  type:     git
+  location: https://github.com/plow-technologies/quickbooks
 
 library
   exposed-modules:     QuickBooks
