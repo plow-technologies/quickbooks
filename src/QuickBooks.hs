@@ -59,6 +59,7 @@ import QuickBooks.Types        ( APIConfig(..)
                                , QuickBooksQuery
                                , OAuthVerifier(..)
                                , DeletedInvoice
+                               , ItemRef
                                , SalesItemLineDetail(..)
                                , salesItemLineDetail
                                , Reference(..)
