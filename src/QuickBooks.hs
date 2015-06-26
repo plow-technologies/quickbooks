@@ -26,9 +26,10 @@ module QuickBooks
   , Invoice(..)
   , defaultInvoice
   , InvoiceId
-  , Reference
+  , Reference(..)
   , reference
   , CustomerRef
+  , ItemRef
   , Line
   , SalesItemLineDetail(..)
   , salesItemLineDetail
