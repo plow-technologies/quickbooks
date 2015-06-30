@@ -15,25 +15,14 @@
 
 module QuickBooks
   ( -- * Authentication and authorization
-    OAuthToken(..)
-  , getAccessTokens
+    getAccessTokens
   , getTempTokens
   , authorizationURLForToken
   , cancelOAuthAuthorization
     -- * Transaction entities
     -- ** Invoices
     -- *** Types
-  , Invoice(..)
-  , defaultInvoice
-  , InvoiceId
-  , Reference(..)
-  , reference
-  , CustomerRef
-  , ItemRef
-  , Line
-  , SalesItemLineDetail(..)
-  , salesItemLineDetail
-  , salesItemLine
+  , module QuickBooks.Types
     -- *** CRUD an invoice
   , createInvoice
   , readInvoice
@@ -43,31 +32,11 @@ module QuickBooks
   , EmailAddress
   , emailAddress
   , sendInvoice
-  , OAuthVerifier(..)
-  , QuickBooksResponse(..)  
   ) where
 
 import QuickBooks.Authentication
-import QuickBooks.Types        ( APIConfig(..)
-                               , CallbackURL
-                               , Invoice(..)
-                               , InvoiceId(..)
-                               , QuickBooksRequest(..)
-                               , QuickBooksResponse(..)
-                               , SyncToken
-                               , OAuthToken(..)
-                               , QuickBooksQuery
-                               , OAuthVerifier(..)
-                               , DeletedInvoice
-                               , ItemRef
-                               , SalesItemLineDetail(..)
-                               , salesItemLineDetail
-                               , Reference(..)
-                               , reference
-                               , defaultInvoice
-                               , CustomerRef
-                               , Line
-                               , salesItemLine)
+import QuickBooks.Types hiding (EmailAddress,emailAddress)
+
 import Control.Applicative     ((<$>),(<*>), (<|>))
 import Control.Arrow           (second)
 import Data.ByteString.Char8   (pack)
