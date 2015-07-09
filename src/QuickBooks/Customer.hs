@@ -28,7 +28,7 @@ import qualified Data.Text as Text
 -- GET /v3/company/<companyID>/query=<selectStatement>
 
 queryCustomerRequest
-  :: ByteString
+  :: OAuthToken
   -> Text
   -> IO (Either String (QuickBooksResponse Customer))
 queryCustomerRequest _ displayName =

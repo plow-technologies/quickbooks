@@ -39,6 +39,11 @@ module QuickBooks
   , EmailAddress
   , emailAddress
   , sendInvoice
+    -- * Name list entities
+    -- ** Customer
+  , queryCustomer
+    -- ** Line
+  , queryLine
   ) where
 
 import QuickBooks.Authentication
@@ -47,18 +52,21 @@ import QuickBooks.Types hiding (EmailAddress,emailAddress)
 import Control.Applicative     ((<$>),(<*>), (<|>))
 import Control.Arrow           (second)
 import Data.ByteString.Char8   (pack)
+import Data.Text               (Text)
 import Network.HTTP.Client.TLS (tlsManagerSettings)
 import Network.HTTP.Client     (newManager)
 import System.Environment      (getEnvironment)
 import Text.Email.Validate     (EmailAddress, emailAddress)
 
 
+import QuickBooks.Customer
 import QuickBooks.Invoice      ( createInvoiceRequest
                                , deleteInvoiceRequest
                                , readInvoiceRequest
                                , updateInvoiceRequest
                                , sendInvoiceRequest
                                )
+import QuickBooks.Item
 import QuickBooks.Logging      (apiLogger, getLogger)
 
 -- $setup
@@ -68,6 +76,20 @@ import QuickBooks.Logging      (apiLogger, getLogger)
 -- >>> :set -XOverloadedStrings
 -- >>> maybeTestOAuthToken <- lookupTestOAuthTokenFromEnv
 -- >>> let oAuthToken = maybe (error "") id maybeTestOAuthToken
+
+queryCustomer
+  :: OAuthToken
+  -> Text
+  -> IO (Either String (QuickBooksResponse Customer))
+queryCustomer tok =
+  queryQuickBooks tok . QueryCustomer
+
+queryLine
+  :: OAuthToken
+  -> Text
+  -> IO (Either String (QuickBooksResponse Item))
+queryLine tok =
+  queryQuickBooks tok . QueryItem
 
 -- | Create an invoice.
 --
@@ -268,7 +290,10 @@ queryQuickBooks' apiConfig tok query = do
     (GetTempOAuthCredentials callbackURL) -> getTempOAuthCredentialsRequest callbackURL
     (GetAccessTokens oauthVerifier)       -> getAccessTokensRequest tok oauthVerifier
     (DisconnectQuickBooks)                -> disconnectRequest tok
-   
+
+    QueryCustomer queryCustomerName -> queryCustomerRequest tok queryCustomerName
+    QueryItem queryItemName -> queryItemRequest tok queryItemName
+
 readAPIConfig :: IO APIConfig
 readAPIConfig = do
   env <- getEnvironment

@@ -81,6 +81,9 @@ data QuickBooksRequest a where
   SendInvoice             :: InvoiceId   -> E.EmailAddress -> QuickBooksQuery Invoice
   DisconnectQuickBooks    :: QuickBooksQuery ()
 
+  QueryCustomer           :: Text -> QuickBooksQuery Customer
+  QueryItem               :: Text -> QuickBooksQuery Item
+
 newtype InvoiceId = InvoiceId {unInvoiceId :: Text}
   deriving (Show, Eq, FromJSON, ToJSON)
 
@@ -498,17 +501,6 @@ data Customer = Customer
   }
   deriving (Eq, Show)
 
-$(deriveJSON defaultOptions
-               { fieldLabelModifier = drop 8
-               , omitNothingFields  = True
-               }
-             ''Customer)
-
-$(deriveJSON defaultOptions
-               { fieldLabelModifier = drop 16
-               }
-             ''CustomerResponse)
-
 data ItemResponse = ItemResponse
   { itemResponseItem :: !Item
   }
@@ -542,6 +534,17 @@ data Item = Item
   , itemInvStartDate         :: !(Maybe Text) -- required for inventory items
   }
   deriving (Eq, Show)
+
+$(deriveJSON defaultOptions
+               { fieldLabelModifier = drop 8
+               , omitNothingFields  = True
+               }
+             ''Customer)
+
+$(deriveJSON defaultOptions
+               { fieldLabelModifier = drop 16
+               }
+             ''CustomerResponse)
 
 $(deriveJSON defaultOptions
                { fieldLabelModifier = drop 4

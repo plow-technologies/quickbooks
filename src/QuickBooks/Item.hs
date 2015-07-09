@@ -29,7 +29,7 @@ import qualified Data.Text as Text
 -- select * from Item maxresults 2
 
 queryItemRequest
-  :: ByteString
+  :: OAuthToken
   -> Text
   -> IO (Either String (QuickBooksResponse Item))
 queryItemRequest _ name =
