@@ -57,7 +57,7 @@ queryCustomerRequest tok queryCustomerName = do
   where
     query =
       Text.concat
-        [ "select * from Customer Where DisplayName>'"
+        [ "select * from Customer Where DisplayName='"
         , queryCustomerName
         ,  "' Order By DisplayName"
         ]

@@ -57,7 +57,7 @@ queryItemRequest tok queryItemName = do
   where
     query =
       Text.concat
-        [ "select * from Item Where Name>'"
+        [ "select * from Item Where Name='"
         , queryItemName
         ,  "' Order By Name"
         ]
