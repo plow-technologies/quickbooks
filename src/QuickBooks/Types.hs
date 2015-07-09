@@ -6,7 +6,6 @@
 {-# LANGUAGE RecordWildCards            #-}
 {-# LANGUAGE TemplateHaskell            #-}
 {-# LANGUAGE TypeFamilies               #-}
-{-# LANGUAGE ViewPatterns               #-}
 
 ------------------------------------------------------------------------------
 -- |
@@ -24,15 +23,15 @@
 
 module QuickBooks.Types where
 
-import Data.Aeson      ((.:),FromJSON(..),Value(Object),ToJSON)
-import Data.ByteString (ByteString)
-import Data.Aeson.TH   (defaultOptions
-                       ,deriveJSON
-                       ,Options(fieldLabelModifier,omitNothingFields))
-import Data.Char       (toLower)
-import Data.Text       (Text)
+import           Data.Aeson          (FromJSON (..), ToJSON, Value (Object),
+                                      (.:))
+import           Data.Aeson.TH       (Options (fieldLabelModifier, omitNothingFields),
+                                      defaultOptions, deriveJSON)
+import           Data.ByteString     (ByteString)
+import           Data.Char           (toLower)
+import           Data.Text           (Text)
+import           Prelude             hiding (lines)
 import qualified Text.Email.Validate as E (EmailAddress)
-import Prelude hiding (lines)
 
 type CallbackURL = String
 
@@ -46,21 +45,21 @@ data APIConfig = APIConfig
   , oauthToken     :: !ByteString
   , oauthSecret    :: !ByteString
   , hostname       :: !ByteString
-  , loggingEnabled :: !ByteString 
+  , loggingEnabled :: !ByteString
   } deriving (Show, Eq)
 
 -- | A request or access OAuth token.
 
 data OAuthToken = OAuthToken
-  { token         :: ByteString
-  , tokenSecret   :: ByteString
+  { token       :: ByteString
+  , tokenSecret :: ByteString
   } deriving (Show, Eq)
 
 data family QuickBooksResponse a
 data instance QuickBooksResponse Invoice = QuickBooksInvoiceResponse { quickBooksResponseInvoice :: Invoice }
 data instance QuickBooksResponse DeletedInvoice = QuickBooksDeletedInvoiceResponse DeletedInvoice
 data instance QuickBooksResponse OAuthToken = QuickBooksAuthResponse { tokens :: OAuthToken }
-data instance QuickBooksResponse () = QuickBooksVoidResponse 
+data instance QuickBooksResponse () = QuickBooksVoidResponse
 
 instance FromJSON (QuickBooksResponse Invoice) where
   parseJSON (Object o) = QuickBooksInvoiceResponse `fmap` (o .: "Invoice")
@@ -159,7 +158,7 @@ data Line = Line
   { lineId                    :: !(Maybe LineId)
   , lineLineNum               :: !(Maybe Double)
   , lineDescription           :: !(Maybe Text)
-  , lineAmount                :: !Double
+  , lineAmount                :: !(Maybe Double)
   , lineLinkedTxn             :: !(Maybe [LinkedTxn])
   , lineDetailType            :: !Text
   , lineDescriptionLineDetail :: !(Maybe DescriptionLineDetail)
@@ -196,7 +195,7 @@ salesItemLine amount detail =
 newtype DeletedInvoiceId = DeletedInvoiceId { unDeletedInvoiceId :: Text }
   deriving (Show, Eq, FromJSON, ToJSON)
 
-data DeletedInvoice = DeletedInvoice 
+data DeletedInvoice = DeletedInvoice
   { deletedInvoiceId     :: !DeletedInvoiceId
   , deletedInvoicedomain :: !Text
   , deletedInvoicestatus :: !Text
