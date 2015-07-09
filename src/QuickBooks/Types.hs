@@ -265,6 +265,16 @@ data ModificationMetaData = ModificationMetaData
   }
   deriving (Show, Eq)
 
+data TelephoneNumber = TelephoneNumber
+  { telephoneNumberFreeFormNumber :: !Text
+  }
+  deriving (Eq, Show)
+
+data WebSiteAddress = WebAddress
+  { webSiteAddressURI :: !Text
+  }
+  deriving (Eq, Show)
+
 data PhysicalAddress = PhysicalAddress
   { physicalAddressId                     :: !Text
   , physicalAddressLine1                  :: !Text
@@ -442,6 +452,117 @@ defaultInvoice lines customerRef =
 data InvoiceResponse = InvoiceResponse
   { invoiceResponseInvoice :: Invoice }
   deriving (Show, Eq)
+
+data CustomerResponse = CustomerResponse
+  { customerResponseCustomer :: !Customer
+  }
+  deriving (Eq, Show)
+
+data Customer = Customer
+  { customerId                      :: !(Maybe Text)
+  , customerSyncToken               :: !(Maybe SyncToken)
+  , customerMetaData                :: !(Maybe ModificationMetaData)
+  , customerTitle                   :: !(Maybe Text) -- def null
+  , customerGivenName               :: !(Maybe Text) -- max 25 def null
+  , customerMiddleName              :: !(Maybe Text) -- max 25, def null
+  , customerFamilyName              :: !(Maybe Text) -- max 25, def null
+  , customerSuffix                  :: !(Maybe Text) -- max 10, def null
+  , customerFullyQualifiedName      :: !(Maybe Text)
+  , customerCompanyName             :: !(Maybe Text) -- max 50, def null
+  , customerDisplayName             :: !Text -- unique
+  , customerPrintOnCheckName        :: !(Maybe Text) -- max 100
+  , customerActive                  :: !(Maybe Bool) -- def true
+  , customerPrimaryPhone            :: !(Maybe TelephoneNumber)
+  , customerAlternatePhone          :: !(Maybe TelephoneNumber)
+  , customerMobile                  :: !(Maybe TelephoneNumber)
+  , customerFax                     :: !(Maybe TelephoneNumber)
+  , customerPrimaryEmailAddress     :: !(Maybe EmailAddress)
+  , customerWebAddr                 :: !(Maybe WebSiteAddress)
+  , customerDefaultTaxCodeRef       :: !(Maybe TaxCodeRef)
+  , customerTaxable                 :: !(Maybe Bool)
+  , customerBillAddr                :: !(Maybe BillAddr)
+  , customerShipAddr                :: !(Maybe ShipAddr)
+  , customerNotes                   :: !(Maybe Text) -- max 2000
+  , customerJob                     :: !(Maybe Bool) -- def false or null
+  , customerBillWithParent          :: !(Maybe Bool) -- def false or null
+  , customerParentRef               :: !(Maybe CustomerRef)
+  , customerLevel                   :: !(Maybe Int) -- def 0, up to 5
+  , customerSalesTermRef            :: !(Maybe SalesTermRef)
+  , customerPaymentMethodRef        :: !(Maybe Reference)
+  , customerBalance                 :: !(Maybe Double)
+  , customerOpenBalanceDate         :: !(Maybe Text)
+  , customerBalanceWithJobs         :: !(Maybe Double)
+  , customerCurrencyRef             :: !(Maybe CurrencyRef)
+  , customerPreferredDeliveryMethod :: !(Maybe Text)
+  , customerResaleNum               :: !(Maybe Text) -- max 15
+  }
+  deriving (Eq, Show)
+
+$(deriveJSON defaultOptions
+               { fieldLabelModifier = drop 8
+               , omitNothingFields  = True
+               }
+             ''Customer)
+
+$(deriveJSON defaultOptions
+               { fieldLabelModifier = drop 16
+               }
+             ''CustomerResponse)
+
+data ItemResponse = ItemResponse
+  { itemResponseItem :: !Item
+  }
+  deriving (Eq, Show)
+
+data Item = Item
+  { itemId                   :: !(Maybe Text)
+  , itemSyncToken            :: !(Maybe SyncToken)
+  , itemMetaData             :: !(Maybe ModificationMetaData)
+  , itemName                 :: !Text -- max 100
+  , itemDescription          :: !(Maybe Text) -- max 4000
+  , itemActive               :: !(Maybe Bool) -- def true
+  , itemSubItem              :: !(Maybe Bool) -- def false or null
+  , itemParentRef            :: !(Maybe ItemRef) -- def null
+  , itemLevel                :: !(Maybe Int) -- def 0 up to 5
+  , itemFullyQualifiedName   :: !(Maybe String) -- def null
+  , itemTaxable              :: !(Maybe Bool) -- US only
+  , itemSalesTaxInclusive    :: !(Maybe Bool) -- def false
+  , itemUnitPrice            :: !(Maybe Double) -- max 99999999999, def 0
+  , itemType                 :: !(Maybe Text) -- def Inventory (Inventory/Service)
+  , itemIncomeAccountRef     :: !(Maybe Reference) -- required
+  , itemPurchaseDesc         :: !(Maybe String) -- max 1000
+  , itemPurchaseTaxInclusive :: !(Maybe Bool) -- def false
+  , itemPurchaseCost         :: !(Maybe Double) -- max 99999999999
+  , itemExpenseAccountRef    :: !(Maybe Reference) -- required
+  , itemAssetAccountRef      :: !(Maybe Reference) -- req for inventory items
+  , itemTrackQtyOnHand       :: !(Maybe Bool) -- def false
+  , itemQtyOnHand            :: !(Maybe Double) -- req for inventory items
+  , itemSalesTaxCodeRef      :: !(Maybe Reference)
+  , itemPurchaseTaxCodeRef   :: !(Maybe Reference)
+  , itemInvStartDate         :: !(Maybe Text) -- required for inventory items
+  }
+  deriving (Eq, Show)
+
+$(deriveJSON defaultOptions
+               { fieldLabelModifier = drop 4
+               , omitNothingFields  = True
+               }
+             ''Item)
+
+$(deriveJSON defaultOptions
+               { fieldLabelModifier = drop 12
+               }
+             ''ItemResponse)
+
+$(deriveJSON defaultOptions
+               { fieldLabelModifier = drop 15
+               }
+             ''TelephoneNumber)
+
+$(deriveJSON defaultOptions
+               { fieldLabelModifier = drop 14
+               }
+             ''WebSiteAddress)
 
 $(deriveJSON defaultOptions
                { fieldLabelModifier = drop 11
