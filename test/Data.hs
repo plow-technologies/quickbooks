@@ -2,13 +2,13 @@
 
 module Data where
 
-import QuickBooks.Types
-import qualified Text.Email.Validate as E (EmailAddress, emailAddress)
-import Control.Monad (ap,liftM)
-import Data.ByteString.Char8 (pack)
-import Data.Maybe (fromJust)
-import Data.String
-import System.Environment (getEnvironment)
+import           Control.Monad         (ap, liftM)
+import           Data.ByteString.Char8 (pack)
+import           Data.Maybe            (fromJust)
+import           Data.String
+import           QuickBooks.Types
+import           System.Environment    (getEnvironment)
+import qualified Text.Email.Validate   as E (EmailAddress, emailAddress)
 
 lookupTestOAuthTokenFromEnv :: IO (Maybe OAuthToken)
 lookupTestOAuthTokenFromEnv = do
@@ -20,14 +20,14 @@ trashEmailAccount :: (IsString a) => a
 trashEmailAccount = "xvh221@sharklasers.com"
 
 testEmail :: E.EmailAddress
-testEmail = fromJust $ E.emailAddress trashEmailAccount 
+testEmail = fromJust $ E.emailAddress trashEmailAccount
 
 testLine :: Line
 testLine = Line
   { lineId                    = Nothing
   , lineLineNum               = Nothing
   , lineDescription           = Nothing
-  , lineAmount                = 100.0
+  , lineAmount                = Just 100.0
   , lineLinkedTxn             = Nothing
   , lineDetailType            = "SalesItemLineDetail"
   , lineDescriptionLineDetail = Nothing
@@ -38,11 +38,11 @@ testLine = Line
   }
 
 testSalesItemLineDetail :: SalesItemLineDetail
-testSalesItemLineDetail = 
-  SalesItemLineDetail 
+testSalesItemLineDetail =
+  SalesItemLineDetail
    { salesItemLineDetailItemRef         = Just testItemRef
-   , salesItemLineDetailClassRef        = Nothing 
-   , salesItemLineDetailUnitPrice       = Nothing 
+   , salesItemLineDetailClassRef        = Nothing
+   , salesItemLineDetailUnitPrice       = Nothing
    , salesItemLineDetailRatePercent     = Nothing
    , salesItemLineDetailPriceLevelRef   = Nothing
    , salesItemLineDetailMarkupInfo      = Nothing

@@ -183,7 +183,7 @@ salesItemLine amount detail =
   Line Nothing
        Nothing
        Nothing
-       amount
+       (Just amount)
        Nothing
        "SalesItemLineDetail"
        Nothing
@@ -191,6 +191,21 @@ salesItemLine amount detail =
        (Just detail)
        Nothing
        Nothing
+-- | if you are using a salesItemLineDetail that has a Qty and a price it generates amount automatically
+emptySalesItemLine :: Line
+emptySalesItemLine =
+  Line Nothing
+       Nothing
+       Nothing
+       Nothing
+       Nothing
+       "SalesItemLineDetail"
+       Nothing
+       Nothing
+       Nothing
+       Nothing
+       Nothing
+
 
 newtype DeletedInvoiceId = DeletedInvoiceId { unDeletedInvoiceId :: Text }
   deriving (Show, Eq, FromJSON, ToJSON)
