@@ -61,6 +61,12 @@ data instance QuickBooksResponse DeletedInvoice = QuickBooksDeletedInvoiceRespon
 data instance QuickBooksResponse OAuthToken = QuickBooksAuthResponse { tokens :: OAuthToken }
 data instance QuickBooksResponse () = QuickBooksVoidResponse
 
+data instance QuickBooksResponse Customer =
+  QuickBooksCustomerResponse { quickBooksResponseCustomer :: Customer }
+
+data instance QuickBooksResponse Item =
+  QuickBooksItemResponse { quickBooksResponseItem :: Item }
+
 instance FromJSON (QuickBooksResponse Invoice) where
   parseJSON (Object o) = QuickBooksInvoiceResponse `fmap` (o .: "Invoice")
   parseJSON _          = fail "Could not parse invoice response from QuickBooks"
@@ -68,6 +74,14 @@ instance FromJSON (QuickBooksResponse Invoice) where
 instance FromJSON (QuickBooksResponse DeletedInvoice) where
   parseJSON (Object o) = QuickBooksDeletedInvoiceResponse `fmap` (o .: "Invoice")
   parseJSON _          = fail "Could not parse deleted invoice response from QuickBooks"
+
+instance FromJSON (QuickBooksResponse Customer) where
+  parseJSON (Object o) = QuickBooksCustomerResponse `fmap` (o .: "Customer")
+  parseJSON _          = fail "Could not parse customer response from QuickBooks"
+
+instance FromJSON (QuickBooksResponse Item) where
+  parseJSON (Object o) = QuickBooksItemResponse `fmap` (o .: "Item")
+  parseJSON _          = fail "Could not parse item response from QuickBooks"
 
 type QuickBooksQuery a = QuickBooksRequest (QuickBooksResponse a)
 

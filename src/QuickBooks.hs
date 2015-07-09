@@ -42,8 +42,10 @@ module QuickBooks
     -- * Name list entities
     -- ** Customer
   , queryCustomer
+  , queryCustomer'
     -- ** Line
-  , queryLine
+  , queryItem
+  , queryItem'
   ) where
 
 import QuickBooks.Authentication
@@ -84,12 +86,28 @@ queryCustomer
 queryCustomer tok =
   queryQuickBooks tok . QueryCustomer
 
-queryLine
+queryCustomer'
+  :: APIConfig
+  -> OAuthToken
+  -> Text
+  -> IO (Either String (QuickBooksResponse Customer))
+queryCustomer' apiConfig tok =
+  queryQuickBooks' apiConfig tok . QueryCustomer
+
+queryItem
   :: OAuthToken
   -> Text
   -> IO (Either String (QuickBooksResponse Item))
-queryLine tok =
+queryItem tok =
   queryQuickBooks tok . QueryItem
+
+queryItem'
+  :: APIConfig
+  -> OAuthToken
+  -> Text
+  -> IO (Either String (QuickBooksResponse Item))
+queryItem' apiConfig tok =
+  queryQuickBooks' apiConfig tok . QueryItem
 
 -- | Create an invoice.
 --
