@@ -42,7 +42,7 @@ queryItemRequest
      )
   => OAuthToken
   -> Text
-  -> IO (Either String (QuickBooksResponse Item))
+  -> IO (Either String (QuickBooksResponse [Item]))
 queryItemRequest tok queryItemName = do
   let apiConfig = ?apiConfig
   let queryURI = parseUrl [i|#{queryURITemplate apiConfig}#{query}|]

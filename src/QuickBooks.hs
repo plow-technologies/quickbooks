@@ -82,7 +82,7 @@ import QuickBooks.Logging      (apiLogger, getLogger)
 queryCustomer
   :: OAuthToken
   -> Text
-  -> IO (Either String (QuickBooksResponse Customer))
+  -> IO (Either String (QuickBooksResponse [Customer]))
 queryCustomer tok =
   queryQuickBooks tok . QueryCustomer
 
@@ -90,14 +90,14 @@ queryCustomer'
   :: APIConfig
   -> OAuthToken
   -> Text
-  -> IO (Either String (QuickBooksResponse Customer))
+  -> IO (Either String (QuickBooksResponse [Customer]))
 queryCustomer' apiConfig tok =
   queryQuickBooks' apiConfig tok . QueryCustomer
 
 queryItem
   :: OAuthToken
   -> Text
-  -> IO (Either String (QuickBooksResponse Item))
+  -> IO (Either String (QuickBooksResponse [Item]))
 queryItem tok =
   queryQuickBooks tok . QueryItem
 
@@ -105,7 +105,7 @@ queryItem'
   :: APIConfig
   -> OAuthToken
   -> Text
-  -> IO (Either String (QuickBooksResponse Item))
+  -> IO (Either String (QuickBooksResponse [Item]))
 queryItem' apiConfig tok =
   queryQuickBooks' apiConfig tok . QueryItem
 

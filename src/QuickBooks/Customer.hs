@@ -42,7 +42,7 @@ queryCustomerRequest
      )
   => OAuthToken
   -> Text
-  -> IO (Either String (QuickBooksResponse Customer))
+  -> IO (Either String (QuickBooksResponse [Customer]))
 queryCustomerRequest tok queryCustomerName = do
   let apiConfig = ?apiConfig
   let queryURI = parseUrl [i|#{queryURITemplate apiConfig}#{query}|]
