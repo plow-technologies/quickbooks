@@ -16,3 +16,8 @@ cabal.config
 *.aux
 *.hp
 /TAGS
+#*#
+/.#.gitignore
+/src/QuickBooks/#Invoice.hs#
+/src/QuickBooks/#Types.hs#
+/src/QuickBooks/.#Invoice.hs
