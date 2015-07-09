@@ -16,18 +16,25 @@
 module QuickBooks
   ( -- * Authentication and authorization
     getAccessTokens
+  , getAccessTokens'
   , getTempTokens
+  , getTempTokens'
   , authorizationURLForToken
   , cancelOAuthAuthorization
+  , cancelOAuthAuthorization'
     -- * Transaction entities
     -- ** Invoices
     -- *** Types
   , module QuickBooks.Types
     -- *** CRUD an invoice
   , createInvoice
+  , createInvoice'  
   , readInvoice
+  , readInvoice'  
   , updateInvoice
+  , updateInvoice'
   , deleteInvoice
+  , deleteInvoice'     
     -- *** Send an invoice via email
   , EmailAddress
   , emailAddress
@@ -82,6 +89,11 @@ import QuickBooks.Logging      (apiLogger, getLogger)
 createInvoice :: OAuthToken -> Invoice -> IO (Either String (QuickBooksResponse Invoice))
 createInvoice tok = queryQuickBooks tok . CreateInvoice
 
+-- | Like createInvoice but accepts an APIConfig rather than reading it from the environment
+createInvoice' :: APIConfig -> OAuthToken -> Invoice -> IO (Either String (QuickBooksResponse Invoice))
+createInvoice' apiConfig tok = queryQuickBooks' apiConfig tok . CreateInvoice
+
+
 -- | Retrieve the details of an invoice that has been previously created.
 --
 -- Example:
@@ -108,6 +120,10 @@ createInvoice tok = queryQuickBooks tok . CreateInvoice
 
 readInvoice ::  OAuthToken -> InvoiceId -> IO (Either String (QuickBooksResponse Invoice))
 readInvoice tok = queryQuickBooks tok . ReadInvoice
+
+-- | Like readInvoice but accepts an APIConfig rather than reading it from the environment
+readInvoice' :: APIConfig -> OAuthToken -> InvoiceId -> IO (Either String (QuickBooksResponse Invoice))
+readInvoice' apiConfig tok = queryQuickBooks' apiConfig tok . ReadInvoice
 
 -- | Update an invoice.
 --
@@ -137,6 +153,11 @@ readInvoice tok = queryQuickBooks tok . ReadInvoice
 updateInvoice ::  OAuthToken -> Invoice -> IO (Either String (QuickBooksResponse Invoice))
 updateInvoice tok = queryQuickBooks tok . UpdateInvoice
 
+-- | Like updateInvoice but accepts an APIConfig rather than reading it from the environment
+updateInvoice' :: APIConfig -> OAuthToken -> Invoice -> IO (Either String (QuickBooksResponse Invoice))
+updateInvoice' apiConfig tok = queryQuickBooks' apiConfig tok . UpdateInvoice
+
+
 -- | Delete an invoice.
 --
 -- Example:
@@ -160,6 +181,11 @@ updateInvoice tok = queryQuickBooks tok . UpdateInvoice
 
 deleteInvoice ::  OAuthToken -> InvoiceId -> SyncToken -> IO (Either String (QuickBooksResponse DeletedInvoice))
 deleteInvoice tok iId = queryQuickBooks tok . DeleteInvoice iId
+
+-- | Like deleteInvoice but accepts an APIConfig rather than reading it from the environment
+deleteInvoice' :: APIConfig -> OAuthToken -> InvoiceId -> SyncToken -> IO (Either String (QuickBooksResponse DeletedInvoice))
+deleteInvoice' apiConfig tok iId = queryQuickBooks' apiConfig tok . DeleteInvoice iId
+
 
 -- | Send an invoice via email.
 --
@@ -204,31 +230,44 @@ sendInvoice tok invId = queryQuickBooks tok . SendInvoice invId
 getTempTokens :: CallbackURL -> IO (Either String (QuickBooksResponse OAuthToken))
 getTempTokens = queryQuickBooks (OAuthToken "" "") . GetTempOAuthCredentials
 
+getTempTokens' :: APIConfig -> CallbackURL -> IO (Either String (QuickBooksResponse OAuthToken))
+getTempTokens' apiConfig = queryQuickBooks' apiConfig (OAuthToken "" "") . GetTempOAuthCredentials
+
 -- | Exchange oauth_verifier for access tokens
 getAccessTokens :: OAuthToken -> OAuthVerifier -> IO (Either String (QuickBooksResponse OAuthToken))
 getAccessTokens tempToken = queryQuickBooks tempToken . GetAccessTokens
 
+getAccessTokens' :: APIConfig -> OAuthToken -> OAuthVerifier -> IO (Either String (QuickBooksResponse OAuthToken))
+getAccessTokens' apiConfig tempToken = queryQuickBooks' apiConfig tempToken . GetAccessTokens
+
 -- | Invalidate an OAuth access token and disconnect from QuickBooks.
 cancelOAuthAuthorization :: OAuthToken -> IO (Either String (QuickBooksResponse ()))
-cancelOAuthAuthorization tok = queryQuickBooks tok DisconnectQuickBooks
+cancelOAuthAuthorization tok = queryQuickBooks  tok DisconnectQuickBooks
+
+cancelOAuthAuthorization' :: APIConfig -> OAuthToken -> IO (Either String (QuickBooksResponse ()))
+cancelOAuthAuthorization' apiConfig tok = queryQuickBooks' apiConfig tok DisconnectQuickBooks
 
 queryQuickBooks :: OAuthToken -> QuickBooksQuery a -> IO (Either String (QuickBooksResponse a))
 queryQuickBooks tok query = do
   apiConfig <- readAPIConfig
+  queryQuickBooks' apiConfig tok query
+
+queryQuickBooks' :: APIConfig -> OAuthToken -> QuickBooksQuery a -> IO (Either String (QuickBooksResponse a))
+queryQuickBooks' apiConfig tok query = do  
   manager   <- newManager tlsManagerSettings
   logger    <-  getLogger apiLogger
   let ?apiConfig = apiConfig
   let ?manager   = manager
   let ?logger    = logger
   case query of
-    (CreateInvoice invoice)                   -> createInvoiceRequest tok invoice
-    (UpdateInvoice invoice)                   -> updateInvoiceRequest tok invoice
-    (ReadInvoice invoiceId)                   -> readInvoiceRequest tok invoiceId
-    (DeleteInvoice invoiceId syncToken)       -> deleteInvoiceRequest tok invoiceId syncToken
-    (SendInvoice invoiceId emailAddr)         -> sendInvoiceRequest tok invoiceId emailAddr
-    (GetTempOAuthCredentials callbackURL)     -> getTempOAuthCredentialsRequest callbackURL
-    (GetAccessTokens oauthVerifier)           -> getAccessTokensRequest tok oauthVerifier
-    (DisconnectQuickBooks)                    -> disconnectRequest tok
+    (CreateInvoice invoice)               -> createInvoiceRequest tok invoice
+    (UpdateInvoice invoice)               -> updateInvoiceRequest tok invoice
+    (ReadInvoice _invoiceId)              -> readInvoiceRequest tok _invoiceId
+    (DeleteInvoice _invoiceId syncToken)  -> deleteInvoiceRequest tok _invoiceId syncToken
+    (SendInvoice _invoiceId emailAddr)    -> sendInvoiceRequest tok _invoiceId emailAddr
+    (GetTempOAuthCredentials callbackURL) -> getTempOAuthCredentialsRequest callbackURL
+    (GetAccessTokens oauthVerifier)       -> getAccessTokensRequest tok oauthVerifier
+    (DisconnectQuickBooks)                -> disconnectRequest tok
    
 readAPIConfig :: IO APIConfig
 readAPIConfig = do
