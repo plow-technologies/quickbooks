@@ -37,6 +37,7 @@ import Network.HTTP.Types.Header (hAccept)
 
 queryItemRequest
   :: ( ?apiConfig :: APIConfig
+     , ?appConfig :: AppConfig
      , ?manager   :: Manager
      , ?logger    :: Logger
      )

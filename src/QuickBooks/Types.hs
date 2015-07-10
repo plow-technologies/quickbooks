@@ -38,10 +38,15 @@ type CallbackURL = String
 newtype OAuthVerifier = OAuthVerifier { unOAuthVerifier :: ByteString }
   deriving (Show, Eq)
 
+-- | QuickBooks Application Keys
+
+data AppConfig = AppConfig
+  { consumerToken  :: !ByteString
+  , consumerSecret :: !ByteString
+  } deriving (Show, Eq)
+
 data APIConfig = APIConfig
   { companyId      :: !ByteString
-  , consumerToken  :: !ByteString
-  , consumerSecret :: !ByteString
   , oauthToken     :: !ByteString
   , oauthSecret    :: !ByteString
   , hostname       :: !ByteString
@@ -90,16 +95,19 @@ instance FromJSON (QuickBooksResponse [Item]) where
   parseJSON _          = fail "Could not parse item response from QuickBooks"
 
 type QuickBooksQuery a = QuickBooksRequest (QuickBooksResponse a)
+type QuickBooksOAuthQuery a = QuickBooksOAuthRequest (QuickBooksResponse a) 
+
+data QuickBooksOAuthRequest a where
+  GetTempOAuthCredentials :: CallbackURL   -> QuickBooksOAuthQuery OAuthToken
+  GetAccessTokens         :: OAuthVerifier -> QuickBooksOAuthQuery OAuthToken
+  DisconnectQuickBooks    :: QuickBooksOAuthQuery ()
 
 data QuickBooksRequest a where
-  GetTempOAuthCredentials :: CallbackURL -> QuickBooksQuery OAuthToken
-  GetAccessTokens         :: OAuthVerifier -> QuickBooksQuery OAuthToken
   CreateInvoice           :: Invoice     -> QuickBooksQuery Invoice
   ReadInvoice             :: InvoiceId   -> QuickBooksQuery Invoice
   UpdateInvoice           :: Invoice     -> QuickBooksQuery Invoice
   DeleteInvoice           :: InvoiceId   -> SyncToken -> QuickBooksQuery DeletedInvoice
   SendInvoice             :: InvoiceId   -> E.EmailAddress -> QuickBooksQuery Invoice
-  DisconnectQuickBooks    :: QuickBooksQuery ()
 
   QueryCustomer           :: Text -> QuickBooksQuery [Customer]
   QueryItem               :: Text -> QuickBooksQuery [Item]
