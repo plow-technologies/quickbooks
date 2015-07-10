@@ -39,9 +39,10 @@ module QuickBooks
   , EmailAddress
   , emailAddress
   , sendInvoice
+  , sendInvoice'
     -- *** Read in configuration files
   , readAPIConfigFromFile
-  , sendInvoice'
+  , readAppConfigFromFile
     -- * Name list entities
     -- ** Customer
   , queryCustomer
@@ -409,7 +410,8 @@ lookupAPIConfig environment = APIConfig <$> lookup "INTUIT_COMPANY_ID" env
 readAPIConfigFromFile :: FilePath -> IO (Either ParseException APIConfig)
 readAPIConfigFromFile = decodeFileEither
 
-
+readAppConfigFromFile :: FilePath -> IO (Either ParseException AppConfig)
+readAppConfigFromFile = decodeFileEither
 
 lookupAppConfig :: [(String, String)] -> Maybe AppConfig
 lookupAppConfig environment = AppConfig <$> lookup "INTUIT_CONSUMER_KEY" env
