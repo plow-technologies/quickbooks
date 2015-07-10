@@ -39,6 +39,8 @@ module QuickBooks
   , EmailAddress
   , emailAddress
   , sendInvoice
+    -- *** Read in configuration files
+  , readAPIConfigFromFile
   ) where
 
 import QuickBooks.Authentication
@@ -60,6 +62,7 @@ import QuickBooks.Invoice      ( createInvoiceRequest
                                , sendInvoiceRequest
                                )
 import QuickBooks.Logging      (apiLogger, getLogger)
+import Data.Yaml (ParseException, decodeFileEither)
 
 -- $setup
 --
@@ -285,3 +288,6 @@ lookupAPIConfig environment = APIConfig <$> lookup "INTUIT_COMPANY_ID" env
                                         <*> lookup "INTUIT_HOSTNAME" env
                                         <*> (lookup "INTUIT_API_LOGGING_ENABLED" env <|> Just "true")
     where env = map (second pack) environment
+
+readAPIConfigFromFile :: FilePath -> IO (Either ParseException APIConfig)
+readAPIConfigFromFile = decodeFileEither

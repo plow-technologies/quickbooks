@@ -1,5 +1,5 @@
 name:                quickbooks
-version:             0.2.2.0
+version:             0.2.3.0
 synopsis:            QuickBooks API binding.
 -- description:
 license:             BSD3
@@ -80,6 +80,7 @@ library
                        , thyme              == 0.3.*
                        , old-locale         == 1.0.*
                        , email-validate     == 2.0.*
+                       , yaml               == 0.8.*
 
 test-suite doctests
   type:             exitcode-stdio-1.0
