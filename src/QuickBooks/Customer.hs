@@ -54,15 +54,14 @@ queryCustomerRequest tok queryCustomerName = do
                  }
   resp <- httpLbs req' ?manager
   logAPICall req'
-  return (Aeson.eitherDecode (responseBody resp))
+  let eitherAllCustomers = Aeson.eitherDecode (responseBody resp)
+  case eitherAllCustomers of
+    Left er -> return (Left er)
+    Right (QuickBooksCustomerResponse allCustomers) ->
+      return $ Right $ QuickBooksCustomerResponse $
+        filter (\Customer{..} -> customerDisplayName == queryCustomerName) allCustomers
   where
     query = "SELECT * FROM Customer"
-    query2 =
-      Text.concat
-        [ "SELECT * FROM Customer WHERE DisplayName='"
-        , queryCustomerName
-        ,  "' ORDER BY DisplayName"
-        ]
 
 queryURITemplate :: APIConfig -> String
 queryURITemplate APIConfig{..} =

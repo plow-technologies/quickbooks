@@ -54,14 +54,14 @@ queryItemRequest tok queryItemName = do
                  }
   resp <- httpLbs req' ?manager
   logAPICall req'
-  return (Aeson.eitherDecode (responseBody resp))
+  let eitherAllItems = Aeson.eitherDecode (responseBody resp)
+  case eitherAllItems of
+    Left er -> return (Left er)
+    Right (QuickBooksItemResponse allItems) ->
+      return $ Right $ QuickBooksItemResponse $
+        filter (\Item{..} -> itemName == queryItemName) allItems
   where
-    query =
-      Text.concat
-        [ "SELECT * FROM Item WHERE Name='"
-        , queryItemName
-        ,  "' ORDER BY Name"
-        ]
+    query = "SELECT * FROM Item"
 
 queryURITemplate :: APIConfig -> String
 queryURITemplate APIConfig{..} =

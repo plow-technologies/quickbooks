@@ -92,7 +92,7 @@ import QuickBooks.Logging      (apiLogger, getLogger)
 --        _ ->
 --          putStrLn "Nothing"
 -- :}
--- Just "1"
+-- Just "21"
 
 queryCustomer
   :: OAuthToken
@@ -120,7 +120,7 @@ queryCustomer' apiConfig appConfig tok =
 --        _ ->
 --          putStrLn "Nothing"
 -- :}
--- Nothing
+-- Just "2"
 
 queryItem
   :: OAuthToken
