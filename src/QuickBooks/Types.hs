@@ -25,14 +25,14 @@ module QuickBooks.Types where
 
 import           Control.Applicative ((<$>), (<*>))
 import           Control.Monad       (mzero)
-import           Data.Aeson          (FromJSON (..), ToJSON, Value (Object),
-                                      (.:))
+import           Data.Aeson          (FromJSON (..), ToJSON(..), Value (Object),
+                                      (.:), object, (.=))
 import           Data.Aeson.TH       (Options (fieldLabelModifier, omitNothingFields),
                                       defaultOptions, deriveJSON)
 import           Data.ByteString     (ByteString)
 import           Data.Char           (toLower)
 import           Data.Text           (Text)
-import           Data.Text.Encoding  (encodeUtf8)
+import           Data.Text.Encoding  (encodeUtf8, decodeUtf8)
 import           Prelude             hiding (lines)
 import qualified Text.Email.Validate as E (EmailAddress)
 
@@ -70,6 +70,15 @@ instance FromJSON APIConfig where
                                    <*> (parseByteString o "loggingEnabled")
     where parseByteString obj name = encodeUtf8 <$> (obj .: name)
   parseJSON _ = mzero
+
+instance ToJSON APIConfig where
+  toJSON (APIConfig cId oToken oSecret hName lEnabled) = object [
+                                                                  "companyId" .= (decodeUtf8 cId),
+                                                                  "oauthToken" .= (decodeUtf8 oToken),
+                                                                  "oauthSecret" .= (decodeUtf8 oSecret),
+                                                                  "hostname" .= (decodeUtf8 hName),
+                                                                  "loggingEnabled" .= (decodeUtf8 lEnabled)
+                                                                ]
 -- | A request or access OAuth token.
 
 data OAuthToken = OAuthToken
