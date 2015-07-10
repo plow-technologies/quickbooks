@@ -76,11 +76,17 @@ instance FromJSON (QuickBooksResponse DeletedInvoice) where
   parseJSON _          = fail "Could not parse deleted invoice response from QuickBooks"
 
 instance FromJSON (QuickBooksResponse [Customer]) where
-  parseJSON (Object o) = QuickBooksCustomerResponse `fmap` (o .: "Customer")
+  parseJSON (Object o) = do
+    let customers =
+          o .: "QueryResponse" >>= \queryResponse -> queryResponse .: "Customer"
+    fmap QuickBooksCustomerResponse customers
   parseJSON _          = fail "Could not parse customer response from QuickBooks"
 
 instance FromJSON (QuickBooksResponse [Item]) where
-  parseJSON (Object o) = QuickBooksItemResponse `fmap` (o .: "Item")
+  parseJSON (Object o) = do
+    let items =
+          o .: "QueryResponse" >>= \queryResponse -> queryResponse .: "Item"
+    fmap QuickBooksItemResponse items
   parseJSON _          = fail "Could not parse item response from QuickBooks"
 
 type QuickBooksQuery a = QuickBooksRequest (QuickBooksResponse a)

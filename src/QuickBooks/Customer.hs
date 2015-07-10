@@ -55,13 +55,14 @@ queryCustomerRequest tok queryCustomerName = do
   logAPICall req'
   return (Aeson.eitherDecode (responseBody resp))
   where
-    query =
+    query = "SELECT * FROM Customer"
+    query2 =
       Text.concat
-        [ "select * from Customer Where DisplayName='"
+        [ "SELECT * FROM Customer WHERE DisplayName='"
         , queryCustomerName
-        ,  "' Order By DisplayName"
+        ,  "' ORDER BY DisplayName"
         ]
 
 queryURITemplate :: APIConfig -> String
 queryURITemplate APIConfig{..} =
-  [i|https://#{hostname}/v3/company/#{companyId}/query=|]
+  [i|https://#{hostname}/v3/company/#{companyId}/query?query=|]

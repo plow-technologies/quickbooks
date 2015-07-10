@@ -79,6 +79,19 @@ import QuickBooks.Logging      (apiLogger, getLogger)
 -- >>> maybeTestOAuthToken <- lookupTestOAuthTokenFromEnv
 -- >>> let oAuthToken = maybe (error "") id maybeTestOAuthToken
 
+-- |
+--
+-- >>> :{
+--   do eitherQueryCustomer <-
+--        queryCustomer oAuthToken "Rondonuwu Fruit and Vegi"
+--      case eitherQueryCustomer of
+--        Right (QuickBooksCustomerResponse (customer:_)) ->
+--          print (customerId customer)
+--        _ ->
+--          putStrLn "Nothing"
+-- :}
+-- Just "1"
+
 queryCustomer
   :: OAuthToken
   -> Text
@@ -93,6 +106,18 @@ queryCustomer'
   -> IO (Either String (QuickBooksResponse [Customer]))
 queryCustomer' apiConfig tok =
   queryQuickBooks' apiConfig tok . QueryCustomer
+
+-- |
+--
+-- >>> :{
+--   do eitherQueryItem <- queryItem oAuthToken "Hours"
+--      case eitherQueryItem of
+--        Right (QuickBooksItemResponse (item:_)) ->
+--          print (itemId item)
+--        _ ->
+--          putStrLn "Nothing"
+-- :}
+-- Nothing
 
 queryItem
   :: OAuthToken

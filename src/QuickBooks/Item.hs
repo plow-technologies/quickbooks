@@ -57,11 +57,11 @@ queryItemRequest tok queryItemName = do
   where
     query =
       Text.concat
-        [ "select * from Item Where Name='"
+        [ "SELECT * FROM Item WHERE Name='"
         , queryItemName
-        ,  "' Order By Name"
+        ,  "' ORDER BY Name"
         ]
 
 queryURITemplate :: APIConfig -> String
 queryURITemplate APIConfig{..} =
-  [i|https://#{hostname}/v3/company/#{companyId}/query=|]
+  [i|https://#{hostname}/v3/company/#{companyId}/query?query=|]
