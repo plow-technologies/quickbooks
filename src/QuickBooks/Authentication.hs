@@ -19,9 +19,9 @@ import Network.HTTP.Client (Manager, Request(..), RequestBody(RequestBodyLBS), r
 import Network.HTTP.Types.URI
 import Web.Authenticate.OAuth (signOAuth, newCredential, emptyCredential, injectVerifier, newOAuth, OAuth(..))
 
-import QuickBooks.Logging (logAPICall, Logger)
+import QuickBooks.Logging (logAPICall', Logger)
 
-getTempOAuthCredentialsRequest :: ( ?apiConfig :: APIConfig
+getTempOAuthCredentialsRequest :: ( ?appConfig :: AppConfig
                                   , ?manager   :: Manager
                                   , ?logger    :: Logger                
                                   ) => CallbackURL
@@ -31,7 +31,7 @@ getTempOAuthCredentialsRequest callbackURL =
   return.handleQuickBooksTokenResponse "Couldn't get temporary tokens" =<< tokensRequest
     where tokensRequest = getTokens temporaryTokenURL "?oauth_callback=" callbackURL oauthSignRequestWithEmptyCredentials
 
-getAccessTokensRequest :: ( ?apiConfig :: APIConfig
+getAccessTokensRequest :: ( ?appConfig :: AppConfig
                           , ?manager   :: Manager
                           , ?logger    :: Logger  
                           )  => OAuthToken                                         -- ^ The previously-acquired temp tokens to
@@ -45,7 +45,7 @@ getAccessTokensRequest tempToken verifier =
     tokensRequest = getTokens accessTokenURL "?oauth_token=" (unpack $ token tempToken)
                                                              (oauthSignRequestWithVerifier verifier tempToken)
 
-disconnectRequest :: ( ?apiConfig :: APIConfig
+disconnectRequest :: ( ?appConfig :: AppConfig
                      , ?manager   :: Manager
                      , ?logger    :: Logger                
                      ) => OAuthToken -> IO (Either String (QuickBooksResponse ()))
@@ -53,50 +53,50 @@ disconnectRequest tok = do
   req  <- parseUrl $ disconnectURL
   req' <- oauthSignRequest tok req
   void $ httpLbs req' ?manager
-  logAPICall req'
+  logAPICall' req'
   return $ Right QuickBooksVoidResponse
   
   
-getTokens :: ( ?apiConfig :: APIConfig
+getTokens :: ( ?appConfig :: AppConfig
              , ?manager   :: Manager
              , ?logger    :: Logger 
              ) => String                  -- ^ Endpoint to request the token
                -> String                  -- ^ URL parameter name
                -> String                  -- ^ URL parameter value
-               -> ((?apiConfig :: APIConfig) => Request -> IO Request) -- ^ Signing function
+               -> ((?appConfig :: AppConfig) => Request -> IO Request) -- ^ Signing function
                -> IO (Maybe OAuthToken)
 getTokens tokenURL parameterName parameterValue signRequest = do
   request  <- parseUrl $ concat [tokenURL, parameterName, parameterValue]
   request' <- signRequest request { method="POST", requestBody = RequestBodyLBS "" }
   response <- httpLbs request' ?manager
-  logAPICall request'
+  logAPICall' request'
   return $ tokensFromResponse (responseBody response)
 
 
-oauthSignRequestWithVerifier :: (?apiConfig :: APIConfig) => OAuthVerifier -> OAuthToken -> Request -> IO Request
+oauthSignRequestWithVerifier :: (?appConfig :: AppConfig) => OAuthVerifier -> OAuthToken -> Request -> IO Request
 oauthSignRequestWithVerifier verifier tempTokens = signOAuth oauthApp credsWithVerifier
   where
     credentials       = newCredential (token tempTokens)
                                       (tokenSecret tempTokens)
     credsWithVerifier = injectVerifier (unOAuthVerifier verifier) credentials
-    oauthApp          = newOAuth { oauthConsumerKey    = consumerToken ?apiConfig
-                                 , oauthConsumerSecret = consumerSecret ?apiConfig }
+    oauthApp          = newOAuth { oauthConsumerKey    = consumerToken ?appConfig
+                                 , oauthConsumerSecret = consumerSecret ?appConfig }
 
 
-oauthSignRequest :: (?apiConfig :: APIConfig) => OAuthToken -> Request -> IO Request
+oauthSignRequest :: (?appConfig :: AppConfig) => OAuthToken -> Request -> IO Request
 oauthSignRequest tok req = signOAuth oauthApp credentials req
   where
     credentials = newCredential (token tok)
                                 (tokenSecret tok)
-    oauthApp    = newOAuth { oauthConsumerKey    = consumerToken ?apiConfig
-                           , oauthConsumerSecret = consumerSecret ?apiConfig }
+    oauthApp    = newOAuth { oauthConsumerKey    = consumerToken ?appConfig
+                           , oauthConsumerSecret = consumerSecret ?appConfig }
 
-oauthSignRequestWithEmptyCredentials :: (?apiConfig :: APIConfig) => Request -> IO Request
+oauthSignRequestWithEmptyCredentials :: (?appConfig :: AppConfig) => Request -> IO Request
 oauthSignRequestWithEmptyCredentials = signOAuth oauthApp credentials
   where
     credentials = emptyCredential
-    oauthApp    = newOAuth { oauthConsumerKey    = consumerToken ?apiConfig
-                           , oauthConsumerSecret = consumerSecret ?apiConfig }
+    oauthApp    = newOAuth { oauthConsumerKey    = consumerToken ?appConfig
+                           , oauthConsumerSecret = consumerSecret ?appConfig }
 
 disconnectURL :: String
 disconnectURL = "https://appcenter.intuit.com/api/v1/connection/disconnect"

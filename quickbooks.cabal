@@ -1,5 +1,5 @@
 name:                quickbooks
-version:             0.2.3.0
+version:             0.3.0.0
 synopsis:            QuickBooks API binding.
 -- description:
 license:             BSD3
@@ -59,7 +59,9 @@ source-repository head
 library
   exposed-modules:     QuickBooks
                        QuickBooks.Authentication
+                       QuickBooks.Customer
                        QuickBooks.Invoice
+                       QuickBooks.Item
                        QuickBooks.Logging
                        QuickBooks.Types
 

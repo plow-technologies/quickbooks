@@ -41,10 +41,21 @@ type CallbackURL = String
 newtype OAuthVerifier = OAuthVerifier { unOAuthVerifier :: ByteString }
   deriving (Show, Eq)
 
+-- | QuickBooks Application Keys
+
+data AppConfig = AppConfig
+  { consumerToken  :: !ByteString
+  , consumerSecret :: !ByteString
+  } deriving (Show, Eq)
+
+instance FromJSON AppConfig where
+  parseJSON (Object o) = AppConfig <$> (parseByteString o "consumerToken")
+                                   <*> (parseByteString o "consumerSecret")
+    where parseByteString obj name = encodeUtf8 <$> (obj .: name)
+  parseJSON _ = mzero
+  
 data APIConfig = APIConfig
   { companyId      :: !ByteString
-  , consumerToken  :: !ByteString
-  , consumerSecret :: !ByteString
   , oauthToken     :: !ByteString
   , oauthSecret    :: !ByteString
   , hostname       :: !ByteString
@@ -53,8 +64,6 @@ data APIConfig = APIConfig
 
 instance FromJSON APIConfig where
   parseJSON (Object o) = APIConfig <$> (parseByteString o "companyId")
-                                   <*> (parseByteString o "consumerToken")
-                                   <*> (parseByteString o "consumerSecret")
                                    <*> (parseByteString o "oauthToken")
                                    <*> (parseByteString o "oauthSecret")
                                    <*> (parseByteString o "hostname")
@@ -74,6 +83,12 @@ data instance QuickBooksResponse DeletedInvoice = QuickBooksDeletedInvoiceRespon
 data instance QuickBooksResponse OAuthToken = QuickBooksAuthResponse { tokens :: OAuthToken }
 data instance QuickBooksResponse () = QuickBooksVoidResponse
 
+data instance QuickBooksResponse [Customer] =
+  QuickBooksCustomerResponse { quickBooksResponseCustomer :: [Customer] }
+
+data instance QuickBooksResponse [Item] =
+  QuickBooksItemResponse { quickBooksResponseItem :: [Item] }
+
 instance FromJSON (QuickBooksResponse Invoice) where
   parseJSON (Object o) = QuickBooksInvoiceResponse `fmap` (o .: "Invoice")
   parseJSON _          = fail "Could not parse invoice response from QuickBooks"
@@ -82,17 +97,37 @@ instance FromJSON (QuickBooksResponse DeletedInvoice) where
   parseJSON (Object o) = QuickBooksDeletedInvoiceResponse `fmap` (o .: "Invoice")
   parseJSON _          = fail "Could not parse deleted invoice response from QuickBooks"
 
+instance FromJSON (QuickBooksResponse [Customer]) where
+  parseJSON (Object o) = do
+    let customers =
+          o .: "QueryResponse" >>= \queryResponse -> queryResponse .: "Customer"
+    fmap QuickBooksCustomerResponse customers
+  parseJSON _          = fail "Could not parse customer response from QuickBooks"
+
+instance FromJSON (QuickBooksResponse [Item]) where
+  parseJSON (Object o) = do
+    let items =
+          o .: "QueryResponse" >>= \queryResponse -> queryResponse .: "Item"
+    fmap QuickBooksItemResponse items
+  parseJSON _          = fail "Could not parse item response from QuickBooks"
+
 type QuickBooksQuery a = QuickBooksRequest (QuickBooksResponse a)
+type QuickBooksOAuthQuery a = QuickBooksOAuthRequest (QuickBooksResponse a) 
+
+data QuickBooksOAuthRequest a where
+  GetTempOAuthCredentials :: CallbackURL   -> QuickBooksOAuthQuery OAuthToken
+  GetAccessTokens         :: OAuthVerifier -> QuickBooksOAuthQuery OAuthToken
+  DisconnectQuickBooks    :: QuickBooksOAuthQuery ()
 
 data QuickBooksRequest a where
-  GetTempOAuthCredentials :: CallbackURL -> QuickBooksQuery OAuthToken
-  GetAccessTokens         :: OAuthVerifier -> QuickBooksQuery OAuthToken
   CreateInvoice           :: Invoice     -> QuickBooksQuery Invoice
   ReadInvoice             :: InvoiceId   -> QuickBooksQuery Invoice
   UpdateInvoice           :: Invoice     -> QuickBooksQuery Invoice
   DeleteInvoice           :: InvoiceId   -> SyncToken -> QuickBooksQuery DeletedInvoice
   SendInvoice             :: InvoiceId   -> E.EmailAddress -> QuickBooksQuery Invoice
-  DisconnectQuickBooks    :: QuickBooksQuery ()
+
+  QueryCustomer           :: Text -> QuickBooksQuery [Customer]
+  QueryItem               :: Text -> QuickBooksQuery [Item]
 
 newtype InvoiceId = InvoiceId {unInvoiceId :: Text}
   deriving (Show, Eq, FromJSON, ToJSON)
@@ -278,6 +313,16 @@ data ModificationMetaData = ModificationMetaData
   }
   deriving (Show, Eq)
 
+data TelephoneNumber = TelephoneNumber
+  { telephoneNumberFreeFormNumber :: !Text
+  }
+  deriving (Eq, Show)
+
+data WebSiteAddress = WebAddress
+  { webSiteAddressURI :: !Text
+  }
+  deriving (Eq, Show)
+
 data PhysicalAddress = PhysicalAddress
   { physicalAddressId                     :: !Text
   , physicalAddressLine1                  :: !Text
@@ -455,6 +500,117 @@ defaultInvoice lines customerRef =
 data InvoiceResponse = InvoiceResponse
   { invoiceResponseInvoice :: Invoice }
   deriving (Show, Eq)
+
+data CustomerResponse = CustomerResponse
+  { customerResponseCustomer :: !Customer
+  }
+  deriving (Eq, Show)
+
+data Customer = Customer
+  { customerId                      :: !(Maybe Text)
+  , customerSyncToken               :: !(Maybe SyncToken)
+  , customerMetaData                :: !(Maybe ModificationMetaData)
+  , customerTitle                   :: !(Maybe Text) -- def null
+  , customerGivenName               :: !(Maybe Text) -- max 25 def null
+  , customerMiddleName              :: !(Maybe Text) -- max 25, def null
+  , customerFamilyName              :: !(Maybe Text) -- max 25, def null
+  , customerSuffix                  :: !(Maybe Text) -- max 10, def null
+  , customerFullyQualifiedName      :: !(Maybe Text)
+  , customerCompanyName             :: !(Maybe Text) -- max 50, def null
+  , customerDisplayName             :: !Text -- unique
+  , customerPrintOnCheckName        :: !(Maybe Text) -- max 100
+  , customerActive                  :: !(Maybe Bool) -- def true
+  , customerPrimaryPhone            :: !(Maybe TelephoneNumber)
+  , customerAlternatePhone          :: !(Maybe TelephoneNumber)
+  , customerMobile                  :: !(Maybe TelephoneNumber)
+  , customerFax                     :: !(Maybe TelephoneNumber)
+  , customerPrimaryEmailAddress     :: !(Maybe EmailAddress)
+  , customerWebAddr                 :: !(Maybe WebSiteAddress)
+  , customerDefaultTaxCodeRef       :: !(Maybe TaxCodeRef)
+  , customerTaxable                 :: !(Maybe Bool)
+  , customerBillAddr                :: !(Maybe BillAddr)
+  , customerShipAddr                :: !(Maybe ShipAddr)
+  , customerNotes                   :: !(Maybe Text) -- max 2000
+  , customerJob                     :: !(Maybe Bool) -- def false or null
+  , customerBillWithParent          :: !(Maybe Bool) -- def false or null
+  , customerParentRef               :: !(Maybe CustomerRef)
+  , customerLevel                   :: !(Maybe Int) -- def 0, up to 5
+  , customerSalesTermRef            :: !(Maybe SalesTermRef)
+  , customerPaymentMethodRef        :: !(Maybe Reference)
+  , customerBalance                 :: !(Maybe Double)
+  , customerOpenBalanceDate         :: !(Maybe Text)
+  , customerBalanceWithJobs         :: !(Maybe Double)
+  , customerCurrencyRef             :: !(Maybe CurrencyRef)
+  , customerPreferredDeliveryMethod :: !(Maybe Text)
+  , customerResaleNum               :: !(Maybe Text) -- max 15
+  }
+  deriving (Eq, Show)
+
+data ItemResponse = ItemResponse
+  { itemResponseItem :: !Item
+  }
+  deriving (Eq, Show)
+
+data Item = Item
+  { itemId                   :: !(Maybe Text)
+  , itemSyncToken            :: !(Maybe SyncToken)
+  , itemMetaData             :: !(Maybe ModificationMetaData)
+  , itemName                 :: !Text -- max 100
+  , itemDescription          :: !(Maybe Text) -- max 4000
+  , itemActive               :: !(Maybe Bool) -- def true
+  , itemSubItem              :: !(Maybe Bool) -- def false or null
+  , itemParentRef            :: !(Maybe ItemRef) -- def null
+  , itemLevel                :: !(Maybe Int) -- def 0 up to 5
+  , itemFullyQualifiedName   :: !(Maybe String) -- def null
+  , itemTaxable              :: !(Maybe Bool) -- US only
+  , itemSalesTaxInclusive    :: !(Maybe Bool) -- def false
+  , itemUnitPrice            :: !(Maybe Double) -- max 99999999999, def 0
+  , itemType                 :: !(Maybe Text) -- def Inventory (Inventory/Service)
+  , itemIncomeAccountRef     :: !(Maybe Reference) -- required
+  , itemPurchaseDesc         :: !(Maybe String) -- max 1000
+  , itemPurchaseTaxInclusive :: !(Maybe Bool) -- def false
+  , itemPurchaseCost         :: !(Maybe Double) -- max 99999999999
+  , itemExpenseAccountRef    :: !(Maybe Reference) -- required
+  , itemAssetAccountRef      :: !(Maybe Reference) -- req for inventory items
+  , itemTrackQtyOnHand       :: !(Maybe Bool) -- def false
+  , itemQtyOnHand            :: !(Maybe Double) -- req for inventory items
+  , itemSalesTaxCodeRef      :: !(Maybe Reference)
+  , itemPurchaseTaxCodeRef   :: !(Maybe Reference)
+  , itemInvStartDate         :: !(Maybe Text) -- required for inventory items
+  }
+  deriving (Eq, Show)
+
+$(deriveJSON defaultOptions
+               { fieldLabelModifier = drop 8
+               , omitNothingFields  = True
+               }
+             ''Customer)
+
+$(deriveJSON defaultOptions
+               { fieldLabelModifier = drop 16
+               }
+             ''CustomerResponse)
+
+$(deriveJSON defaultOptions
+               { fieldLabelModifier = drop 4
+               , omitNothingFields  = True
+               }
+             ''Item)
+
+$(deriveJSON defaultOptions
+               { fieldLabelModifier = drop 12
+               }
+             ''ItemResponse)
+
+$(deriveJSON defaultOptions
+               { fieldLabelModifier = drop 15
+               }
+             ''TelephoneNumber)
+
+$(deriveJSON defaultOptions
+               { fieldLabelModifier = drop 14
+               }
+             ''WebSiteAddress)
 
 $(deriveJSON defaultOptions
                { fieldLabelModifier = drop 11

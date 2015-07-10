@@ -2,7 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes       #-}
 {-# LANGUAGE RecordWildCards   #-}
-
+{-# LANGUAGE RankNTypes        #-}
 ------------------------------------------------------------------------------
 -- |
 -- Module      : QuickBooks.Requests
@@ -38,28 +38,33 @@ import Network.HTTP.Types.Header (hAccept,hContentType)
 import QuickBooks.Authentication
 import QuickBooks.Logging (logAPICall, Logger)
 import QuickBooks.Types (APIConfig(..)
+                        ,AppConfig(..) 
                         ,Invoice
                         ,InvoiceId(..)
                         ,QuickBooksResponse
                         ,SyncToken(..)
                         ,DeletedInvoice(..)
-                        , OAuthToken)
+                        ,OAuthToken)
 
 import Text.Email.Validate (EmailAddress, toByteString)
 
 
+type Configured a = ( ?apiConfig :: APIConfig
+                    , ?appConfig :: AppConfig
+                    , ?manager   :: Manager
+                    , ?logger    :: Logger
+                    ) => a
+
 -- | Create an invoice.
-createInvoiceRequest :: ( ?apiConfig :: APIConfig
-                        , ?manager   :: Manager
-                        , ?logger    :: Logger
-                        ) => OAuthToken
-                          -> Invoice                         
-                          -> IO (Either String (QuickBooksResponse Invoice))
+createInvoiceRequest :: Configured (OAuthToken
+                                    -> Invoice                         
+                                    -> IO (Either String (QuickBooksResponse Invoice)))
 createInvoiceRequest tok = postInvoice tok
   
 
 -- | Update an invoice.
 updateInvoiceRequest :: ( ?apiConfig :: APIConfig
+                        , ?appConfig :: AppConfig
                         , ?manager :: Manager
                         , ?logger    :: Logger
                         ) => OAuthToken
@@ -69,6 +74,7 @@ updateInvoiceRequest tok = postInvoice tok
 
 -- | Read an invoice.
 readInvoiceRequest :: ( ?apiConfig :: APIConfig
+                      , ?appConfig :: AppConfig
                       , ?manager   :: Manager
                       , ?logger    :: Logger
                       ) => OAuthToken
@@ -85,6 +91,7 @@ readInvoiceRequest tok iId = do
 
 -- | Delete an invoice.
 deleteInvoiceRequest :: ( ?apiConfig :: APIConfig
+                        , ?appConfig :: AppConfig
                         , ?manager   :: Manager
                         , ?logger    :: Logger
                         ) => OAuthToken
@@ -110,6 +117,7 @@ deleteInvoiceRequest tok iId syncToken = do
 
 -- | email and invoice
 sendInvoiceRequest :: ( ?apiConfig :: APIConfig
+                      , ?appConfig :: AppConfig
                       , ?manager   :: Manager
                       , ?logger    :: Logger
                       ) => OAuthToken
@@ -132,6 +140,7 @@ invoiceURITemplate APIConfig{..} = [i|https://#{hostname}/v3/company/#{companyId
 
 
 postInvoice :: ( ?apiConfig :: APIConfig
+               , ?appConfig :: AppConfig
                , ?manager   :: Manager
                , ?logger    :: Logger
                ) => OAuthToken
