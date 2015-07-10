@@ -29,7 +29,6 @@ import QuickBooks.Types
 import qualified Data.Aeson as Aeson
 import Data.String.Interpolate (i)
 import Data.Text (Text)
-import qualified Data.Text as Text
 import Network.HTTP.Client
 import Network.HTTP.Types.Header (hAccept)
 
@@ -54,14 +53,15 @@ queryItemRequest tok queryItemName = do
                  }
   resp <- httpLbs req' ?manager
   logAPICall req'
-  return (Aeson.eitherDecode (responseBody resp))
+  let eitherAllItems = Aeson.eitherDecode (responseBody resp)
+  case eitherAllItems of
+    Left er -> return (Left er)
+    Right (QuickBooksItemResponse allItems) ->
+      return $ Right $ QuickBooksItemResponse $
+        filter (\Item{..} -> itemName == queryItemName) allItems
   where
-    query =
-      Text.concat
-        [ "SELECT * FROM Item WHERE Name='"
-        , queryItemName
-        ,  "' ORDER BY Name"
-        ]
+    query :: String
+    query = "SELECT * FROM Item"
 
 queryURITemplate :: APIConfig -> String
 queryURITemplate APIConfig{..} =
