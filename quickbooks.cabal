@@ -1,5 +1,5 @@
 name:                quickbooks
-version:             0.3.0.1
+version:             0.3.0.2
 synopsis:            QuickBooks API binding.
 -- description:
 license:             BSD3
