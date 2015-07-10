@@ -59,7 +59,9 @@ source-repository head
 library
   exposed-modules:     QuickBooks
                        QuickBooks.Authentication
+                       QuickBooks.Customer
                        QuickBooks.Invoice
+                       QuickBooks.Item
                        QuickBooks.Logging
                        QuickBooks.Types
 
