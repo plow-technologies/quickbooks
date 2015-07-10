@@ -39,6 +39,7 @@ module QuickBooks
   , EmailAddress
   , emailAddress
   , sendInvoice
+  , sendInvoice'
     -- * Name list entities
     -- ** Customer
   , queryCustomer
@@ -270,7 +271,7 @@ deleteInvoice' apiConfig appConfig tok iId = queryQuickBooks' apiConfig appConfi
 -- >>> :{
 -- do eitherSendInvoice <- sendInvoice oAuthToken cInvoiceId testEmail
 --    case eitherSendInvoice of
---      Left e -> putStrLn e
+--      Left e  -> putStrLn e
 --      Right _ -> putStrLn "I sent an invoice!"
 -- :}
 -- I sent an invoice!
@@ -281,6 +282,15 @@ deleteInvoice' apiConfig appConfig tok iId = queryQuickBooks' apiConfig appConfi
 
 sendInvoice ::  OAuthToken -> InvoiceId -> EmailAddress -> IO (Either String (QuickBooksResponse Invoice))
 sendInvoice tok invId = queryQuickBooks tok . SendInvoice invId
+
+sendInvoice' :: APIConfig
+             -> AppConfig
+             -> OAuthToken
+             -> InvoiceId
+             -> EmailAddress
+             -> IO (Either String (QuickBooksResponse Invoice))
+sendInvoice' apiConfig appConfig tok invId  =
+  queryQuickBooks' apiConfig appConfig tok . SendInvoice invId
 
 -- | Get temporary tokens to request permission.
 --
