@@ -29,7 +29,6 @@ import QuickBooks.Types
 import qualified Data.Aeson as Aeson
 import Data.String.Interpolate (i)
 import Data.Text (Text)
-import qualified Data.Text as Text
 import Network.HTTP.Client
 import Network.HTTP.Types.Header (hAccept)
 
@@ -61,6 +60,7 @@ queryItemRequest tok queryItemName = do
       return $ Right $ QuickBooksItemResponse $
         filter (\Item{..} -> itemName == queryItemName) allItems
   where
+    query :: String
     query = "SELECT * FROM Item"
 
 queryURITemplate :: APIConfig -> String
