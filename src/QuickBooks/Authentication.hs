@@ -1,6 +1,7 @@
 {-# LANGUAGE ImplicitParams     #-}
 {-# LANGUAGE OverloadedStrings  #-}
 {-# LANGUAGE RankNTypes         #-}
+{-# LANGUAGE ConstraintKinds    #-}
 
 module QuickBooks.Authentication
   ( getTempOAuthCredentialsRequest
@@ -14,57 +15,56 @@ import Control.Monad (void, liftM, ap)
 import Data.Monoid ((<>))
 import qualified Data.ByteString.Lazy as BSL
 import Data.ByteString.Char8 (unpack, ByteString)
+import Network.HTTP.Client (Manager
+                           ,Request(..)
+                           ,RequestBody(RequestBodyLBS)
+                           ,responseBody
+                           ,parseUrl
+                           ,httpLbs)
+import Network.HTTP.Types.URI (parseSimpleQuery)
+import Web.Authenticate.OAuth (signOAuth
+                              ,newCredential
+                              ,emptyCredential
+                              ,injectVerifier
+                              ,newOAuth
+                              ,OAuth(..))
+
+import QuickBooks.Logging (logAPICall')
 import QuickBooks.Types
-import Network.HTTP.Client (Manager, Request(..), RequestBody(RequestBodyLBS), responseBody, parseUrl, httpLbs)
-import Network.HTTP.Types.URI
-import Web.Authenticate.OAuth (signOAuth, newCredential, emptyCredential, injectVerifier, newOAuth, OAuth(..))
 
-import QuickBooks.Logging (logAPICall', Logger)
-
-getTempOAuthCredentialsRequest :: ( ?appConfig :: AppConfig
-                                  , ?manager   :: Manager
-                                  , ?logger    :: Logger                
-                                  ) => CallbackURL
-                                    -> IO (Either String (QuickBooksResponse OAuthToken)) -- ^ An OAuthToken with temporary credentials
-
+getTempOAuthCredentialsRequest :: AppEnv
+                               => CallbackURL
+                               -> IO (Either String (QuickBooksResponse OAuthToken)) -- ^ Temporary OAuthToken
 getTempOAuthCredentialsRequest callbackURL =
   return.handleQuickBooksTokenResponse "Couldn't get temporary tokens" =<< tokensRequest
     where tokensRequest = getTokens temporaryTokenURL "?oauth_callback=" callbackURL oauthSignRequestWithEmptyCredentials
 
-getAccessTokensRequest :: ( ?appConfig :: AppConfig
-                          , ?manager   :: Manager
-                          , ?logger    :: Logger  
-                          )  => OAuthToken                                         -- ^ The previously-acquired temp tokens to
-                                                                                   --   use in signing this request
-                             -> OAuthVerifier                                      -- ^ The OAuthVerifier provided to the callback
-                             -> IO (Either String (QuickBooksResponse OAuthToken)) -- ^ OAuthToken containing access tokens
-                                                                                   --   for a resource-owner
+getAccessTokensRequest :: AppEnv
+                       => OAuthToken                                         -- ^ Temporary Token
+                       -> OAuthVerifier                                      -- ^ OAuthVerifier provided by QuickBooks
+                       -> IO (Either String (QuickBooksResponse OAuthToken)) -- ^ OAuthToken                                                                                 
 getAccessTokensRequest tempToken verifier =
   return.handleQuickBooksTokenResponse "Couldn't get access tokens" =<< tokensRequest
   where
     tokensRequest = getTokens accessTokenURL "?oauth_token=" (unpack $ token tempToken)
                                                              (oauthSignRequestWithVerifier verifier tempToken)
-
-disconnectRequest :: ( ?appConfig :: AppConfig
-                     , ?manager   :: Manager
-                     , ?logger    :: Logger                
-                     ) => OAuthToken -> IO (Either String (QuickBooksResponse ()))
+                    
+disconnectRequest :: AppEnv
+                  => OAuthToken
+                  -> IO (Either String (QuickBooksResponse ()))
 disconnectRequest tok = do
   req  <- parseUrl $ disconnectURL
   req' <- oauthSignRequest tok req
   void $ httpLbs req' ?manager
   logAPICall' req'
   return $ Right QuickBooksVoidResponse
-  
-  
-getTokens :: ( ?appConfig :: AppConfig
-             , ?manager   :: Manager
-             , ?logger    :: Logger 
-             ) => String                  -- ^ Endpoint to request the token
-               -> String                  -- ^ URL parameter name
-               -> String                  -- ^ URL parameter value
-               -> ((?appConfig :: AppConfig) => Request -> IO Request) -- ^ Signing function
-               -> IO (Maybe OAuthToken)
+    
+getTokens :: AppEnv
+          => String                  -- ^ Endpoint to request the token
+          -> String                  -- ^ URL parameter name
+          -> String                  -- ^ URL parameter value
+          -> ((?appConfig :: AppConfig) => Request -> IO Request) -- ^ Signing function
+          -> IO (Maybe OAuthToken)
 getTokens tokenURL parameterName parameterValue signRequest = do
   request  <- parseUrl $ concat [tokenURL, parameterName, parameterValue]
   request' <- signRequest request { method="POST", requestBody = RequestBodyLBS "" }
@@ -72,8 +72,11 @@ getTokens tokenURL parameterName parameterValue signRequest = do
   logAPICall' request'
   return $ tokensFromResponse (responseBody response)
 
-
-oauthSignRequestWithVerifier :: (?appConfig :: AppConfig) => OAuthVerifier -> OAuthToken -> Request -> IO Request
+oauthSignRequestWithVerifier :: (?appConfig :: AppConfig)
+                             => OAuthVerifier
+                             -> OAuthToken
+                             -> Request
+                             -> IO Request
 oauthSignRequestWithVerifier verifier tempTokens = signOAuth oauthApp credsWithVerifier
   where
     credentials       = newCredential (token tempTokens)
@@ -82,8 +85,10 @@ oauthSignRequestWithVerifier verifier tempTokens = signOAuth oauthApp credsWithV
     oauthApp          = newOAuth { oauthConsumerKey    = consumerToken ?appConfig
                                  , oauthConsumerSecret = consumerSecret ?appConfig }
 
-
-oauthSignRequest :: (?appConfig :: AppConfig) => OAuthToken -> Request -> IO Request
+oauthSignRequest :: (?appConfig :: AppConfig)
+                 => OAuthToken
+                 -> Request
+                 -> IO Request
 oauthSignRequest tok req = signOAuth oauthApp credentials req
   where
     credentials = newCredential (token tok)
@@ -91,7 +96,9 @@ oauthSignRequest tok req = signOAuth oauthApp credentials req
     oauthApp    = newOAuth { oauthConsumerKey    = consumerToken ?appConfig
                            , oauthConsumerSecret = consumerSecret ?appConfig }
 
-oauthSignRequestWithEmptyCredentials :: (?appConfig :: AppConfig) => Request -> IO Request
+oauthSignRequestWithEmptyCredentials :: (?appConfig :: AppConfig)
+                                     => Request
+                                     -> IO Request
 oauthSignRequestWithEmptyCredentials = signOAuth oauthApp credentials
   where
     credentials = emptyCredential

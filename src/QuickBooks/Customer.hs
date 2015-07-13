@@ -2,6 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes       #-}
 {-# LANGUAGE RecordWildCards   #-}
+{-# LANGUAGE ConstraintKinds   #-}
 
 ------------------------------------------------------------------------------
 -- |
@@ -34,15 +35,10 @@ import Network.HTTP.Types.Header (hAccept)
 
 -- GET /v3/company/<companyID>/query=<selectStatement>
 
-queryCustomerRequest
-  :: ( ?apiConfig :: APIConfig
-     , ?appConfig :: AppConfig
-     , ?manager   :: Manager
-     , ?logger    :: Logger
-     )
-  => OAuthToken
-  -> Text
-  -> IO (Either String (QuickBooksResponse [Customer]))
+queryCustomerRequest :: APIEnv 
+                     => OAuthToken
+                     -> Text
+                     -> IO (Either String (QuickBooksResponse [Customer]))
 queryCustomerRequest tok queryCustomerName = do
   let apiConfig = ?apiConfig
   let queryURI = parseUrl [i|#{queryURITemplate apiConfig}#{query}|]

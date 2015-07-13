@@ -2,7 +2,10 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes       #-}
 {-# LANGUAGE RecordWildCards   #-}
+{-# LANGUAGE ConstraintKinds   #-}
+{-# LANGUAGE TypeOperators     #-}
 {-# LANGUAGE RankNTypes        #-}
+{-# LANGUAGE PolyKinds         #-}
 ------------------------------------------------------------------------------
 -- |
 -- Module      : QuickBooks.Requests
@@ -27,59 +30,46 @@ module QuickBooks.Invoice
 
 import Data.Aeson                (encode, eitherDecode, object, Value(String))
 import Data.String.Interpolate   (i)
-import Network.HTTP.Client       (Manager
-                                 ,httpLbs
+import Network.HTTP.Client       (httpLbs
                                  ,parseUrl
                                  ,Request(..)
                                  ,RequestBody(..)
                                  ,Response(responseBody))
 import Network.HTTP.Types.Header (hAccept,hContentType)
 
-import QuickBooks.Authentication
-import QuickBooks.Logging (logAPICall, Logger)
+import QuickBooks.Authentication (oauthSignRequest)
+
 import QuickBooks.Types (APIConfig(..)
-                        ,AppConfig(..) 
                         ,Invoice
                         ,InvoiceId(..)
                         ,QuickBooksResponse
                         ,SyncToken(..)
                         ,DeletedInvoice(..)
-                        ,OAuthToken)
+                        ,OAuthToken
+                        ,APIEnv)
 
 import Text.Email.Validate (EmailAddress, toByteString)
-
-
-type Configured a = ( ?apiConfig :: APIConfig
-                    , ?appConfig :: AppConfig
-                    , ?manager   :: Manager
-                    , ?logger    :: Logger
-                    ) => a
+import QuickBooks.Logging  (logAPICall)
 
 -- | Create an invoice.
-createInvoiceRequest :: Configured (OAuthToken
-                                    -> Invoice                         
-                                    -> IO (Either String (QuickBooksResponse Invoice)))
+createInvoiceRequest :: APIEnv
+                     => OAuthToken
+                     -> Invoice                        
+                     -> IO (Either String (QuickBooksResponse Invoice))
 createInvoiceRequest tok = postInvoice tok
-  
-
+                           
 -- | Update an invoice.
-updateInvoiceRequest :: ( ?apiConfig :: APIConfig
-                        , ?appConfig :: AppConfig
-                        , ?manager :: Manager
-                        , ?logger    :: Logger
-                        ) => OAuthToken
-                          -> Invoice
-                          -> IO (Either String (QuickBooksResponse Invoice))
+updateInvoiceRequest :: APIEnv
+                     => OAuthToken
+                     -> Invoice
+                     -> IO (Either String (QuickBooksResponse Invoice))
 updateInvoiceRequest tok = postInvoice tok
 
 -- | Read an invoice.
-readInvoiceRequest :: ( ?apiConfig :: APIConfig
-                      , ?appConfig :: AppConfig
-                      , ?manager   :: Manager
-                      , ?logger    :: Logger
-                      ) => OAuthToken
-                        -> InvoiceId
-                        -> IO (Either String (QuickBooksResponse Invoice))
+readInvoiceRequest :: APIEnv
+                   => OAuthToken
+                   -> InvoiceId
+                   -> IO (Either String (QuickBooksResponse Invoice))
 readInvoiceRequest tok iId = do
   let apiConfig = ?apiConfig
   req  <- oauthSignRequest tok =<< parseUrl [i|#{invoiceURITemplate apiConfig}#{unInvoiceId iId}|]
@@ -90,14 +80,11 @@ readInvoiceRequest tok iId = do
   return $ eitherDecode $ responseBody resp
 
 -- | Delete an invoice.
-deleteInvoiceRequest :: ( ?apiConfig :: APIConfig
-                        , ?appConfig :: AppConfig
-                        , ?manager   :: Manager
-                        , ?logger    :: Logger
-                        ) => OAuthToken
-                          -> InvoiceId
-                          -> SyncToken
-                          -> IO (Either String (QuickBooksResponse DeletedInvoice))
+deleteInvoiceRequest :: APIEnv
+                     => OAuthToken
+                     -> InvoiceId
+                     -> SyncToken
+                     -> IO (Either String (QuickBooksResponse DeletedInvoice))
 deleteInvoiceRequest tok iId syncToken = do
   let apiConfig = ?apiConfig
   req  <- parseUrl [i|#{invoiceURITemplate apiConfig}?operation=delete|]
@@ -116,14 +103,11 @@ deleteInvoiceRequest tok iId syncToken = do
                   ]
 
 -- | email and invoice
-sendInvoiceRequest :: ( ?apiConfig :: APIConfig
-                      , ?appConfig :: AppConfig
-                      , ?manager   :: Manager
-                      , ?logger    :: Logger
-                      ) => OAuthToken
-                        -> InvoiceId 
-                        -> EmailAddress 
-                        -> IO (Either String (QuickBooksResponse Invoice))
+sendInvoiceRequest :: APIEnv
+                   => OAuthToken
+                   -> InvoiceId 
+                   -> EmailAddress 
+                   -> IO (Either String (QuickBooksResponse Invoice))
 sendInvoiceRequest tok iId emailAddr =  do
   let apiConfig = ?apiConfig
   req  <- parseUrl [i|#{invoiceURITemplate apiConfig}#{unInvoiceId iId}/send?sendTo=#{toByteString emailAddr}|]
@@ -139,13 +123,10 @@ invoiceURITemplate :: APIConfig -> String
 invoiceURITemplate APIConfig{..} = [i|https://#{hostname}/v3/company/#{companyId}/invoice/|]
 
 
-postInvoice :: ( ?apiConfig :: APIConfig
-               , ?appConfig :: AppConfig
-               , ?manager   :: Manager
-               , ?logger    :: Logger
-               ) => OAuthToken
-                 -> Invoice
-                 -> IO (Either String (QuickBooksResponse Invoice))
+postInvoice :: APIEnv
+            => OAuthToken
+            -> Invoice
+            -> IO (Either String (QuickBooksResponse Invoice))
 postInvoice tok invoice = do
   let apiConfig = ?apiConfig
   req <- parseUrl [i|#{invoiceURITemplate apiConfig}|]
