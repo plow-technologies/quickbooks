@@ -20,14 +20,12 @@ import Data.Thyme
 import Network.HTTP.Client       (Request(..),RequestBody(..),getUri)
 import System.IO.Unsafe
 import System.Locale 
-import System.Log.FastLogger     (LoggerSet, LogStr, pushLogStr, flushLogStr, newStdoutLoggerSet)
+import System.Log.FastLogger     (LogStr, pushLogStr, flushLogStr, newStdoutLoggerSet)
 import qualified Data.ByteString.Char8 as BS
 
-import QuickBooks.Types (APIConfig(..))
+import QuickBooks.Types (APIConfig(..), Logger)
 
-type Logger = LoggerSet
-
-apiLogger :: IORef LoggerSet
+apiLogger :: IORef Logger
 apiLogger = unsafePerformIO $ newIORef =<< newStdoutLoggerSet 0
 
 getLogger :: IORef Logger -> IO Logger

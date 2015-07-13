@@ -6,6 +6,8 @@
 {-# LANGUAGE RecordWildCards            #-}
 {-# LANGUAGE TemplateHaskell            #-}
 {-# LANGUAGE TypeFamilies               #-}
+{-# LANGUAGE ConstraintKinds            #-}
+
 
 ------------------------------------------------------------------------------
 -- |
@@ -35,6 +37,10 @@ import           Data.Text           (Text)
 import           Data.Text.Encoding  (encodeUtf8, decodeUtf8)
 import           Prelude             hiding (lines)
 import qualified Text.Email.Validate as E (EmailAddress)
+import           System.Log.FastLogger (LoggerSet)
+import           Network.HTTP.Client   (Manager)
+
+type Logger = LoggerSet
 
 type CallbackURL = String
 
@@ -79,6 +85,22 @@ instance ToJSON APIConfig where
                                                                   "hostname" .= (decodeUtf8 hName),
                                                                   "loggingEnabled" .= (decodeUtf8 lEnabled)
                                                                 ]
+                                                                
+  
+type APIEnv = ( ?apiConfig :: APIConfig
+              , AppEnv               
+              , NetworkEnv              
+              )
+
+type AppEnv = ( ?appConfig :: AppConfig
+              , NetworkEnv   
+              )
+              
+type NetworkEnv = ( ?manager :: Manager
+                  , ?logger  :: Logger
+                  )
+             
+
 -- | A request or access OAuth token.
 
 data OAuthToken = OAuthToken
