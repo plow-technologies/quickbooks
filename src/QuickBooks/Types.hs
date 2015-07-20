@@ -100,7 +100,6 @@ type NetworkEnv = ( ?manager :: Manager
                   , ?logger  :: Logger
                   )
              
-
 -- | A request or access OAuth token.
 
 data OAuthToken = OAuthToken
