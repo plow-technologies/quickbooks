@@ -1,5 +1,5 @@
 name:                quickbooks
-version:             0.3.0.5
+version:             0.4.0.0
 synopsis:            QuickBooks API binding.
 -- description:
 license:             BSD3
@@ -95,4 +95,4 @@ test-suite doctests
 
   build-depends:
     base,
-    doctest == 0.9.*
+    doctest
