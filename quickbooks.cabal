@@ -70,7 +70,10 @@ library
   default-language:    Haskell2010
   ghc-options:         -Wall
   build-depends:         base >= 4.7   && < 5
-                       , aeson
+                         -- We restrict the version of aeson until
+                         -- https://github.com/bos/aeson/issues/293
+                         -- is fixed.
+                       , aeson == 0.9.0.1
                        , authenticate-oauth
                        , bytestring
                        , http-client
