@@ -73,7 +73,7 @@ library
                          -- We restrict the version of aeson until
                          -- https://github.com/bos/aeson/issues/293
                          -- is fixed.
-                       , aeson == 0.9.0.1
+                       , aeson <= 0.9.0.1
                        , authenticate-oauth
                        , bytestring
                        , http-client
