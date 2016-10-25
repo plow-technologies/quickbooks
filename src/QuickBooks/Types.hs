@@ -7,7 +7,7 @@
 {-# LANGUAGE TemplateHaskell            #-}
 {-# LANGUAGE TypeFamilies               #-}
 {-# LANGUAGE ConstraintKinds            #-}
-
+{-# LANGUAGE FlexibleInstances          #-}
 
 ------------------------------------------------------------------------------
 -- |
