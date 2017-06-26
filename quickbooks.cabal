@@ -87,15 +87,36 @@ library
                        , email-validate
                        , yaml
 
-test-suite doctests
+test-suite api-tests
   type:             exitcode-stdio-1.0
   default-language: Haskell2010
   ghc-options:      -Wall -threaded
   hs-source-dirs:   src, test
-  main-is:          doctests.hs
-
-  other-modules:   Data
+  main-is:          Main.hs
+  other-modules:    QuickBooks
+                  , QuickBooks.Authentication
+                  , QuickBooks.Customer
+                  , QuickBooks.Invoice
+                  , QuickBooks.Item
+                  , QuickBooks.Logging
+                  , QuickBooks.Types
 
   build-depends:
-    base >= 4.7 && < 5,
-    doctest
+      base >= 4.7 && < 5
+    , tasty
+    , tasty-hunit
+    , tasty-quickcheck
+    , tasty-smallcheck
+    , aeson
+    , authenticate-oauth
+    , bytestring
+    , http-client
+    , http-types
+    , http-client-tls
+    , interpolate
+    , text
+    , fast-logger
+    , thyme
+    , old-locale
+    , email-validate
+    , yaml

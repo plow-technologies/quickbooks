@@ -77,6 +77,7 @@ import QuickBooks.Item
 import QuickBooks.Logging      (apiLogger, getLogger)
 import Data.Yaml (ParseException, decodeFileEither)
 
+-- Unsued DocTest (removed 6-26-17)
 -- $setup
 --
 -- >>> import Data
@@ -114,6 +115,7 @@ queryCustomer'
 queryCustomer' apiConfig appConfig tok =
   queryQuickBooks' apiConfig appConfig tok . QueryCustomer
 
+-- Unused DocTest (removed 6-26-17)
 -- |
 --
 -- >>> :{
@@ -142,6 +144,7 @@ queryItem'
 queryItem' apiConfig appConfig tok =
   queryQuickBooks' apiConfig appConfig tok . QueryItem
 
+-- Unused DocTest (removed 6-26-17)
 -- | Create an invoice.
 --
 -- Example:
@@ -166,7 +169,7 @@ createInvoice tok = queryQuickBooks tok . CreateInvoice
 createInvoice' :: APIConfig -> AppConfig -> OAuthToken -> Invoice -> IO (Either String (QuickBooksResponse Invoice))
 createInvoice' apiConfig appConfig tok = queryQuickBooks' apiConfig appConfig tok . CreateInvoice
 
-
+-- Unused DocTest (removed 6-26-17)
 -- | Retrieve the details of an invoice that has been previously created.
 --
 -- Example:
@@ -198,6 +201,7 @@ readInvoice tok = queryQuickBooks tok . ReadInvoice
 readInvoice' :: APIConfig -> AppConfig -> OAuthToken -> InvoiceId -> IO (Either String (QuickBooksResponse Invoice))
 readInvoice' apiConfig appConfig tok = queryQuickBooks' apiConfig appConfig tok . ReadInvoice
 
+-- Unused DocTest (removed 6-26-17)
 -- | Update an invoice.
 --
 -- Example:
@@ -230,6 +234,7 @@ updateInvoice tok = queryQuickBooks tok . UpdateInvoice
 updateInvoice' :: APIConfig -> AppConfig -> OAuthToken -> Invoice -> IO (Either String (QuickBooksResponse Invoice))
 updateInvoice' apiConfig appConfig tok = queryQuickBooks' apiConfig appConfig tok . UpdateInvoice
 
+-- Unused DocTest (removed 6-26-17)
 -- | Delete an invoice.
 --
 -- Example:
@@ -259,6 +264,7 @@ deleteInvoice' :: APIConfig -> AppConfig -> OAuthToken -> InvoiceId -> SyncToken
 deleteInvoice' apiConfig appConfig tok iId = queryQuickBooks' apiConfig appConfig tok . DeleteInvoice iId
 
 
+-- Unused DocTest (removed 6-26-17)
 -- | Send an invoice via email.
 --
 -- Example:
@@ -296,6 +302,7 @@ sendInvoice' :: APIConfig
 sendInvoice' apiConfig appConfig tok invId  =
   queryQuickBooks' apiConfig appConfig tok . SendInvoice invId
 
+-- Unused DocTest (removed 6-26-17)
 -- | Get temporary tokens to request permission.
 --
 -- Example:
@@ -306,7 +313,6 @@ sendInvoice' apiConfig appConfig tok invId  =
 --      Left e -> putStrLn e
 --      Right _ -> putStrLn "I got my request tokens!"
 -- :}
--- ...
 -- I got my request tokens!
 
 getTempTokens :: CallbackURL -> IO (Either String (QuickBooksResponse OAuthToken))
