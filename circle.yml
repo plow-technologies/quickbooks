@@ -1,29 +1,43 @@
+# This is a default circle.yml that can be used as
+# starting point.
+
 machine:
-  ghc:
-    version: 7.10.1
+  pre:
+    - echo 'deb http://download.fpcomplete.com/ubuntu precise main'|sudo tee /etc/apt/sources.list.d/fpco.list
+    - sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 575159689BEFB442
+    - sudo apt-get update
+    - sudo apt-get install gcc-4.8
+    - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.8 90
+    - gcc --version
+    - sudo apt-get install stack -y
+    
+  environment:
+    PATH: $HOME/.local/bin:$HOME/.cabal/bin:$CIRCLE_ARTIFACTS:$PATH:$HOME/$CIRCLE_PROJECT_REPONAME/.cabal-sandbox/bin
 
 dependencies:
-  pre:
-    - cabal update
-
   cache_directories:
-    - ".cabal-sandbox"
-
+    - ".stack-work"
+    - "~/.stack"
+  
   override:
-    - git clone git@github.com:plow-technologies/plow-scripts.git
-    - cabal sandbox init
-    - cabal install --only-dependencies --enable-tests -j2:
-        timeout: 3000    
-    - cabal configure --enable-tests
+    - cd ~ && git clone git@github.com:plow-technologies/plow-scripts.git
+    - stack setup
+    - stack build --only-dependencies -j2
 
 test:
   override:
-    - cabal build -j2:
-        timeout: 3000    
-    - cabal test --show-details=always -j2
-    
+  # Use stack test if you want to run tests
+    - stack test -j2
+    - stackPath=$(stack path --dist-dir) && echo $stackPath && echo export stackPath=$stackPath >> ~/.bashrc && source ~/.bashrc
+
+# Comment this section below if you don't want to upload to hackage
 deployment:
   staging:
     branch: master
     commands:
-       - sh plow-scripts/hackage.sh
+      # Tag Release
+      - git clone git@github.com:Daniel-Diaz/tagthis.git
+      - cd tagthis && stack setup && stack build -j2
+      - git config --global user.email "ar@plowtech.net"
+      - git config --global user.name "plowtech-bot"
+      - tagthis/.stack-work/dist/x86_64-linux/Cabal*/build/tagthis/tagthis
