@@ -82,6 +82,7 @@ library
                        , interpolate
                        , text
                        , fast-logger
+                       , time
                        , thyme
                        , old-locale
                        , email-validate
@@ -105,6 +106,7 @@ test-suite api-tests
       base >= 4.7 && < 5
     , tasty
     , tasty-hunit
+    , QuickCheck
     , tasty-quickcheck
     , tasty-smallcheck
     , aeson
@@ -116,6 +118,7 @@ test-suite api-tests
     , interpolate
     , text
     , fast-logger
+    , time
     , thyme
     , old-locale
     , email-validate

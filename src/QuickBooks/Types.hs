@@ -25,7 +25,7 @@
 
 module QuickBooks.Types where
 
-import           Control.Applicative ((<$>), (<*>))
+import           Control.Applicative ((<$>), (<*>), (<|>))
 import           Control.Monad       (mzero)
 import           Data.Aeson          (FromJSON (..), ToJSON(..), Value (Object),
                                       (.:), object, (.=))
@@ -123,6 +123,7 @@ instance FromJSON (QuickBooksResponse Invoice) where
   parseJSON (Object o) = QuickBooksInvoiceResponse `fmap` (o .: "Invoice")
   parseJSON _          = fail "Could not parse invoice response from QuickBooks"
 
+
 instance FromJSON (QuickBooksResponse DeletedInvoice) where
   parseJSON (Object o) = QuickBooksDeletedInvoiceResponse `fmap` (o .: "Invoice")
   parseJSON _          = fail "Could not parse deleted invoice response from QuickBooks"
@@ -135,10 +136,15 @@ instance FromJSON (QuickBooksResponse [Customer]) where
   parseJSON _          = fail "Could not parse customer response from QuickBooks"
 
 instance FromJSON (QuickBooksResponse [Item]) where
-  parseJSON (Object o) = do
-    let items =
-          o .: "QueryResponse" >>= \queryResponse -> queryResponse .: "Item"
-    fmap QuickBooksItemResponse items
+  parseJSON (Object o) = parseQueryResponse o <|> parseItems o <|> parseSingleItem o
+    where
+      parseQueryResponse obj = do
+        qResponse <- obj .: "QueryResponse"
+        parseItems qResponse
+      parseItems obj = QuickBooksItemResponse <$> obj .: "Item"
+      parseSingleItem obj = do
+        i <- obj .: "Item"
+        return $ QuickBooksItemResponse [i]
   parseJSON _          = fail "Could not parse item response from QuickBooks"
 
 type QuickBooksQuery a = QuickBooksRequest (QuickBooksResponse a)
@@ -157,6 +163,10 @@ data QuickBooksRequest a where
   SendInvoice             :: InvoiceId   -> E.EmailAddress -> QuickBooksQuery Invoice
 
   QueryCustomer           :: Text -> QuickBooksQuery [Customer]
+  CreateItem              :: Item -> QuickBooksQuery [Item]
+  ReadItem                :: Text -> QuickBooksQuery [Item]
+  UpdateItem              :: Item -> QuickBooksQuery [Item]
+  DeleteItem              :: Item -> QuickBooksQuery [Item]
   QueryItem               :: Text -> QuickBooksQuery [Item]
 
 newtype InvoiceId = InvoiceId {unInvoiceId :: Text}
@@ -626,6 +636,7 @@ $(deriveJSON defaultOptions
                , omitNothingFields  = True
                }
              ''Item)
+
 
 $(deriveJSON defaultOptions
                { fieldLabelModifier = drop 12

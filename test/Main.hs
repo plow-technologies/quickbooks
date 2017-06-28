@@ -7,11 +7,17 @@ import Test.Tasty.SmallCheck as SC
 import Test.Tasty.QuickCheck as QC
 import Test.Tasty.HUnit
 import QuickBooks
+import Test.QuickCheck.Arbitrary       (arbitrary)
+import Test.QuickCheck.Gen             (generate)
 
 import           Control.Monad         (ap, liftM)
+import           Control.Monad.IO.Class (liftIO)
 import           Data.ByteString.Char8 (pack)
 import           Data.Maybe            (fromJust)
 import           Data.String
+import           Data.Time.Clock       (getCurrentTime)
+import qualified Data.Text             as T
+import           Data.Text             (Text)
 import           QuickBooks.Types
 import           System.Environment    (getEnvironment, getEnv)
 import qualified Text.Email.Validate   as E (EmailAddress, emailAddress)
@@ -23,18 +29,23 @@ main = do
     defaultMain $ tests oAuthToken'
 
 tests :: OAuthToken -> TestTree
-tests tok = testGroup "tests" [ testCase "Query Customer" $ queryCustomerTest tok
-                              , testCase "Query Item" $ queryItemTest tok
+tests tok = testGroup "tests" [-- testCase "Query Customer" $ queryCustomerTest tok
+                               testCase "Query Item" $ queryItemTest tok
+                              , testCase "Create Item" $ createItemTest tok
+                              , testCase "Read Item" $ readItemTest tok
+                              , testCase "Update Item" $ updateItemTest tok
+                              , testCase "Delete Item" $ deleteItemTest tok
                               , testCase "Create Invoice" $ createInvoiceTest tok
                               , testCase "Read Invoice" $ readInvoiceTest tok
                               , testCase "Update Invoice" $ updateInvoiceTest tok
                               , testCase "Delete Invoice" $ deleteInvoiceTest tok
                               , testCase "Email Invoice" $ emailInvoiceTest tok
-                              , testCase "Temp Tokens" $ tempTokenTest]
+                              , testCase "Temp Tokens" $ tempTokenTest
+                              ]
 
----------
---Tests--
----------
+-----------  Note: There is a very small chance that they may fail due to duplicate name errors on create.
+-- Tests --  Just rerun the tests and they will likely pass.
+-----------
 queryCustomerTest :: OAuthToken -> Assertion
 queryCustomerTest oAuthToken = do
   eitherQueryCustomer <-
@@ -45,6 +56,60 @@ queryCustomerTest oAuthToken = do
     _ ->
       assertEither "Faild to query customer" eitherQueryCustomer
 
+---- Create Item ----
+createItemTest :: OAuthToken -> Assertion
+createItemTest oAuthToken = do
+  testItem <- makeTestItem
+  resp <- createItem oAuthToken testItem
+  case resp of
+    Left err -> assertEither ("My custom error message: " ++ err) resp
+    Right (QuickBooksItemResponse (item:_)) -> do
+      deleteItem oAuthToken item
+      assertEither "I created an invoice!" resp
+
+---- Read Item ----
+readItemTest :: OAuthToken -> Assertion
+readItemTest oAuthToken = do
+  testItem <- makeTestItem
+  Right (QuickBooksItemResponse (cItem:_)) <- createItem oAuthToken testItem
+  let (Just iId) = itemId cItem
+  eitherReadItem <- readItem oAuthToken iId
+  case eitherReadItem of
+    Left _ -> do
+      deleteItem oAuthToken cItem
+      assertEither "Failed to read item" eitherReadItem
+    Right (QuickBooksItemResponse (rItem:_)) -> do
+      deleteItem oAuthToken cItem
+      assertBool "Read the Item" (itemId cItem == itemId rItem)
+
+---- Update Item ----
+updateItemTest :: OAuthToken -> Assertion
+updateItemTest oAuthToken = do
+  testItem <- makeTestItem
+  Right (QuickBooksItemResponse (cItem:_)) <- createItem oAuthToken testItem
+  let nItem = cItem { itemPurchaseDesc = Just "Changed", itemId = (itemId cItem) }
+  eitherUpdateItem <- updateItem oAuthToken nItem
+  case eitherUpdateItem of
+    Left _ -> do
+      deleteItem oAuthToken cItem
+      assertEither "Failed to update invoice" eitherUpdateItem
+    Right (QuickBooksItemResponse (uItem:_)) -> do
+      deleteItem oAuthToken uItem
+      assertBool "Updated the Item" (itemPurchaseDesc cItem /= itemPurchaseDesc uItem)
+
+---- Delete Item ----
+deleteItemTest :: OAuthToken -> Assertion
+deleteItemTest oAuthToken = do
+  -- First, we create an item (see 'createItem'):
+  testItem <- makeTestItem
+  Right (QuickBooksItemResponse (cItem:_)) <- createItem oAuthToken testItem
+  -- Then, we delete it:
+  eitherDeleteItem <- deleteItem oAuthToken cItem
+  case eitherDeleteItem of
+    Left e -> assertEither (show e) eitherDeleteItem
+    Right _ -> assertEither "I *deleted* an item!" eitherDeleteItem
+
+---- Query Item ----
 queryItemTest :: OAuthToken -> Assertion
 queryItemTest oAuthToken = do 
   eitherQueryItem <- queryItem oAuthToken "Hours"
@@ -215,6 +280,62 @@ testCustomerRef  = Reference
   , referenceName  = Nothing
   , referenceType  = Nothing
   }
+
+testItemIncomeAccountRef :: Reference
+testItemIncomeAccountRef = Reference
+  { referenceValue = "79"
+  , referenceName  = Just "Sales of Product Income"
+  , referenceType  = Nothing
+  }
+
+testItemExpenseAccountRef :: Reference
+testItemExpenseAccountRef = Reference
+  { referenceName  = Just "Cost of Goods Sold"
+  , referenceValue = "80"
+  , referenceType  = Nothing
+  }
+
+testItemAssetAccountRef :: Reference
+testItemAssetAccountRef = Reference
+  { referenceName  = Just "Inventory Asset"
+  , referenceValue = "81"
+  , referenceType  = Nothing
+  }
+
+getTestItemName :: IO Text
+getTestItemName = do
+  arbInt <- generate (choose (0, 100000000000000000) :: Gen Int)
+  return $ T.pack $ "testItemName" ++ show arbInt
+
+makeTestItem :: IO Item
+makeTestItem = do
+  itemName <- getTestItemName
+  return $ Item Nothing                 -- Id
+       (Just $ SyncToken "0")           -- Sync Token
+       Nothing                          -- Metadata
+       itemName                         -- Name
+       Nothing                          -- Description
+       (Just False)                     -- Active
+       Nothing                          -- Sub Item
+       Nothing                          -- Parent Ref
+       (Just 0)                         -- Item Level
+       Nothing                          -- FullyQualifiedName
+       Nothing                          -- Taxable
+       Nothing                          -- Sales Tax Included
+       (Just 0)                         -- Unit Price
+       (Just "Inventory")               -- Type
+       (Just testItemIncomeAccountRef)  -- IncomeAccountRef
+       (Just "Purchase Desc")           -- Purchase Description
+       Nothing                          -- Purchase Tax Included
+       (Just 0)                         -- Purchase Cost
+       (Just testItemExpenseAccountRef) -- Item Expense Account Ref
+       (Just testItemAssetAccountRef)   -- Asset Account Ref
+       (Just True)                      -- TrackQtyOnHand
+       (Just 10)                        -- QtyOnHand
+       Nothing                          -- SalesTaxCodeRef
+       Nothing                          -- PurchaseTaxCodeRef
+       (Just "2015-01-01")              -- InvStartDate
+
 
 testInvoice :: Invoice
 testInvoice =

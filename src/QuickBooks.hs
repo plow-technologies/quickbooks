@@ -48,6 +48,14 @@ module QuickBooks
   , queryCustomer
   , queryCustomer'
     -- ** Line
+  , createItem
+  , createItem'
+  , readItem
+  , readItem'
+  , updateItem
+  , updateItem'
+  , deleteItem
+  , deleteItem'
   , queryItem
   , queryItem'
   ) where
@@ -114,6 +122,39 @@ queryCustomer'
   -> IO (Either String (QuickBooksResponse [Customer]))
 queryCustomer' apiConfig appConfig tok =
   queryQuickBooks' apiConfig appConfig tok . QueryCustomer
+
+
+-- Create Item --
+createItem :: OAuthToken -> Item -> IO (Either String (QuickBooksResponse [Item]))
+createItem tok = queryQuickBooks tok . CreateItem
+
+-- | Like createItem but accepts an APIConfig rather than reading it from the environment
+createItem' :: APIConfig -> AppConfig -> OAuthToken -> Item -> IO (Either String (QuickBooksResponse [Item]))
+createItem' apiConfig appConfig tok = queryQuickBooks' apiConfig appConfig tok . CreateItem
+
+-- Read Item --
+readItem :: OAuthToken -> Text -> IO (Either String (QuickBooksResponse [Item]))
+readItem tok = queryQuickBooks tok . ReadItem
+
+-- | Like readItem but accepts an APIConfig rather than reading it from the environment
+readItem' :: APIConfig -> AppConfig -> OAuthToken -> Text -> IO (Either String (QuickBooksResponse [Item]))
+readItem' apiConfig appConfig tok = queryQuickBooks' apiConfig appConfig tok . ReadItem
+
+-- Update Item --
+updateItem :: OAuthToken -> Item -> IO (Either String (QuickBooksResponse [Item]))
+updateItem tok = queryQuickBooks tok . UpdateItem
+
+-- | Like updateItem but accepts an APIConfig rather than reading it from the environment
+updateItem' :: APIConfig -> AppConfig -> OAuthToken -> Item -> IO (Either String (QuickBooksResponse [Item]))
+updateItem' apiConfig appConfig tok = queryQuickBooks' apiConfig appConfig tok . UpdateItem
+
+-- Delete Item --
+deleteItem ::  OAuthToken -> Item -> IO (Either String (QuickBooksResponse [Item]))
+deleteItem tok = queryQuickBooks tok . DeleteItem
+
+-- | Like deleteItem but accepts an APIConfig rather than reading it from the environment
+deleteItem' :: APIConfig -> AppConfig -> OAuthToken -> Item -> IO (Either String (QuickBooksResponse [Item]))
+deleteItem' apiConfig appConfig tok = queryQuickBooks' apiConfig appConfig tok . DeleteItem
 
 -- Unused DocTest (removed 6-26-17)
 -- |
@@ -367,6 +408,10 @@ queryQuickBooks' apiConfig appConfig tok query = do
     DeleteInvoice _invoiceId syncToken  -> deleteInvoiceRequest tok _invoiceId syncToken
     SendInvoice _invoiceId emailAddr    -> sendInvoiceRequest tok _invoiceId emailAddr    
     QueryCustomer queryCustomerName     -> queryCustomerRequest tok queryCustomerName
+    CreateItem item                     -> createItemRequest tok item
+    ReadItem iId                         -> readItemRequest tok iId
+    UpdateItem item                     -> updateItemRequest tok item
+    DeleteItem item                     -> deleteItemRequest tok item
     QueryItem queryItemName             -> queryItemRequest tok queryItemName
 
 queryQuickBooksOAuth :: Maybe OAuthToken
