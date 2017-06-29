@@ -58,6 +58,16 @@ module QuickBooks
   , deleteItem'
   , queryItem
   , queryItem'
+  , createCategory
+  , createCategory'
+  , readCategory
+  , readCategory'
+  , updateCategory
+  , updateCategory'
+  , deleteCategory
+  , deleteCategory'
+  , queryCategory
+  , queryCategory'
   ) where
 
 import QuickBooks.Authentication
@@ -82,6 +92,7 @@ import QuickBooks.Invoice      ( createInvoiceRequest
                                , sendInvoiceRequest
                                )
 import QuickBooks.Item
+import QuickBooks.Category
 import QuickBooks.Logging      (apiLogger, getLogger)
 import Data.Yaml (ParseException, decodeFileEither)
 
@@ -184,6 +195,60 @@ queryItem'
   -> IO (Either String (QuickBooksResponse [Item]))
 queryItem' apiConfig appConfig tok =
   queryQuickBooks' apiConfig appConfig tok . QueryItem
+
+
+
+
+-- Create Category --
+createCategory :: OAuthToken -> Category -> IO (Either String (QuickBooksResponse [Category]))
+createCategory tok = queryQuickBooks tok . CreateCategory
+
+-- | Like createCategory but accepts an APIConfig rather than reading it from the environment
+createCategory' :: APIConfig -> AppConfig -> OAuthToken -> Category -> IO (Either String (QuickBooksResponse [Category]))
+createCategory' apiConfig appConfig tok = queryQuickBooks' apiConfig appConfig tok . CreateCategory
+
+-- Read Category --
+readCategory :: OAuthToken -> Text -> IO (Either String (QuickBooksResponse [Category]))
+readCategory tok = queryQuickBooks tok . ReadCategory
+
+-- | Like readCategory but accepts an APIConfig rather than reading it from the environment
+readCategory' :: APIConfig -> AppConfig -> OAuthToken -> Text -> IO (Either String (QuickBooksResponse [Category]))
+readCategory' apiConfig appConfig tok = queryQuickBooks' apiConfig appConfig tok . ReadCategory
+
+-- Update Category --
+updateCategory :: OAuthToken -> Category -> IO (Either String (QuickBooksResponse [Category]))
+updateCategory tok = queryQuickBooks tok . UpdateCategory
+
+-- | Like updateCategory but accepts an APIConfig rather than reading it from the environment
+updateCategory' :: APIConfig -> AppConfig -> OAuthToken -> Category -> IO (Either String (QuickBooksResponse [Category]))
+updateCategory' apiConfig appConfig tok = queryQuickBooks' apiConfig appConfig tok . UpdateCategory
+
+-- Delete Category --
+deleteCategory ::  OAuthToken -> Category -> IO (Either String (QuickBooksResponse DeletedCategory))
+deleteCategory tok = queryQuickBooks tok . DeleteCategory
+
+-- | Like deleteCategory but accepts an APIConfig rather than reading it from the environment
+deleteCategory' :: APIConfig -> AppConfig -> OAuthToken -> Category -> IO (Either String (QuickBooksResponse DeletedCategory))
+deleteCategory' apiConfig appConfig tok = queryQuickBooks' apiConfig appConfig tok . DeleteCategory
+
+queryCategory
+  :: OAuthToken
+  -> Text
+  -> IO (Either String (QuickBooksResponse [Category]))
+queryCategory tok =
+  queryQuickBooks tok . QueryCategory
+
+queryCategory'
+  :: APIConfig
+  -> AppConfig
+  -> OAuthToken
+  -> Text
+  -> IO (Either String (QuickBooksResponse [Category]))
+queryCategory' apiConfig appConfig tok =
+  queryQuickBooks' apiConfig appConfig tok . QueryCategory
+
+
+
 
 -- Unused DocTest (removed 6-26-17)
 -- | Create an invoice.
@@ -409,10 +474,15 @@ queryQuickBooks' apiConfig appConfig tok query = do
     SendInvoice _invoiceId emailAddr    -> sendInvoiceRequest tok _invoiceId emailAddr    
     QueryCustomer queryCustomerName     -> queryCustomerRequest tok queryCustomerName
     CreateItem item                     -> createItemRequest tok item
-    ReadItem iId                         -> readItemRequest tok iId
+    ReadItem iId                        -> readItemRequest tok iId
     UpdateItem item                     -> updateItemRequest tok item
     DeleteItem item                     -> deleteItemRequest tok item
     QueryItem queryItemName             -> queryItemRequest tok queryItemName
+    CreateCategory category             -> createCategoryRequest tok category
+    ReadCategory iId                    -> readCategoryRequest tok iId
+    UpdateCategory category             -> updateCategoryRequest tok category
+    DeleteCategory category             -> deleteCategoryRequest tok category
+    QueryCategory queryCategoryName     -> queryCategoryRequest tok queryCategoryName
 
 queryQuickBooksOAuth :: Maybe OAuthToken
                      -> QuickBooksOAuthQuery a

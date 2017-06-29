@@ -59,7 +59,7 @@ instance FromJSON AppConfig where
                                    <*> (parseByteString o "consumerSecret")
     where parseByteString obj name = encodeUtf8 <$> (obj .: name)
   parseJSON _ = mzero
-  
+
 data APIConfig = APIConfig
   { companyId      :: !ByteString
   , oauthToken     :: !ByteString
@@ -85,21 +85,21 @@ instance ToJSON APIConfig where
                                                                   "hostname" .= (decodeUtf8 hName),
                                                                   "loggingEnabled" .= (decodeUtf8 lEnabled)
                                                                 ]
-                                                                
-  
+
+
 type APIEnv = ( ?apiConfig :: APIConfig
-              , AppEnv               
-              , NetworkEnv              
+              , AppEnv
+              , NetworkEnv
               )
 
 type AppEnv = ( ?appConfig :: AppConfig
-              , NetworkEnv   
+              , NetworkEnv
               )
-              
+
 type NetworkEnv = ( ?manager :: Manager
                   , ?logger  :: Logger
                   )
-             
+
 -- | A request or access OAuth token.
 
 data OAuthToken = OAuthToken
@@ -110,6 +110,7 @@ data OAuthToken = OAuthToken
 data family QuickBooksResponse a
 data instance QuickBooksResponse Invoice = QuickBooksInvoiceResponse { quickBooksResponseInvoice :: Invoice }
 data instance QuickBooksResponse DeletedInvoice = QuickBooksDeletedInvoiceResponse DeletedInvoice
+data instance QuickBooksResponse DeletedCategory = QuickBooksDeletedCategoryResponse DeletedCategory
 data instance QuickBooksResponse OAuthToken = QuickBooksAuthResponse { tokens :: OAuthToken }
 data instance QuickBooksResponse () = QuickBooksVoidResponse
 
@@ -118,6 +119,9 @@ data instance QuickBooksResponse [Customer] =
 
 data instance QuickBooksResponse [Item] =
   QuickBooksItemResponse { quickBooksResponseItem :: [Item] }
+
+data instance QuickBooksResponse [Category] =
+  QuickBooksCategoryResponse { quickBooksResponseCategory :: [Category] }
 
 instance FromJSON (QuickBooksResponse Invoice) where
   parseJSON (Object o) = QuickBooksInvoiceResponse `fmap` (o .: "Invoice")
@@ -147,8 +151,26 @@ instance FromJSON (QuickBooksResponse [Item]) where
         return $ QuickBooksItemResponse [i]
   parseJSON _          = fail "Could not parse item response from QuickBooks"
 
+-- Categories still have an Item response from the QB API
+instance FromJSON (QuickBooksResponse [Category]) where
+  parseJSON (Object o) = parseQueryResponse o <|> parseCategories o <|> parseSingleCategory o
+    where
+      parseQueryResponse obj = do
+        qResponse <- obj .: "QueryResponse"
+        parseCategories qResponse
+      parseCategories obj = QuickBooksCategoryResponse <$> obj .: "Item"
+      parseSingleCategory obj = do
+        i <- obj .: "Item"
+        return $ QuickBooksCategoryResponse [i]
+  parseJSON _          = fail "Could not parse category response from QuickBooks"
+
+instance FromJSON (QuickBooksResponse DeletedCategory) where
+  parseJSON (Object o) = QuickBooksDeletedCategoryResponse `fmap` (o .: "Item")
+  parseJSON _          = fail "Could not parse deleted category response from QuickBooks"
+
+
 type QuickBooksQuery a = QuickBooksRequest (QuickBooksResponse a)
-type QuickBooksOAuthQuery a = QuickBooksOAuthRequest (QuickBooksResponse a) 
+type QuickBooksOAuthQuery a = QuickBooksOAuthRequest (QuickBooksResponse a)
 
 data QuickBooksOAuthRequest a where
   GetTempOAuthCredentials :: CallbackURL   -> QuickBooksOAuthQuery OAuthToken
@@ -163,11 +185,18 @@ data QuickBooksRequest a where
   SendInvoice             :: InvoiceId   -> E.EmailAddress -> QuickBooksQuery Invoice
 
   QueryCustomer           :: Text -> QuickBooksQuery [Customer]
+
   CreateItem              :: Item -> QuickBooksQuery [Item]
   ReadItem                :: Text -> QuickBooksQuery [Item]
   UpdateItem              :: Item -> QuickBooksQuery [Item]
   DeleteItem              :: Item -> QuickBooksQuery [Item]
   QueryItem               :: Text -> QuickBooksQuery [Item]
+
+  CreateCategory          :: Category -> QuickBooksQuery [Category]
+  ReadCategory            :: Text -> QuickBooksQuery [Category]
+  UpdateCategory          :: Category -> QuickBooksQuery [Category]
+  DeleteCategory          :: Category -> QuickBooksQuery DeletedCategory
+  QueryCategory           :: Text -> QuickBooksQuery [Category]
 
 newtype InvoiceId = InvoiceId {unInvoiceId :: Text}
   deriving (Show, Eq, FromJSON, ToJSON)
@@ -620,6 +649,26 @@ data Item = Item
   }
   deriving (Eq, Show)
 
+data Category = Category
+  { categoryId                 :: !(Maybe Text)
+  , categorySyncToken          :: !(Maybe SyncToken)
+  , categoryMetaData           :: !(Maybe ModificationMetaData)
+  , categoryName               :: !Text -- max 100
+  , categoryActive             :: !(Maybe Bool) -- Always true for categories
+  , categorySubItem            :: !(Maybe Bool) -- true -> Sub-category, false -> top-level (default)
+  , categoryParentRef          :: !(Maybe Reference) --
+  , categoryLevel              :: !(Maybe Integer)   -- 0 to 3
+  , categoryFullyQualifiedName :: !(Maybe Text)    -- readonly
+  , categoryType               :: !(Maybe Text)
+  }
+  deriving (Eq, Show)
+
+data DeletedCategory = DeletedCategory
+  { deletedCategoryId     :: !Text
+  , deletedCategorydomain :: !Text
+  , deletedCategorystatus :: !Text
+  } deriving (Show, Eq)
+
 $(deriveJSON defaultOptions
                { fieldLabelModifier = drop 8
                , omitNothingFields  = True
@@ -637,6 +686,11 @@ $(deriveJSON defaultOptions
                }
              ''Item)
 
+$(deriveJSON defaultOptions
+               { fieldLabelModifier = drop 8
+               , omitNothingFields  = True
+               }
+             ''Category)
 
 $(deriveJSON defaultOptions
                { fieldLabelModifier = drop 12
@@ -730,3 +784,7 @@ $(deriveJSON defaultOptions
 $(deriveJSON defaultOptions
                { fieldLabelModifier = drop (length ("deletedInvoice" :: String)) }
              ''DeletedInvoice)
+
+$(deriveJSON defaultOptions
+               { fieldLabelModifier = drop (length ("deletedCategory" :: String)) }
+             ''DeletedCategory)
