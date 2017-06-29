@@ -30,7 +30,12 @@ main = do
 
 tests :: OAuthToken -> TestTree
 tests tok = testGroup "tests" [-- testCase "Query Customer" $ queryCustomerTest tok
-                               testCase "Query Item" $ queryItemTest tok
+                               testCase "Query Category" $ queryCategoryTest tok
+                              , testCase "Create Category" $ createCategoryTest tok
+                              , testCase "Read Category" $ readCategoryTest tok
+                              , testCase "Update Category" $ updateCategoryTest tok
+                              , testCase "Delete Category" $ deleteCategoryTest tok
+                              , testCase "Query Item" $ queryItemTest tok
                               , testCase "Create Item" $ createItemTest tok
                               , testCase "Read Item" $ readItemTest tok
                               , testCase "Update Item" $ updateItemTest tok
@@ -46,6 +51,8 @@ tests tok = testGroup "tests" [-- testCase "Query Customer" $ queryCustomerTest 
 -----------  Note: There is a very small chance that they may fail due to duplicate name errors on create.
 -- Tests --  Just rerun the tests and they will likely pass.
 -----------
+
+---- Query Customer ----
 queryCustomerTest :: OAuthToken -> Assertion
 queryCustomerTest oAuthToken = do
   eitherQueryCustomer <-
@@ -55,6 +62,10 @@ queryCustomerTest oAuthToken = do
       assertBool (show $ customerId customer) (customerId customer == Just "21")
     _ ->
       assertEither "Faild to query customer" eitherQueryCustomer
+
+-----------------
+-- Item CRUD-Q --
+-----------------
 
 ---- Create Item ----
 createItemTest :: OAuthToken -> Assertion
@@ -111,7 +122,7 @@ deleteItemTest oAuthToken = do
 
 ---- Query Item ----
 queryItemTest :: OAuthToken -> Assertion
-queryItemTest oAuthToken = do 
+queryItemTest oAuthToken = do
   eitherQueryItem <- queryItem oAuthToken "Hours"
   case eitherQueryItem of
     Right (QuickBooksItemResponse (item:_)) ->
@@ -119,9 +130,94 @@ queryItemTest oAuthToken = do
     _ ->
       assertEither "Failed to query item" eitherQueryItem
 
+---------------------
+-- Category CRUD-Q --
+---------------------
+
+---- Create Category ----
+createCategoryTest :: OAuthToken -> Assertion
+createCategoryTest oAuthToken = do
+  testCategory <- makeTestCategory
+  resp <- createCategory oAuthToken testCategory
+  case resp of
+    Left err -> assertEither ("My custom error message: " ++ err) resp
+    Right (QuickBooksCategoryResponse (category:_)) -> do
+      -- Make a sub category in the first
+      case (categoryId category) of
+        Nothing ->
+          assertBool "Faild to get category id" False
+        Just categoryId -> do
+          testCategory2 <- makeTestCategory2 categoryId
+          resp2 <- createCategory oAuthToken testCategory2
+          case resp2 of
+            Left err -> assertEither ("My custom error message: " ++ err) resp2
+            Right (QuickBooksCategoryResponse (category2:_)) -> do
+              -- Delete the sub category
+              _ <- deleteCategory oAuthToken category2
+              return ()
+          -- Delete the top layer category
+          deleteCategory oAuthToken category
+          assertEither "I created an invoice!" resp
+
+---- Read Category ----
+readCategoryTest :: OAuthToken -> Assertion
+readCategoryTest oAuthToken = do
+  testCategory <- makeTestCategory
+  Right (QuickBooksCategoryResponse (cCategory:_)) <- createCategory oAuthToken testCategory
+  let (Just iId) = categoryId cCategory
+  eitherReadCategory <- readCategory oAuthToken iId
+  case eitherReadCategory of
+    Left _ -> do
+      deleteCategory oAuthToken cCategory
+      assertEither "Failed to read category" eitherReadCategory
+    Right (QuickBooksCategoryResponse (rCategory:_)) -> do
+      deleteCategory oAuthToken cCategory
+      assertBool "Read the Category" (categoryId cCategory == categoryId rCategory)
+
+---- Update Category ----
+updateCategoryTest :: OAuthToken -> Assertion
+updateCategoryTest oAuthToken = do
+  testCategory <- makeTestCategory
+  Right (QuickBooksCategoryResponse (cCategory:_)) <- createCategory oAuthToken testCategory
+  let nCategory = cCategory { categoryName = ( T.append (categoryName cCategory) "C"), categoryId = (categoryId cCategory) }
+  eitherUpdateCategory <- updateCategory oAuthToken nCategory
+  case eitherUpdateCategory of
+    Left _ -> do
+      deleteCategory oAuthToken cCategory
+      assertEither "Failed to update invoice" eitherUpdateCategory
+    Right (QuickBooksCategoryResponse (uCategory:_)) -> do
+      deleteCategory oAuthToken uCategory
+      assertBool "Updated the Category" (categoryName cCategory /= categoryName uCategory)
+
+---- Delete Category ----
+deleteCategoryTest :: OAuthToken -> Assertion
+deleteCategoryTest oAuthToken = do
+  -- First, we create an category (see 'createCategory'):
+  testCategory <- makeTestCategory
+  Right (QuickBooksCategoryResponse (cCategory:_)) <- createCategory oAuthToken testCategory
+  -- Then, we delete it:
+  eitherDeleteCategory <- deleteCategory oAuthToken cCategory
+  case eitherDeleteCategory of
+    Left e -> assertEither (show e) eitherDeleteCategory
+    Right _ -> assertEither "I *deleted* an category!" eitherDeleteCategory
+
+---- Query Category ----
+queryCategoryTest :: OAuthToken -> Assertion
+queryCategoryTest oAuthToken = do
+  eitherQueryCategory <- queryCategory oAuthToken "Cat 1"
+  case eitherQueryCategory of
+    Right (QuickBooksCategoryResponse (category:_)) ->
+      assertBool (show $ categoryId category) (categoryId category == Just "91")
+    _ ->
+      assertEither "Failed to query category" eitherQueryCategory
+
+
+
+
+
 ---- Invoice CRUD-Email ----
 createInvoiceTest :: OAuthToken -> Assertion
-createInvoiceTest oAuthToken = do 
+createInvoiceTest oAuthToken = do
   resp <- createInvoice oAuthToken testInvoice
   case resp of
     Left err -> assertEither ("My custom error message: " ++ err) resp
@@ -135,14 +231,14 @@ readInvoiceTest oAuthToken = do
   Right (QuickBooksInvoiceResponse cInvoice) <- createInvoice oAuthToken testInvoice
   -- Then, we read the invoice and test that it is the same invoice we created:
   let cInvoiceId = fromJust (invoiceId cInvoice)
-  do 
+  do
     eitherReadInvoice <- readInvoice oAuthToken cInvoiceId
     case eitherReadInvoice of
       Left _ -> do
         -- Finally, we delete the invoice we created:
         deleteInvoice oAuthToken cInvoiceId (fromJust (invoiceSyncToken cInvoice))
         assertEither "Failed to read created invoice" eitherReadInvoice
-      Right (QuickBooksInvoiceResponse rInvoice) -> do 
+      Right (QuickBooksInvoiceResponse rInvoice) -> do
         -- Finally, we delete the invoice we created:
         deleteInvoice oAuthToken cInvoiceId (fromJust (invoiceSyncToken cInvoice))
         assertBool "Read the invoice correctly" (cInvoice == rInvoice)
@@ -153,7 +249,7 @@ updateInvoiceTest oAuthToken = do
   Right (QuickBooksInvoiceResponse cInvoice) <- createInvoice oAuthToken testInvoice
   -- Then, we update the customer reference of the invoice:
   let nInvoice = cInvoice { invoiceCustomerRef = Reference Nothing Nothing "1" }
-  do 
+  do
     eitherUpdateInvoice <- updateInvoice oAuthToken nInvoice
     case eitherUpdateInvoice of
       Left _ -> do
@@ -174,7 +270,7 @@ deleteInvoiceTest oAuthToken = do
   -- Then, we delete it:
   let cInvoiceId = fromJust (invoiceId cInvoice)
   let cInvoiceSyncToken = fromJust (invoiceSyncToken cInvoice)
-  do 
+  do
     eitherDeleteInvoice <- deleteInvoice oAuthToken cInvoiceId cInvoiceSyncToken
     case eitherDeleteInvoice of
       Left e -> assertEither (show e) eitherDeleteInvoice
@@ -187,7 +283,7 @@ emailInvoiceTest oAuthToken = do
   -- Then, we send the invoice via email:
   let cInvoiceId = fromJust (invoiceId cInvoice)
   let testEmail = fromJust (E.emailAddress "test@test.com")
-  do 
+  do
     eitherSendInvoice <- sendInvoice oAuthToken cInvoiceId testEmail
     case eitherSendInvoice of
       Left e  -> do
@@ -302,10 +398,22 @@ testItemAssetAccountRef = Reference
   , referenceType  = Nothing
   }
 
+makeTestParentRef :: Text -> Reference
+makeTestParentRef parentId = Reference
+  { referenceValue = parentId
+  , referenceName = Nothing
+  , referenceType  = Nothing
+  }
+
 getTestItemName :: IO Text
 getTestItemName = do
   arbInt <- generate (choose (0, 100000000000000000) :: Gen Int)
   return $ T.pack $ "testItemName" ++ show arbInt
+
+getTestCategoryName :: IO Text
+getTestCategoryName = do
+  arbInt <- generate (choose (0, 100000000000000000) :: Gen Int)
+  return $ T.pack $ "testCategoryName" ++ show arbInt
 
 makeTestItem :: IO Item
 makeTestItem = do
@@ -336,6 +444,34 @@ makeTestItem = do
        Nothing                          -- PurchaseTaxCodeRef
        (Just "2015-01-01")              -- InvStartDate
 
+makeTestCategory :: IO Category
+makeTestCategory = do
+  categoryName <- getTestCategoryName
+  return $ Category Nothing            -- Id
+       (Just $ SyncToken "0")          -- SyncToken
+       Nothing                         -- Metadata
+       categoryName                    -- Name
+       (Just True)                     -- Active
+       Nothing                         -- SubItem
+       Nothing                         -- ParentRef
+       Nothing                         -- Level
+       Nothing                         -- Fully Qualified Name
+       (Just "Category")               -- Type
+
+makeTestCategory2 :: Text -> IO Category
+makeTestCategory2 parentId = do
+  categoryName <- getTestCategoryName
+  return $ Category
+       Nothing                             -- Id
+       (Just $ SyncToken "0")              -- SyncToken
+       Nothing                             -- Metadata
+       categoryName                        -- Name
+       (Just True)                         -- Active
+       (Just True)                         -- SubItem
+       (Just (makeTestParentRef parentId)) -- ParentRef
+       (Just 1)                            -- Level
+       Nothing                             -- Fully Qualified Name
+       (Just "Category")                   -- Type
 
 testInvoice :: Invoice
 testInvoice =
