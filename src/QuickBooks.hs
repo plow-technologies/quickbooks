@@ -58,6 +58,10 @@ module QuickBooks
   , deleteItem'
   , queryItem
   , queryItem'
+  , readBundle
+  , readBundle'
+  , queryBundle
+  , queryBundle'
   , createCategory
   , createCategory'
   , readCategory
@@ -92,6 +96,7 @@ import QuickBooks.Invoice      ( createInvoiceRequest
                                , sendInvoiceRequest
                                )
 import QuickBooks.Item
+import QuickBooks.Bundle
 import QuickBooks.Category
 import QuickBooks.Logging      (apiLogger, getLogger)
 import Data.Yaml (ParseException, decodeFileEither)
@@ -197,7 +202,39 @@ queryItem' apiConfig appConfig tok =
   queryQuickBooks' apiConfig appConfig tok . QueryItem
 
 
+----------------
+-- Bundle R/Q --
+----------------
 
+-- Read Bundle --
+readBundle :: OAuthToken -> Text -> IO (Either String (QuickBooksResponse [Bundle]))
+readBundle tok = queryQuickBooks tok . ReadBundle
+
+-- | Like readBundle but accepts an APIConfig rather than reading it from the environment
+readBundle' :: APIConfig -> AppConfig -> OAuthToken -> Text -> IO (Either String (QuickBooksResponse [Bundle]))
+readBundle' apiConfig appConfig tok = queryQuickBooks' apiConfig appConfig tok . ReadBundle
+
+-- Query Bundle
+queryBundle
+  :: OAuthToken
+  -> Text
+  -> IO (Either String (QuickBooksResponse [Bundle]))
+queryBundle tok =
+  queryQuickBooks tok . QueryBundle
+
+queryBundle'
+  :: APIConfig
+  -> AppConfig
+  -> OAuthToken
+  -> Text
+  -> IO (Either String (QuickBooksResponse [Bundle]))
+queryBundle' apiConfig appConfig tok =
+  queryQuickBooks' apiConfig appConfig tok . QueryBundle
+
+
+--------------------
+-- Category CRUDQ --
+--------------------
 
 -- Create Category --
 createCategory :: OAuthToken -> Category -> IO (Either String (QuickBooksResponse [Category]))
@@ -478,6 +515,8 @@ queryQuickBooks' apiConfig appConfig tok query = do
     UpdateItem item                     -> updateItemRequest tok item
     DeleteItem item                     -> deleteItemRequest tok item
     QueryItem queryItemName             -> queryItemRequest tok queryItemName
+    ReadBundle iId                      -> readBundleRequest tok iId
+    QueryBundle queryBundleName         -> queryBundleRequest tok queryBundleName
     CreateCategory category             -> createCategoryRequest tok category
     ReadCategory iId                    -> readCategoryRequest tok iId
     UpdateCategory category             -> updateCategoryRequest tok category

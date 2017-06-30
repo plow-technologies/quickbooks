@@ -59,6 +59,7 @@ source-repository head
 library
   exposed-modules:     QuickBooks
                        QuickBooks.Authentication
+                       QuickBooks.Bundle
                        QuickBooks.Category
                        QuickBooks.Customer
                        QuickBooks.Invoice
@@ -97,6 +98,7 @@ test-suite api-tests
   main-is:          Main.hs
   other-modules:    QuickBooks
                   , QuickBooks.Authentication
+                  , QuickBooks.Bundle
                   , QuickBooks.Category
                   , QuickBooks.Customer
                   , QuickBooks.Invoice
