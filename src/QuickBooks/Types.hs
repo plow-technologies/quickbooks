@@ -120,6 +120,9 @@ data instance QuickBooksResponse [Customer] =
 data instance QuickBooksResponse [Item] =
   QuickBooksItemResponse { quickBooksResponseItem :: [Item] }
 
+data instance QuickBooksResponse [Bundle] =
+  QuickBooksBundleResponse { quickBooksResponseBundle :: [Bundle] }
+
 data instance QuickBooksResponse [Category] =
   QuickBooksCategoryResponse { quickBooksResponseCategory :: [Category] }
 
@@ -150,6 +153,19 @@ instance FromJSON (QuickBooksResponse [Item]) where
         i <- obj .: "Item"
         return $ QuickBooksItemResponse [i]
   parseJSON _          = fail "Could not parse item response from QuickBooks"
+
+-- Bundles still have an Item response from the QB API
+instance FromJSON (QuickBooksResponse [Bundle]) where
+  parseJSON (Object o) = parseQueryResponse o <|> parseBundles o <|> parseSingleBundle o
+    where
+      parseQueryResponse obj = do
+        qResponse <- obj .: "QueryResponse"
+        parseBundles qResponse
+      parseBundles obj = QuickBooksBundleResponse <$> obj .: "Item"
+      parseSingleBundle obj = do
+        i <- obj .: "Item"
+        return $ QuickBooksBundleResponse [i]
+  parseJSON _          = fail "Could not parse bundle response from QuickBooks"
 
 -- Categories still have an Item response from the QB API
 instance FromJSON (QuickBooksResponse [Category]) where
@@ -191,6 +207,9 @@ data QuickBooksRequest a where
   UpdateItem              :: Item -> QuickBooksQuery [Item]
   DeleteItem              :: Item -> QuickBooksQuery [Item]
   QueryItem               :: Text -> QuickBooksQuery [Item]
+
+  ReadBundle              :: Text -> QuickBooksQuery [Bundle]
+  QueryBundle             :: Text -> QuickBooksQuery [Bundle]
 
   CreateCategory          :: Category -> QuickBooksQuery [Category]
   ReadCategory            :: Text -> QuickBooksQuery [Category]
@@ -271,6 +290,10 @@ data SubTotalLineDetail = SubTotalLineDetail
 
 -- | An individual line item of a transaction.
 
+data ItemGroupDetail = ItemGroupDetail
+  { itemGroupLine             :: !(Maybe [ItemGroupLine])}
+  deriving (Show, Eq)
+
 data Line = Line
   { lineId                    :: !(Maybe LineId)
   , lineLineNum               :: !(Maybe Double)
@@ -335,6 +358,12 @@ data DeletedInvoice = DeletedInvoice
 
 -- | A reference.
 -- In order to create a reference, use 'reference'.
+
+data ItemGroupLine = ItemGroupLine
+  { itemRef        :: !(Maybe ItemRef)
+  , itemQty        :: !(Maybe Integer)
+  }
+  deriving (Show, Eq)
 
 data Reference = Reference
   { referenceName  :: !(Maybe Text)
@@ -649,6 +678,24 @@ data Item = Item
   }
   deriving (Eq, Show)
 
+data Bundle = Bundle
+  { bundleId                 :: !(Maybe Text)
+  , bundleSyncToken          :: !(Maybe SyncToken)
+  , bundleMetaData           :: !(Maybe ModificationMetaData)
+  , bundleName               :: !Text -- max 100
+  , bundleSKU                :: !(Maybe Text)
+  , bundleActive             :: !(Maybe Bool) -- Always true for categories
+  , bundleDescription        :: !(Maybe Text) -- max 4000
+  , bundleFullyQualifiedName :: !(Maybe Text)    -- readonly, system gen
+  , bundleTaxable            :: !(Maybe Bool) -- US only
+  , bundleUnitPrice          :: !(Maybe Double) -- max 99999999999, def 0
+  , bundleType               :: !(Maybe Text) -- Set to "Group" for bundles
+  , bundlePurchaseCost       :: !(Maybe Double) -- maximum of 99999999999
+  , bundlePrintGroupItems    :: !(Maybe Bool) -- Specifies if all group items get printed
+  , bundleGroupDetail        :: !(Maybe ItemGroupDetail) -- [ItemGroupLine]
+  }
+  deriving (Eq, Show)
+
 data Category = Category
   { categoryId                 :: !(Maybe Text)
   , categorySyncToken          :: !(Maybe SyncToken)
@@ -685,6 +732,12 @@ $(deriveJSON defaultOptions
                , omitNothingFields  = True
                }
              ''Item)
+
+$(deriveJSON defaultOptions
+               { fieldLabelModifier = drop 6
+               , omitNothingFields  = True
+               }
+             ''Bundle)
 
 $(deriveJSON defaultOptions
                { fieldLabelModifier = drop 8
@@ -780,6 +833,14 @@ $(deriveJSON defaultOptions
 $(deriveJSON defaultOptions
                { fieldLabelModifier = drop 12 }
              ''TxnTaxDetail)
+
+$(deriveJSON defaultOptions
+               { fieldLabelModifier = drop (length ("itemGroupDetail" :: String)) }
+             ''ItemGroupDetail)
+
+$(deriveJSON defaultOptions
+               { fieldLabelModifier = drop (length ("itemGroupLine" :: String)) }
+             ''ItemGroupLine)
 
 $(deriveJSON defaultOptions
                { fieldLabelModifier = drop (length ("deletedInvoice" :: String)) }

@@ -3,7 +3,6 @@
 module Main where
 
 import Test.Tasty
-import Test.Tasty.SmallCheck as SC
 import Test.Tasty.QuickCheck as QC
 import Test.Tasty.HUnit
 import QuickBooks
@@ -15,11 +14,10 @@ import           Control.Monad.IO.Class (liftIO)
 import           Data.ByteString.Char8 (pack)
 import           Data.Maybe            (fromJust)
 import           Data.String
-import           Data.Time.Clock       (getCurrentTime)
 import qualified Data.Text             as T
 import           Data.Text             (Text)
 import           QuickBooks.Types
-import           System.Environment    (getEnvironment, getEnv)
+import           System.Environment    (getEnvironment)
 import qualified Text.Email.Validate   as E (EmailAddress, emailAddress)
 
 main :: IO ()
@@ -29,8 +27,10 @@ main = do
     defaultMain $ tests oAuthToken'
 
 tests :: OAuthToken -> TestTree
-tests tok = testGroup "tests" [-- testCase "Query Customer" $ queryCustomerTest tok
-                               testCase "Query Category" $ queryCategoryTest tok
+tests tok = testGroup "tests" [ testCase "Query Customer" $ queryCustomerTest tok
+                              , testCase "Query Bundle" $ queryBundleTest tok
+                              , testCase "Read Bundle" $ readBundleTest tok
+                              , testCase "Query Category" $ queryCategoryTest tok
                               , testCase "Create Category" $ createCategoryTest tok
                               , testCase "Read Category" $ readCategoryTest tok
                               , testCase "Update Category" $ updateCategoryTest tok
@@ -76,7 +76,7 @@ createItemTest oAuthToken = do
     Left err -> assertEither ("My custom error message: " ++ err) resp
     Right (QuickBooksItemResponse (item:_)) -> do
       deleteItem oAuthToken item
-      assertEither "I created an invoice!" resp
+      assertEither "I created an item!" resp
 
 ---- Read Item ----
 readItemTest :: OAuthToken -> Assertion
@@ -129,6 +129,45 @@ queryItemTest oAuthToken = do
       assertBool (show $ itemId item) (itemId item == Just "2")
     _ ->
       assertEither "Failed to query item" eitherQueryItem
+
+---------------------
+-- Bundle CRUD-Q --
+---------------------
+
+---- Read Bundle ----
+readBundleTest :: OAuthToken -> Assertion
+readBundleTest oAuthToken = do
+  let existingBundleId = "208" -- this MUST be created in QB Online for the test to pass
+                            -- Replace the number the id for the existing bundle
+                            -- It can be obtained by querying the bundle name below
+                            -- Or through the API Explorer at https://developer.intuit.com/v2/apiexplorer?apiname=V3QBO#?id=Item
+                            -- With select * from item where Type='Group'
+  eitherReadBundle <- readBundle oAuthToken existingBundleId
+  case eitherReadBundle of
+    Left _ -> do
+      assertEither "Failed to read bundle" eitherReadBundle
+    Right (QuickBooksBundleResponse (rBundle:_)) -> do
+      let rBundleId = fromJust (bundleId rBundle)
+      assertBool "Read the Bundle" (rBundleId == existingBundleId)
+
+---- Query Bundle ----
+queryBundleTest :: OAuthToken -> Assertion
+queryBundleTest oAuthToken = do
+  let existingBundleId = "208" -- this MUST be created in QB Online for the test to pass
+                            -- Replace the number the id for the existing bundle
+                            -- It can be obtained by querying the bundle name below
+                            -- Or through the API Explorer at https://developer.intuit.com/v2/apiexplorer?apiname=V3QBO#?id=Item
+                            -- With select * from item where Type='Group'
+  eitherQueryBundle <- queryBundle oAuthToken "Bundle 1"
+  case eitherQueryBundle of
+    Right (QuickBooksBundleResponse (bundle:_)) -> do
+      let bundleId' = fromJust (bundleId bundle)
+      assertBool (show $ bundleId') (bundleId' == existingBundleId)
+    _ ->
+      assertEither "Failed to query bundle" eitherQueryBundle
+
+
+
 
 ---------------------
 -- Category CRUD-Q --
@@ -369,6 +408,13 @@ testItemRef = Reference
   , referenceType  = Nothing
   }
 
+testItemRef2 :: Reference
+testItemRef2 = Reference
+  { referenceValue = "3"
+  , referenceName  = Nothing
+  , referenceType  = Nothing
+  }
+
 
 testCustomerRef :: CustomerRef
 testCustomerRef  = Reference
@@ -405,10 +451,28 @@ makeTestParentRef parentId = Reference
   , referenceType  = Nothing
   }
 
+makeTestBundleGroupDetail :: IO ItemGroupDetail
+makeTestBundleGroupDetail = do
+  let testItemLine1 = ItemGroupLine
+        { itemRef = (Just testItemRef)
+        , itemQty = (Just 2)
+        }
+      testItemLine2 = ItemGroupLine
+        { itemRef = (Just testItemRef2)
+        , itemQty = (Just 4)
+        }
+  return $ ItemGroupDetail 
+    { itemGroupLine = (Just [testItemLine1, testItemLine2]) }
+
 getTestItemName :: IO Text
 getTestItemName = do
   arbInt <- generate (choose (0, 100000000000000000) :: Gen Int)
   return $ T.pack $ "testItemName" ++ show arbInt
+
+getTestBundleName :: IO Text
+getTestBundleName = do
+  arbInt <- generate (choose (0, 100000000000000000) :: Gen Int)
+  return $ T.pack $ "testBundleName" ++ show arbInt
 
 getTestCategoryName :: IO Text
 getTestCategoryName = do
@@ -417,11 +481,11 @@ getTestCategoryName = do
 
 makeTestItem :: IO Item
 makeTestItem = do
-  itemName <- getTestItemName
+  itemName' <- getTestItemName
   return $ Item Nothing                 -- Id
        (Just $ SyncToken "0")           -- Sync Token
        Nothing                          -- Metadata
-       itemName                         -- Name
+       itemName'                         -- Name
        Nothing                          -- Description
        (Just False)                     -- Active
        Nothing                          -- Sub Item
@@ -444,13 +508,32 @@ makeTestItem = do
        Nothing                          -- PurchaseTaxCodeRef
        (Just "2015-01-01")              -- InvStartDate
 
+makeTestBundle :: IO Bundle
+makeTestBundle = do
+  bundleName' <- getTestBundleName
+  testGroupDetail <- makeTestBundleGroupDetail
+  return $ Bundle Nothing              -- Id
+       (Just $ SyncToken "0")          -- SyncToken
+       Nothing                         -- Metadata
+       bundleName'                      -- Name
+       Nothing                         -- SKU
+       (Just True)                     -- Active
+       Nothing                         -- Description
+       Nothing                         -- Fully Qualified Name
+       Nothing                         -- Taxable
+       Nothing                         -- Unit Price
+       (Just "Group")                  -- Type
+       Nothing                         -- PurchaseCost
+       (Just True)                     -- Print Group Items
+       (Just testGroupDetail)          -- Group Detail
+
 makeTestCategory :: IO Category
 makeTestCategory = do
-  categoryName <- getTestCategoryName
+  categoryName' <- getTestCategoryName
   return $ Category Nothing            -- Id
        (Just $ SyncToken "0")          -- SyncToken
        Nothing                         -- Metadata
-       categoryName                    -- Name
+       categoryName'                    -- Name
        (Just True)                     -- Active
        Nothing                         -- SubItem
        Nothing                         -- ParentRef
