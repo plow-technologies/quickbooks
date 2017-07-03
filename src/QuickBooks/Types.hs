@@ -147,7 +147,7 @@ instance FromJSON (QuickBooksResponse [Item]) where
     where
       parseQueryResponse obj = do
         qResponse <- obj .: "QueryResponse"
-        parseItems qResponse
+        parseItems qResponse <|> (return (QuickBooksItemResponse []))
       parseItems obj = QuickBooksItemResponse <$> obj .: "Item"
       parseSingleItem obj = do
         i <- obj .: "Item"
