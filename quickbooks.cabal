@@ -82,6 +82,7 @@ library
                        , http-types
                        , http-client-tls
                        , interpolate
+                       , network-uri
                        , text
                        , fast-logger
                        , time
@@ -120,6 +121,7 @@ test-suite api-tests
     , http-types
     , http-client-tls
     , interpolate
+    , network-uri
     , text
     , fast-logger
     , time

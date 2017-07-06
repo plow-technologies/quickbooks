@@ -201,6 +201,8 @@ queryItem'
 queryItem' apiConfig appConfig tok =
   queryQuickBooks' apiConfig appConfig tok . QueryItem
 
+-- queryAllItems :: OAuthToken -> IO (Either String ([QuickBooksItemResponse [Item]]))
+-- queryAllItems otk = queryQuickBooks tok . QueryAllItems
 
 ----------------
 -- Bundle R/Q --
@@ -515,6 +517,7 @@ queryQuickBooks' apiConfig appConfig tok query = do
     UpdateItem item                     -> updateItemRequest tok item
     DeleteItem item                     -> deleteItemRequest tok item
     QueryItem queryItemName             -> queryItemRequest tok queryItemName
+    --QueryAllItems                       -> queryAllItemRequest tok
     ReadBundle iId                      -> readBundleRequest tok iId
     QueryBundle queryBundleName         -> queryBundleRequest tok queryBundleName
     CreateCategory category             -> createCategoryRequest tok category

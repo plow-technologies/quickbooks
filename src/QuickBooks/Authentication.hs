@@ -22,6 +22,7 @@ import Network.HTTP.Client (Manager
                            ,parseUrl
                            ,httpLbs)
 import Network.HTTP.Types.URI (parseSimpleQuery)
+import Network.URI               (escapeURIString, isUnescapedInURI, isUnescapedInURIComponent)
 import Web.Authenticate.OAuth (signOAuth
                               ,newCredential
                               ,emptyCredential
@@ -53,7 +54,7 @@ disconnectRequest :: AppEnv
                   => OAuthToken
                   -> IO (Either String (QuickBooksResponse ()))
 disconnectRequest tok = do
-  req  <- parseUrl $ disconnectURL
+  req  <- parseUrl $ escapeURIString isUnescapedInURI $ disconnectURL
   req' <- oauthSignRequest tok req
   void $ httpLbs req' ?manager
   logAPICall' req'
@@ -66,7 +67,7 @@ getTokens :: AppEnv
           -> ((?appConfig :: AppConfig) => Request -> IO Request) -- ^ Signing function
           -> IO (Maybe OAuthToken)
 getTokens tokenURL parameterName parameterValue signRequest = do
-  request  <- parseUrl $ concat [tokenURL, parameterName, parameterValue]
+  request  <- parseUrl $ escapeURIString isUnescapedInURI $ concat [tokenURL, parameterName, parameterValue]
   request' <- signRequest request { method="POST", requestBody = RequestBodyLBS "" }
   response <- httpLbs request' ?manager
   logAPICall' request'

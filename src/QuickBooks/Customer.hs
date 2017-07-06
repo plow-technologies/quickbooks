@@ -32,6 +32,8 @@ import Data.String.Interpolate (i)
 import Data.Text (Text)
 import Network.HTTP.Client
 import Network.HTTP.Types.Header (hAccept)
+import Network.URI               (escapeURIString, isUnescapedInURI, isUnescapedInURIComponent)
+
 
 -- GET /v3/company/<companyID>/query=<selectStatement>
 
@@ -41,7 +43,8 @@ queryCustomerRequest :: APIEnv
                      -> IO (Either String (QuickBooksResponse [Customer]))
 queryCustomerRequest tok queryCustomerName = do
   let apiConfig = ?apiConfig
-  let queryURI = parseUrl [i|#{queryURITemplate apiConfig}#{query}|]
+  let uriComponent =  escapeURIString isUnescapedInURIComponent [i|#{query}|]
+  let queryURI = parseUrl $ [i|#{queryURITemplate apiConfig}#{uriComponent}|]
   req <- oauthSignRequest tok =<< queryURI
   let oauthHeaders = requestHeaders req
   let req' = req { method = "GET"

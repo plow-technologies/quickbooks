@@ -33,6 +33,7 @@ import Data.String.Interpolate   (i)
 import Data.Text                 (Text)
 import Network.HTTP.Client
 import Network.HTTP.Types.Header (hAccept)
+import Network.URI               (escapeURIString, isUnescapedInURI, isUnescapedInURIComponent)
 
 -- | Read a bundle by id
 readBundleRequest ::  APIEnv
@@ -41,7 +42,7 @@ readBundleRequest ::  APIEnv
                      -> IO (Either String (QuickBooksResponse [Bundle]))
 readBundleRequest tok iId = do
   let apiConfig = ?apiConfig
-  req  <- oauthSignRequest tok =<< parseUrl [i|#{bundleURITemplate apiConfig}/#{iId}|]
+  req  <- oauthSignRequest tok =<< parseUrl (escapeURIString isUnescapedInURI [i|#{bundleURITemplate apiConfig}/#{iId}|])
   let oauthHeaders = requestHeaders req
   let req' = req{method = "GET", requestHeaders = oauthHeaders ++ [(hAccept, "application/json")]}
   resp <-  httpLbs req' ?manager
@@ -58,7 +59,8 @@ queryBundleRequest :: APIEnv
                  -> IO (Either String (QuickBooksResponse [Bundle]))
 queryBundleRequest tok queryBundleName = do
   let apiConfig = ?apiConfig
-  let queryURI = parseUrl [i|#{queryURITemplate apiConfig}#{query}#{bundleSearch}|]
+  let uriComponent = escapeURIString isUnescapedInURIComponent [i|#{query}#{bundleSearch}|]
+  let queryURI = parseUrl $ [i|#{queryURITemplate apiConfig}#{uriComponent}&minorversion=4|]
   req <- oauthSignRequest tok =<< queryURI
   let oauthHeaders = requestHeaders req
   let req' = req { method = "GET"
@@ -81,7 +83,7 @@ queryBundleRequest tok queryBundleName = do
     bundleSearch :: String
     bundleSearch = if (bundleName == "")
       then "where Type='Group'" -- All Bundles
-      else [i| WHERE Type='Group' AND Name='#{queryBundleName}'&minorversion=4|]    -- Bundle that Matchs Name
+      else [i| WHERE Type='Group' AND Name='#{queryBundleName}'|]    -- Bundle that Matchs Name
 
 -- Template for queries
 queryURITemplate :: APIConfig -> String

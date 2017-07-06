@@ -36,6 +36,7 @@ import Network.HTTP.Client       (httpLbs
                                  ,RequestBody(..)
                                  ,Response(responseBody))
 import Network.HTTP.Types.Header (hAccept,hContentType)
+import Network.URI               (escapeURIString, isUnescapedInURI, isUnescapedInURIComponent)
 
 import QuickBooks.Authentication (oauthSignRequest)
 
@@ -72,7 +73,7 @@ readInvoiceRequest :: APIEnv
                    -> IO (Either String (QuickBooksResponse Invoice))
 readInvoiceRequest tok iId = do
   let apiConfig = ?apiConfig
-  req  <- oauthSignRequest tok =<< parseUrl [i|#{invoiceURITemplate apiConfig}#{unInvoiceId iId}|]
+  req  <- oauthSignRequest tok =<< parseUrl (escapeURIString isUnescapedInURI [i|#{invoiceURITemplate apiConfig}#{unInvoiceId iId}|])
   let oauthHeaders = requestHeaders req
   let req' = req{method = "GET", requestHeaders = oauthHeaders ++ [(hAccept, "application/json")]}
   resp <-  httpLbs req' ?manager
@@ -87,7 +88,7 @@ deleteInvoiceRequest :: APIEnv
                      -> IO (Either String (QuickBooksResponse DeletedInvoice))
 deleteInvoiceRequest tok iId syncToken = do
   let apiConfig = ?apiConfig
-  req  <- parseUrl [i|#{invoiceURITemplate apiConfig}?operation=delete|]
+  req  <- parseUrl $ escapeURIString isUnescapedInURI [i|#{invoiceURITemplate apiConfig}?operation=delete|]
   req' <- oauthSignRequest tok req{ method = "POST"
                                   , requestBody    = RequestBodyLBS $ encode body
                                   , requestHeaders = [ (hAccept, "application/json")
@@ -110,7 +111,7 @@ sendInvoiceRequest :: APIEnv
                    -> IO (Either String (QuickBooksResponse Invoice))
 sendInvoiceRequest tok iId emailAddr =  do
   let apiConfig = ?apiConfig
-  req  <- parseUrl [i|#{invoiceURITemplate apiConfig}#{unInvoiceId iId}/send?sendTo=#{toByteString emailAddr}|]
+  req  <- parseUrl $ escapeURIString isUnescapedInURI [i|#{invoiceURITemplate apiConfig}#{unInvoiceId iId}/send?sendTo=#{toByteString emailAddr}|]
   req' <- oauthSignRequest tok req{ method = "POST"
                                   , requestHeaders = [ (hAccept, "application/json")
                                                      ]
@@ -129,7 +130,7 @@ postInvoice :: APIEnv
             -> IO (Either String (QuickBooksResponse Invoice))
 postInvoice tok invoice = do
   let apiConfig = ?apiConfig
-  req <- parseUrl [i|#{invoiceURITemplate apiConfig}|]
+  req <- parseUrl $ escapeURIString isUnescapedInURI [i|#{invoiceURITemplate apiConfig}|]
   req' <- oauthSignRequest tok req{ method         = "POST"
                                   , requestBody    = RequestBodyLBS $ encode invoice
                                   , requestHeaders = [ (hAccept, "application/json")

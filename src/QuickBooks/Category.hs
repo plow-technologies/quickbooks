@@ -36,6 +36,7 @@ import Data.String.Interpolate   (i)
 import Data.Text                 (Text)
 import Network.HTTP.Client
 import Network.HTTP.Types.Header (hAccept, hContentType)
+import Network.URI               (escapeURIString, isUnescapedInURI, isUnescapedInURIComponent)
 
 -- | Create an category. (Supply a new Category WITHOUT an id field)
 createCategoryRequest :: APIEnv
@@ -51,7 +52,7 @@ readCategoryRequest ::  APIEnv
                      -> IO (Either String (QuickBooksResponse [Category]))
 readCategoryRequest tok iId = do
   let apiConfig = ?apiConfig
-  req  <- oauthSignRequest tok =<< parseUrl [i|#{categoryURITemplate apiConfig}/#{iId}|]
+  req  <- oauthSignRequest tok =<< parseUrl (escapeURIString isUnescapedInURI [i|#{categoryURITemplate apiConfig}/#{iId}|])
   let oauthHeaders = requestHeaders req
   let req' = req{method = "GET", requestHeaders = oauthHeaders ++ [(hAccept, "application/json")]}
   resp <-  httpLbs req' ?manager
@@ -73,7 +74,7 @@ deleteCategoryRequest :: APIEnv
                      -> IO (Either String (QuickBooksResponse DeletedCategory))
 deleteCategoryRequest tok cCategory = do
   let apiConfig = ?apiConfig
-  req <- parseUrl [i|#{categoryURITemplate apiConfig}?operation=delete&minorversion=4|]
+  req <- parseUrl $ escapeURIString isUnescapedInURI [i|#{categoryURITemplate apiConfig}?operation=delete&minorversion=4|]
   req' <- oauthSignRequest tok req{ method         = "POST"
                                   , requestBody    = RequestBodyLBS $ encode cCategory
                                   , requestHeaders = [ (hAccept, "application/json")
@@ -91,7 +92,7 @@ postCategory :: APIEnv
             -> IO (Either String (QuickBooksResponse [Category]))
 postCategory tok category = do
   let apiConfig = ?apiConfig
-  req <- parseUrl [i|#{categoryURITemplate apiConfig}?minorversion=4|]
+  req <- parseUrl $ escapeURIString isUnescapedInURI [i|#{categoryURITemplate apiConfig}?minorversion=4|]
   req' <- oauthSignRequest tok req{ method         = "POST"
                                   , requestBody    = RequestBodyLBS $ encode category
                                   , requestHeaders = [ (hAccept, "application/json")
@@ -113,7 +114,8 @@ queryCategoryRequest :: APIEnv
                  -> IO (Either String (QuickBooksResponse [Category]))
 queryCategoryRequest tok queryCategoryName = do
   let apiConfig = ?apiConfig
-  let queryURI = parseUrl [i|#{queryURITemplate apiConfig}#{query}#{categorySearch}|]
+  let uriComponent = escapeURIString isUnescapedInURIComponent [i|#{query}#{categorySearch}|]
+  let queryURI = parseUrl $ [i|#{queryURITemplate apiConfig}#{uriComponent}&minorversion=4|]
   req <- oauthSignRequest tok =<< queryURI
   let oauthHeaders = requestHeaders req
   let req' = req { method = "GET"
@@ -136,7 +138,7 @@ queryCategoryRequest tok queryCategoryName = do
     categorySearch :: String
     categorySearch = if (categoryName == "")
       then "where Type='Category'" -- All Categorys
-      else [i| WHERE Type='Category' AND Name='#{queryCategoryName}'&minorversion=4|]    -- Category that Matchs Name
+      else [i| WHERE Type='Category' AND Name='#{queryCategoryName}'|]    -- Category that Matchs Name
 
 -- Template for queries
 queryURITemplate :: APIConfig -> String
