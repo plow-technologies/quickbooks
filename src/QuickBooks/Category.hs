@@ -30,6 +30,7 @@ module QuickBooks.Category
 import QuickBooks.Authentication
 import QuickBooks.Logging
 import QuickBooks.Types
+import QuickBooks.QBText
 
 import Data.Aeson                (encode, eitherDecode)
 import Data.String.Interpolate   (i)

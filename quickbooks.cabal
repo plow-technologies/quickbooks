@@ -65,6 +65,7 @@ library
                        QuickBooks.Invoice
                        QuickBooks.Item
                        QuickBooks.Logging
+                       QuickBooks.QBText
                        QuickBooks.Types
 
 
@@ -82,6 +83,7 @@ library
                        , http-types
                        , http-client-tls
                        , interpolate
+                       , MissingH
                        , network-uri
                        , text
                        , fast-logger
@@ -105,6 +107,7 @@ test-suite api-tests
                   , QuickBooks.Invoice
                   , QuickBooks.Item
                   , QuickBooks.Logging
+                  , QuickBooks.QBText
                   , QuickBooks.Types
 
   build-depends:
@@ -121,6 +124,7 @@ test-suite api-tests
     , http-types
     , http-client-tls
     , interpolate
+    , MissingH
     , network-uri
     , text
     , fast-logger

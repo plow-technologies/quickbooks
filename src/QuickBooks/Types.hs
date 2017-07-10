@@ -39,6 +39,7 @@ import           Prelude             hiding (lines)
 import qualified Text.Email.Validate as E (EmailAddress)
 import           System.Log.FastLogger (LoggerSet)
 import           Network.HTTP.Client   (Manager)
+import           QuickBooks.QBText
 
 type Logger = LoggerSet
 
@@ -505,31 +506,31 @@ data Invoice = Invoice
   , invoiceSyncToken             :: !(Maybe SyncToken)
   , invoiceMetaData              :: !(Maybe ModificationMetaData)
   , invoiceCustomField           :: !(Maybe [CustomField])
-  , invoiceDocNumber             :: !(Maybe Text)
-  , invoiceTxnDate               :: !(Maybe Text)
+  , invoiceDocNumber             :: !(Maybe QBText)
+  , invoiceTxnDate               :: !(Maybe QBText)
   , invoiceDepartmentRef         :: !(Maybe DepartmentRef)
   , invoiceCurrencyRef           :: !(Maybe CurrencyRef) -- Non-US
   , invoiceExchangeRate          :: !(Maybe Double) -- Non-US
-  , invoicePrivateNote           :: !(Maybe Text)
+  , invoicePrivateNote           :: !(Maybe QBText)
   , invoiceLinkedTxn             :: !(Maybe [LinkedTxn])
   , invoiceLine                  :: ![Line]
   , invoiceTxnTaxDetail          :: !(Maybe TxnTaxDetail)
   , invoiceCustomerRef           :: !CustomerRef
-  , invoiceCustomerMemo          :: !(Maybe Text)
+  , invoiceCustomerMemo          :: !(Maybe QBText)
   , invoiceBillAddr              :: !(Maybe BillAddr)
   , invoiceShipAddr              :: !(Maybe ShipAddr)
   , invoiceClassRef              :: !(Maybe ClassRef)
   , invoiceSalesTermRef          :: !(Maybe SalesTermRef)
-  , invoiceDueDate               :: !(Maybe Text)
+  , invoiceDueDate               :: !(Maybe QBText)
   , invoiceGlobalTaxCalculation  :: !(Maybe GlobalTaxModel) -- Non-US
   , invoiceShipMethodRef         :: !(Maybe ShipMethodRef)
-  , invoiceShipDate              :: !(Maybe Text)
-  , invoiceTrackingNum           :: !(Maybe Text)
+  , invoiceShipDate              :: !(Maybe QBText)
+  , invoiceTrackingNum           :: !(Maybe QBText)
   , invoiceTotalAmt              :: !(Maybe Double)
   , invoiceHomeTotalAmt          :: !(Maybe Double) -- Non-US
   , invoiceApplyTaxAfterDiscount :: !(Maybe Bool)
-  , invoicePrintStatus           :: !(Maybe Text)
-  , invoiceEmailStatus           :: !(Maybe Text)
+  , invoicePrintStatus           :: !(Maybe QBText)
+  , invoiceEmailStatus           :: !(Maybe QBText)
   , invoiceBillEmail             :: !(Maybe EmailAddress)
   , invoiceDeliveryInfo          :: !(Maybe DeliveryInfo)
   , invoiceBalance               :: !(Maybe Double)
@@ -537,7 +538,7 @@ data Invoice = Invoice
   , invoiceDeposit               :: !(Maybe Double)
 
   , invoiceAllowIPNPayment       :: !(Maybe Bool)
-  , invoiceDomain                :: !(Maybe Text)
+  , invoiceDomain                :: !(Maybe QBText)
   , invoiceSparse                :: !(Maybe Bool)
   }
   deriving (Show, Eq)
@@ -605,18 +606,18 @@ data CustomerResponse = CustomerResponse
   deriving (Eq, Show)
 
 data Customer = Customer
-  { customerId                      :: !(Maybe Text)
+  { customerId                      :: !(Maybe QBText)
   , customerSyncToken               :: !(Maybe SyncToken)
   , customerMetaData                :: !(Maybe ModificationMetaData)
-  , customerTitle                   :: !(Maybe Text) -- def null
-  , customerGivenName               :: !(Maybe Text) -- max 25 def null
-  , customerMiddleName              :: !(Maybe Text) -- max 25, def null
-  , customerFamilyName              :: !(Maybe Text) -- max 25, def null
-  , customerSuffix                  :: !(Maybe Text) -- max 10, def null
-  , customerFullyQualifiedName      :: !(Maybe Text)
-  , customerCompanyName             :: !(Maybe Text) -- max 50, def null
-  , customerDisplayName             :: !Text -- unique
-  , customerPrintOnCheckName        :: !(Maybe Text) -- max 100
+  , customerTitle                   :: !(Maybe QBText) -- def null
+  , customerGivenName               :: !(Maybe QBText) -- max 25 def null
+  , customerMiddleName              :: !(Maybe QBText) -- max 25, def null
+  , customerFamilyName              :: !(Maybe QBText) -- max 25, def null
+  , customerSuffix                  :: !(Maybe QBText) -- max 10, def null
+  , customerFullyQualifiedName      :: !(Maybe QBText)
+  , customerCompanyName             :: !(Maybe QBText) -- max 50, def null
+  , customerDisplayName             :: !QBText -- unique
+  , customerPrintOnCheckName        :: !(Maybe QBText) -- max 100
   , customerActive                  :: !(Maybe Bool) -- def true
   , customerPrimaryPhone            :: !(Maybe TelephoneNumber)
   , customerAlternatePhone          :: !(Maybe TelephoneNumber)
@@ -628,7 +629,7 @@ data Customer = Customer
   , customerTaxable                 :: !(Maybe Bool)
   , customerBillAddr                :: !(Maybe BillAddr)
   , customerShipAddr                :: !(Maybe ShipAddr)
-  , customerNotes                   :: !(Maybe Text) -- max 2000
+  , customerNotes                   :: !(Maybe QBText) -- max 2000
   , customerJob                     :: !(Maybe Bool) -- def false or null
   , customerBillWithParent          :: !(Maybe Bool) -- def false or null
   , customerParentRef               :: !(Maybe CustomerRef)
@@ -636,11 +637,11 @@ data Customer = Customer
   , customerSalesTermRef            :: !(Maybe SalesTermRef)
   , customerPaymentMethodRef        :: !(Maybe Reference)
   , customerBalance                 :: !(Maybe Double)
-  , customerOpenBalanceDate         :: !(Maybe Text)
+  , customerOpenBalanceDate         :: !(Maybe QBText)
   , customerBalanceWithJobs         :: !(Maybe Double)
   , customerCurrencyRef             :: !(Maybe CurrencyRef)
-  , customerPreferredDeliveryMethod :: !(Maybe Text)
-  , customerResaleNum               :: !(Maybe Text) -- max 15
+  , customerPreferredDeliveryMethod :: !(Maybe QBText)
+  , customerResaleNum               :: !(Maybe QBText) -- max 15
   }
   deriving (Eq, Show)
 
@@ -650,11 +651,11 @@ data ItemResponse = ItemResponse
   deriving (Eq, Show)
 
 data Item = Item
-  { itemId                   :: !(Maybe Text)
+  { itemId                   :: !(Maybe QBText)
   , itemSyncToken            :: !(Maybe SyncToken)
   , itemMetaData             :: !(Maybe ModificationMetaData)
-  , itemName                 :: !Text -- max 100
-  , itemDescription          :: !(Maybe Text) -- max 4000
+  , itemName                 :: !QBText -- max 100
+  , itemDescription          :: !(Maybe QBText) -- max 4000
   , itemActive               :: !(Maybe Bool) -- def true
   , itemSubItem              :: !(Maybe Bool) -- def false or null
   , itemParentRef            :: !(Maybe ItemRef) -- def null
@@ -679,14 +680,14 @@ data Item = Item
   deriving (Eq, Show)
 
 data Bundle = Bundle
-  { bundleId                 :: !(Maybe Text)
+  { bundleId                 :: !(Maybe QBText)
   , bundleSyncToken          :: !(Maybe SyncToken)
   , bundleMetaData           :: !(Maybe ModificationMetaData)
-  , bundleName               :: !Text -- max 100
-  , bundleSKU                :: !(Maybe Text)
+  , bundleName               :: !QBText -- max 100
+  , bundleSKU                :: !(Maybe QBText)
   , bundleActive             :: !(Maybe Bool) -- Always true for categories
-  , bundleDescription        :: !(Maybe Text) -- max 4000
-  , bundleFullyQualifiedName :: !(Maybe Text)    -- readonly, system gen
+  , bundleDescription        :: !(Maybe QBText) -- max 4000
+  , bundleFullyQualifiedName :: !(Maybe QBText)    -- readonly, system gen
   , bundleTaxable            :: !(Maybe Bool) -- US only
   , bundleUnitPrice          :: !(Maybe Double) -- max 99999999999, def 0
   , bundleType               :: !(Maybe Text) -- Set to "Group" for bundles
@@ -697,15 +698,15 @@ data Bundle = Bundle
   deriving (Eq, Show)
 
 data Category = Category
-  { categoryId                 :: !(Maybe Text)
+  { categoryId                 :: !(Maybe QBText)
   , categorySyncToken          :: !(Maybe SyncToken)
   , categoryMetaData           :: !(Maybe ModificationMetaData)
-  , categoryName               :: !Text -- max 100
+  , categoryName               :: !QBText -- max 100
   , categoryActive             :: !(Maybe Bool) -- Always true for categories
   , categorySubItem            :: !(Maybe Bool) -- true -> Sub-category, false -> top-level (default)
   , categoryParentRef          :: !(Maybe Reference) --
   , categoryLevel              :: !(Maybe Integer)   -- 0 to 3
-  , categoryFullyQualifiedName :: !(Maybe Text)    -- readonly
+  , categoryFullyQualifiedName :: !(Maybe QBText)    -- readonly
   , categoryType               :: !(Maybe Text)
   }
   deriving (Eq, Show)

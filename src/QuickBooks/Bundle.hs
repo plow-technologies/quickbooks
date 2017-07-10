@@ -27,6 +27,7 @@ module QuickBooks.Bundle
 import QuickBooks.Authentication
 import QuickBooks.Logging
 import QuickBooks.Types
+import QuickBooks.QBText
 
 import Data.Aeson                (eitherDecode)
 import Data.String.Interpolate   (i)

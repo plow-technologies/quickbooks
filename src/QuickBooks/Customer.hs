@@ -26,6 +26,7 @@ module QuickBooks.Customer
 import QuickBooks.Authentication
 import QuickBooks.Logging
 import QuickBooks.Types
+import QuickBooks.QBText
 
 import qualified Data.Aeson as Aeson
 import Data.String.Interpolate (i)
@@ -57,7 +58,7 @@ queryCustomerRequest tok queryCustomerName = do
     Left er -> return (Left er)
     Right (QuickBooksCustomerResponse allCustomers) ->
       return $ Right $ QuickBooksCustomerResponse $
-        filter (\Customer{..} -> customerDisplayName == queryCustomerName) allCustomers
+        filter (\Customer{..} -> (textFromQBText customerDisplayName) == queryCustomerName) allCustomers
   where
     query :: String
     query = "SELECT * FROM Customer"
