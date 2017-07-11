@@ -20,6 +20,8 @@
 
 module QuickBooks.Item
   ( queryItemRequest
+  , countItemRequest
+  , queryMaxItemRequest
   , createItemRequest
   , readItemRequest
   , updateItemRequest
@@ -30,7 +32,6 @@ module QuickBooks.Item
 import QuickBooks.Authentication
 import QuickBooks.Logging
 import QuickBooks.Types
-import QuickBooks.QBText
 
 import Data.Aeson                (encode, eitherDecode)
 import Data.String.Interpolate   (i)
@@ -132,6 +133,59 @@ queryItemRequest tok queryItemName = do
     itemSearch = if (itemName == "")
       then ""                                  -- All Items
       else [i| Where Name='#{queryItemName}'|] -- Item that Matchs Name
+
+
+queryMaxItemRequest :: APIEnv
+                 => OAuthToken
+                 -> Int
+                 -> IO (Either String (QuickBooksResponse [Item]))
+queryMaxItemRequest tok startIndex = do
+  let apiConfig = ?apiConfig
+  let uriComponent = escapeURIString isUnescapedInURIComponent [i|#{query}#{pagination}|]
+  let queryURI = parseUrl $ [i|#{queryURITemplate apiConfig}#{uriComponent}|]
+  req <- oauthSignRequest tok =<< queryURI
+  let oauthHeaders = requestHeaders req
+  let req' = req { method = "GET"
+                 , requestHeaders = oauthHeaders ++ [(hAccept, "application/json")]
+                 }
+  resp <- httpLbs req' ?manager
+  logAPICall req'
+  let eitherFoundItems = eitherDecode (responseBody resp)
+  case eitherFoundItems of
+    Left er -> return (Left er)
+    Right (QuickBooksItemResponse foundItems) ->
+      return $ Right $ QuickBooksItemResponse $ foundItems
+        -- filter (\Item{..} -> itemName == queryItemName) FoundItems
+  where
+    query :: String
+    query = "SELECT * FROM Item"
+    pagination :: String
+    pagination = [i| startposition #{startIndex} maxresults 1000|] -- Item that Matchs Name
+
+countItemRequest :: APIEnv
+                 => OAuthToken
+                 -> IO (Either String (QuickBooksResponse Int))
+countItemRequest tok = do
+  let apiConfig = ?apiConfig
+  let uriComponent = escapeURIString isUnescapedInURIComponent [i|#{query}|]
+  let queryURI = parseUrl $ [i|#{queryURITemplate apiConfig}#{uriComponent}|]
+  req <- oauthSignRequest tok =<< queryURI
+  let oauthHeaders = requestHeaders req
+  let req' = req { method = "GET"
+                 , requestHeaders = oauthHeaders ++ [(hAccept, "application/json")]
+                 }
+  resp <- httpLbs req' ?manager
+  logAPICall req'
+  let eitherFoundCount = eitherDecode (responseBody resp)
+  case eitherFoundCount of
+    Left er -> return (Left er)
+    Right (QuickBooksCountResponse foundCount) ->
+      return $ Right $ QuickBooksCountResponse $ foundCount
+        -- filter (\Item{..} -> itemName == queryItemName) FoundItems
+  where
+    query :: String
+    query = "SELECT COUNT(*) FROM Item"
+ 
 
 --queryAllItems with pagination at the max of 1000
 -- queryAllItemRequest :: APIEnv => OAuthToken -> IO (Either String ([QuickBooksItemResponse [Item]]))

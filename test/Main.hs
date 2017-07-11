@@ -37,6 +37,8 @@ tests tok = testGroup "tests" [ testCase "Query Customer" $ queryCustomerTest to
                               , testCase "Update Category" $ updateCategoryTest tok
                               , testCase "Delete Category" $ deleteCategoryTest tok
                               , testCase "Query Item" $ queryItemTest tok
+                              , testCase "Query Count Items" $ queryCountTest tok
+                              , testCase "Query Max Items" $ queryMaxItemTest tok
                               , testCase "Create Item" $ createItemTest tok
                               , testCase "Read Item" $ readItemTest tok
                               , testCase "Update Item" $ updateItemTest tok
@@ -132,6 +134,25 @@ queryItemTest oAuthToken = do
     Right (QuickBooksItemResponse (item:_)) -> do
       let (Right existingId) = filterTextForQB "2"
       assertBool (show $ itemId item) (itemId item == Just existingId)
+
+---- Query Max Item ----
+queryMaxItemTest :: OAuthToken -> Assertion
+queryMaxItemTest oAuthToken = do
+  eitherQueryItems <- queryMaxItemsFrom oAuthToken 1
+  case eitherQueryItems of
+    Left _ ->
+      assertEither "Failed to query item" eitherQueryItems
+    Right (QuickBooksItemResponse (item:_)) -> do
+      assertEither "Queried for max size" eitherQueryItems
+
+queryCountTest :: OAuthToken -> Assertion
+queryCountTest oAuthToken = do
+  eitherCount <- queryItemCount oAuthToken
+  case eitherCount of
+    Left _ ->
+      assertEither "Failed to query item count" eitherCount
+    Right (QuickBooksCountResponse size) ->
+      assertEither "Queried the count" eitherCount
 
 ---------------------
 -- Bundle CRUD-Q --

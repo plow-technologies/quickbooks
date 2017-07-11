@@ -58,6 +58,10 @@ module QuickBooks
   , deleteItem'
   , queryItem
   , queryItem'
+  , queryItemCount
+  , queryItemCount'
+  , queryMaxItemsFrom
+  , queryMaxItemsFrom'
   , readBundle
   , readBundle'
   , queryBundle
@@ -200,6 +204,38 @@ queryItem'
   -> IO (Either String (QuickBooksResponse [Item]))
 queryItem' apiConfig appConfig tok =
   queryQuickBooks' apiConfig appConfig tok . QueryItem
+
+
+queryItemCount
+  :: OAuthToken
+  -> IO (Either String (QuickBooksResponse Int))
+queryItemCount tok =
+  queryQuickBooks tok QueryCountItem
+
+queryItemCount'
+  :: APIConfig
+  -> AppConfig
+  -> OAuthToken
+  -> IO (Either String (QuickBooksResponse Int))
+queryItemCount' apiConfig appConfig tok =
+  queryQuickBooks' apiConfig appConfig tok QueryCountItem
+
+
+queryMaxItemsFrom
+  :: OAuthToken
+  -> Int
+  -> IO (Either String (QuickBooksResponse [Item]))
+queryMaxItemsFrom tok =
+  queryQuickBooks tok . QueryMaxItemsFrom
+
+queryMaxItemsFrom'
+  :: APIConfig
+  -> AppConfig
+  -> OAuthToken
+  -> Int
+  -> IO (Either String (QuickBooksResponse [Item]))
+queryMaxItemsFrom' apiConfig appConfig tok =
+  queryQuickBooks' apiConfig appConfig tok . QueryMaxItemsFrom
 
 -- queryAllItems :: OAuthToken -> IO (Either String ([QuickBooksItemResponse [Item]]))
 -- queryAllItems otk = queryQuickBooks tok . QueryAllItems
@@ -517,6 +553,8 @@ queryQuickBooks' apiConfig appConfig tok query = do
     UpdateItem item                     -> updateItemRequest tok item
     DeleteItem item                     -> deleteItemRequest tok item
     QueryItem queryItemName             -> queryItemRequest tok queryItemName
+    QueryCountItem                           -> countItemRequest tok
+    QueryMaxItemsFrom startIndex        -> queryMaxItemRequest tok startIndex
     --QueryAllItems                       -> queryAllItemRequest tok
     ReadBundle iId                      -> readBundleRequest tok iId
     QueryBundle queryBundleName         -> queryBundleRequest tok queryBundleName

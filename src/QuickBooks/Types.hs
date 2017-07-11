@@ -127,6 +127,18 @@ data instance QuickBooksResponse [Bundle] =
 data instance QuickBooksResponse [Category] =
   QuickBooksCategoryResponse { quickBooksResponseCategory :: [Category] }
 
+data instance QuickBooksResponse Int =
+  QuickBooksCountResponse { quickBooksCountResponse :: Int}
+
+instance FromJSON (QuickBooksResponse Int) where
+  parseJSON (Object o) = parseQueryResponse o
+    where
+      parseQueryResponse obj = do
+        qResponse <- obj .: "QueryResponse"
+        parseInt qResponse <|> (return $ QuickBooksCountResponse (-1))
+      parseInt obj = QuickBooksCountResponse <$> obj .: "totalCount"
+  parseJSON _          = fail "Could not parse count response from QuickBooks"
+
 instance FromJSON (QuickBooksResponse Invoice) where
   parseJSON (Object o) = QuickBooksInvoiceResponse `fmap` (o .: "Invoice")
   parseJSON _          = fail "Could not parse invoice response from QuickBooks"
@@ -208,6 +220,8 @@ data QuickBooksRequest a where
   UpdateItem              :: Item -> QuickBooksQuery [Item]
   DeleteItem              :: Item -> QuickBooksQuery [Item]
   QueryItem               :: Text -> QuickBooksQuery [Item]
+  QueryCountItem          :: (QuickBooksQuery Int)
+  QueryMaxItemsFrom       :: Int -> QuickBooksQuery [Item]
 
   ReadBundle              :: Text -> QuickBooksQuery [Bundle]
   QueryBundle             :: Text -> QuickBooksQuery [Bundle]
