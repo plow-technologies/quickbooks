@@ -231,6 +231,8 @@ data QuickBooksRequest a where
   UpdateCategory          :: Category -> QuickBooksQuery [Category]
   DeleteCategory          :: Category -> QuickBooksQuery DeletedCategory
   QueryCategory           :: Text -> QuickBooksQuery [Category]
+  QueryCountCategory      :: (QuickBooksQuery Int)
+  QueryMaxCategoriesFrom  :: Int -> QuickBooksQuery [Category]
 
 newtype InvoiceId = InvoiceId {unInvoiceId :: Text}
   deriving (Show, Eq, FromJSON, ToJSON)

@@ -32,12 +32,14 @@ tests tok = testGroup "tests" [ testCase "Query Customer" $ queryCustomerTest to
                               , testCase "Query Bundle" $ queryBundleTest tok
                               , testCase "Read Bundle" $ readBundleTest tok
                               , testCase "Query Category" $ queryCategoryTest tok
+                              , testCase "Query Count Categories" $ queryCountCategoryTest tok
+                              , testCase "Query Max Categories" $ queryMaxCategoryTest tok
                               , testCase "Create Category" $ createCategoryTest tok
                               , testCase "Read Category" $ readCategoryTest tok
                               , testCase "Update Category" $ updateCategoryTest tok
                               , testCase "Delete Category" $ deleteCategoryTest tok
                               , testCase "Query Item" $ queryItemTest tok
-                              , testCase "Query Count Items" $ queryCountTest tok
+                              , testCase "Query Count Items" $ queryCountItemTest tok
                               , testCase "Query Max Items" $ queryMaxItemTest tok
                               , testCase "Create Item" $ createItemTest tok
                               , testCase "Read Item" $ readItemTest tok
@@ -145,8 +147,9 @@ queryMaxItemTest oAuthToken = do
     Right (QuickBooksItemResponse (item:_)) -> do
       assertEither "Queried for max size" eitherQueryItems
 
-queryCountTest :: OAuthToken -> Assertion
-queryCountTest oAuthToken = do
+---- Query Count Item ----
+queryCountItemTest :: OAuthToken -> Assertion
+queryCountItemTest oAuthToken = do
   eitherCount <- queryItemCount oAuthToken
   case eitherCount of
     Left _ ->
@@ -281,9 +284,25 @@ queryCategoryTest oAuthToken = do
       let (Right existingId) = filterTextForQB "91"
       assertBool (show $ categoryId category) (categoryId category == (Just existingId))
 
+---- Query Max Category ----
+queryMaxCategoryTest :: OAuthToken -> Assertion
+queryMaxCategoryTest oAuthToken = do
+  eitherQueryCategories <- queryMaxCategoriesFrom oAuthToken 1
+  case eitherQueryCategories of
+    Left _ ->
+      assertEither "Failed to query category" eitherQueryCategories
+    Right (QuickBooksCategoryResponse (category:_)) -> do
+      assertEither "Queried for max size" eitherQueryCategories
 
-
-
+---- Query Count Category ----
+queryCountCategoryTest :: OAuthToken -> Assertion
+queryCountCategoryTest oAuthToken = do
+  eitherCount <- queryCategoryCount oAuthToken
+  case eitherCount of
+    Left _ ->
+      assertEither "Failed to query category count" eitherCount
+    Right (QuickBooksCountResponse size) ->
+      assertEither "Queried the count" eitherCount
 
 ---- Invoice CRUD-Email ----
 createInvoiceTest :: OAuthToken -> Assertion

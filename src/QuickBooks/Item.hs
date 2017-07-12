@@ -141,7 +141,7 @@ queryMaxItemRequest :: APIEnv
                  -> IO (Either String (QuickBooksResponse [Item]))
 queryMaxItemRequest tok startIndex = do
   let apiConfig = ?apiConfig
-  let uriComponent = escapeURIString isUnescapedInURIComponent [i|#{query}#{pagination}|]
+  let uriComponent = escapeURIString isUnescapedInURIComponent [i|#{query} #{pagination}|]
   let queryURI = parseUrl $ [i|#{queryURITemplate apiConfig}#{uriComponent}|]
   req <- oauthSignRequest tok =<< queryURI
   let oauthHeaders = requestHeaders req

@@ -76,6 +76,10 @@ module QuickBooks
   , deleteCategory'
   , queryCategory
   , queryCategory'
+  , queryCategoryCount
+  , queryCategoryCount'
+  , queryMaxCategoriesFrom
+  , queryMaxCategoriesFrom'
   ) where
 
 import QuickBooks.Authentication
@@ -325,6 +329,43 @@ queryCategory' apiConfig appConfig tok =
 
 
 
+
+
+
+
+queryCategoryCount
+  :: OAuthToken
+  -> IO (Either String (QuickBooksResponse Int))
+queryCategoryCount tok =
+  queryQuickBooks tok QueryCountCategory
+
+queryCategoryCount'
+  :: APIConfig
+  -> AppConfig
+  -> OAuthToken
+  -> IO (Either String (QuickBooksResponse Int))
+queryCategoryCount' apiConfig appConfig tok =
+  queryQuickBooks' apiConfig appConfig tok QueryCountCategory
+
+  
+queryMaxCategoriesFrom
+  :: OAuthToken
+  -> Int
+  -> IO (Either String (QuickBooksResponse [Category]))
+queryMaxCategoriesFrom tok =
+  queryQuickBooks tok . QueryMaxCategoriesFrom
+
+queryMaxCategoriesFrom'
+  :: APIConfig
+  -> AppConfig
+  -> OAuthToken
+  -> Int
+  -> IO (Either String (QuickBooksResponse [Category]))
+queryMaxCategoriesFrom' apiConfig appConfig tok =
+  queryQuickBooks' apiConfig appConfig tok . QueryMaxCategoriesFrom
+
+
+
 -- Unused DocTest (removed 6-26-17)
 -- | Create an invoice.
 --
@@ -553,7 +594,7 @@ queryQuickBooks' apiConfig appConfig tok query = do
     UpdateItem item                     -> updateItemRequest tok item
     DeleteItem item                     -> deleteItemRequest tok item
     QueryItem queryItemName             -> queryItemRequest tok queryItemName
-    QueryCountItem                           -> countItemRequest tok
+    QueryCountItem                      -> countItemRequest tok
     QueryMaxItemsFrom startIndex        -> queryMaxItemRequest tok startIndex
     --QueryAllItems                       -> queryAllItemRequest tok
     ReadBundle iId                      -> readBundleRequest tok iId
@@ -563,6 +604,8 @@ queryQuickBooks' apiConfig appConfig tok query = do
     UpdateCategory category             -> updateCategoryRequest tok category
     DeleteCategory category             -> deleteCategoryRequest tok category
     QueryCategory queryCategoryName     -> queryCategoryRequest tok queryCategoryName
+    QueryCountCategory                  -> countCategoryRequest tok
+    QueryMaxCategoriesFrom startIndex   -> queryMaxCategoryRequest tok startIndex
 
 queryQuickBooksOAuth :: Maybe OAuthToken
                      -> QuickBooksOAuthQuery a

@@ -20,6 +20,8 @@
 
 module QuickBooks.Category
   ( queryCategoryRequest
+  , queryMaxCategoryRequest
+  , countCategoryRequest
   , createCategoryRequest
   , readCategoryRequest
   , updateCategoryRequest
@@ -140,6 +142,62 @@ queryCategoryRequest tok queryCategoryName = do
     categorySearch = if (categoryName == "")
       then "where Type='Category'" -- All Categorys
       else [i| WHERE Type='Category' AND Name='#{queryCategoryName}'|]    -- Category that Matchs Name
+
+
+
+queryMaxCategoryRequest :: APIEnv
+                 => OAuthToken
+                 -> Int
+                 -> IO (Either String (QuickBooksResponse [Category]))
+queryMaxCategoryRequest tok startIndex = do
+  let apiConfig = ?apiConfig
+  let uriComponent = escapeURIString isUnescapedInURIComponent [i|#{query} #{pagination}|]
+  let queryURI = parseUrl $ [i|#{queryURITemplate apiConfig}#{uriComponent}&minorversion=4|]
+  req <- oauthSignRequest tok =<< queryURI
+  let oauthHeaders = requestHeaders req
+  let req' = req { method = "GET"
+                 , requestHeaders = oauthHeaders ++ [(hAccept, "application/json")]
+                 }
+  resp <- httpLbs req' ?manager
+  logAPICall req'
+  let eitherFoundCategories = eitherDecode (responseBody resp)
+  case eitherFoundCategories of
+    Left er -> return (Left er)
+    Right (QuickBooksCategoryResponse foundCategories) ->
+      return $ Right $ QuickBooksCategoryResponse $ foundCategories
+        -- filter (\Category{..} -> itemName == queryCategoryName) FoundCategories
+  where
+    query :: String
+    query = "SELECT * FROM Item WHERE Type='Category'"
+    pagination :: String
+    pagination = [i| startposition #{startIndex} maxresults 1000|] -- Category that Matchs Name
+
+countCategoryRequest :: APIEnv
+                 => OAuthToken
+                 -> IO (Either String (QuickBooksResponse Int))
+countCategoryRequest tok = do
+  let apiConfig = ?apiConfig
+  let uriComponent = escapeURIString isUnescapedInURIComponent [i|#{query}|]
+  let queryURI = parseUrl $ [i|#{queryURITemplate apiConfig}#{uriComponent}&minorversion=4|]
+  req <- oauthSignRequest tok =<< queryURI
+  let oauthHeaders = requestHeaders req
+  let req' = req { method = "GET"
+                 , requestHeaders = oauthHeaders ++ [(hAccept, "application/json")]
+                 }
+  resp <- httpLbs req' ?manager
+  logAPICall req'
+  let eitherFoundCount = eitherDecode (responseBody resp)
+  case eitherFoundCount of
+    Left er -> return (Left er)
+    Right (QuickBooksCountResponse foundCount) ->
+      return $ Right $ QuickBooksCountResponse $ foundCount
+        -- filter (\Category{..} -> itemName == queryCategoryName) FoundCategories
+  where
+    query :: String
+    query = "SELECT COUNT(*) FROM Item WHERE Type='Category'"
+
+
+
 
 -- Template for queries
 queryURITemplate :: APIConfig -> String
