@@ -185,48 +185,7 @@ countItemRequest tok = do
   where
     query :: String
     query = "SELECT COUNT(*) FROM Item"
- 
 
---queryAllItems with pagination at the max of 1000
--- queryAllItemRequest :: APIEnv => OAuthToken -> IO (Either String ([QuickBooksItemResponse [Item]]))
--- queryAllItemRequest tok = do
---   let apiConfig = ?apiConfig
---   paginationStrings <- liftIO $ getPagination tok
---   let queryURI = parseUrl [i|#{queryURITemplate apiConfig}#{query}#{itemSearch}|]
---   req <- oauthSignRequest tok =<< queryURI
---   let oauthHeaders = requestHeaders req
---   let req' = req { method = "GET"
---                  , requestHeaders = oauthHeaders ++ [(hAccept, "application/json")]
---                  }
---   resp <- httpLbs req' ?manager
---   logAPICall req'
---   let eitherFoundItems = eitherDecode (responseBody resp)
---   case eitherFoundItems of
---     Left er -> return (Left er)
---     Right (QuickBooksItemResponse foundItems) ->
---       return $ Right $ QuickBooksItemResponse $ foundItems
---         -- filter (\Item{..} -> itemName == queryItemName) FoundItems
---   where
---     query :: String
---     query = "SELECT * FROM Item"
-
-
--- -- Determines the pagination strings
--- getPagination :: OAuthToken -> [Text]
--- getPagination tok = do
---   let apiConfig = ?apiConfig
---   let queryURI = parseUrl [i|#{queryURITemplate apiConfig}#{query}]
---   req <- oauthSignRequest tok =<< queryURI
---   let oauthHeaders = requestHeaders req
---   let req' = req { method = "GET"
---                  , requestHeaders = oauthHeaders ++ [(hAccept, "application/json")]
---                  }
---   resp <- httpLbs req' ?manager
---   logAPICall req'
-
---   where
---     query :: String
---     query = "SELECT Count(*) From Item"
 
 -- Template for queries
 queryURITemplate :: APIConfig -> String
