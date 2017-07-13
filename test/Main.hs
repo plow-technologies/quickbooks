@@ -66,8 +66,10 @@ queryCustomerTest oAuthToken = do
     Left _ ->
       assertEither "Faild to query customer" eitherQueryCustomer
     Right (QuickBooksCustomerResponse (customer:_)) -> do
-      let (Right existingId) = filterTextForQB "21"
-      assertBool (show $ customerId customer) (customerId customer == Just existingId)
+      case filterTextForQB "21" of
+        Left err -> assertEither "Error making QBText in queryCustomerTest" (filterTextForQB "21")
+        Right existingId ->
+          assertBool (show $ customerId customer) (customerId customer == Just existingId)
 
 -----------------
 -- Item CRUD-Q --
@@ -134,8 +136,10 @@ queryItemTest oAuthToken = do
     Left _ ->
       assertEither "Failed to query item" eitherQueryItem
     Right (QuickBooksItemResponse (item:_)) -> do
-      let (Right existingId) = filterTextForQB "2"
-      assertBool (show $ itemId item) (itemId item == Just existingId)
+      case filterTextForQB "2" of
+        Left err -> assertEither "Failed to create QBText in queryItemTest" (filterTextForQB "2")
+        Right existingId ->
+          assertBool (show $ itemId item) (itemId item == Just existingId)
 
 ---- Query Max Item ----
 queryMaxItemTest :: OAuthToken -> Assertion
@@ -164,36 +168,40 @@ queryCountItemTest oAuthToken = do
 ---- Read Bundle ----
 readBundleTest :: OAuthToken -> Assertion
 readBundleTest oAuthToken = do
-  let (Right existingId) = filterTextForQB "208"
-  let existingBundleId = existingId -- this MUST be created in QB Online for the test to pass
+  case filterTextForQB "208" of
+    Left err -> assertEither "Failed to create QBText in readBundleTest" (filterTextForQB "208")
+    Right existingId -> do
+      let existingBundleId = existingId -- this MUST be created in QB Online for the test to pass
                             -- Replace the number the id for the existing bundle
                             -- It can be obtained by querying the bundle name below
                             -- Or through the API Explorer at https://developer.intuit.com/v2/apiexplorer?apiname=V3QBO#?id=Item
                             -- With select * from item where Type='Group'
-  eitherReadBundle <- readBundle oAuthToken (textFromQBText existingBundleId)
-  case eitherReadBundle of
-    Left _ -> do
-      assertEither "Failed to read bundle" eitherReadBundle
-    Right (QuickBooksBundleResponse (rBundle:_)) -> do
-      let rBundleId = fromJust (bundleId rBundle)
-      assertBool "Read the Bundle" ((textFromQBText rBundleId) == (textFromQBText existingBundleId))
+      eitherReadBundle <- readBundle oAuthToken (textFromQBText existingBundleId)
+      case eitherReadBundle of
+        Left _ -> do
+          assertEither "Failed to read bundle" eitherReadBundle
+        Right (QuickBooksBundleResponse (rBundle:_)) -> do
+          let rBundleId = fromJust (bundleId rBundle)
+          assertBool "Read the Bundle" ((textFromQBText rBundleId) == (textFromQBText existingBundleId))
 
 ---- Query Bundle ----
 queryBundleTest :: OAuthToken -> Assertion
 queryBundleTest oAuthToken = do
-  let (Right existingId) = filterTextForQB "208"
-  let existingBundleId = existingId -- this MUST be created in QB Online for the test to pass
+  case filterTextForQB "208" of
+    Left err -> assertEither "Failed to create QBText in queryBundleTest" (filterTextForQB "208")
+    Right existingId -> do
+      let existingBundleId = existingId -- this MUST be created in QB Online for the test to pass
                             -- Replace the number the id for the existing bundle
                             -- It can be obtained by querying the bundle name below
                             -- Or through the API Explorer at https://developer.intuit.com/v2/apiexplorer?apiname=V3QBO#?id=Item
                             -- With select * from item where Type='Group'
-  eitherQueryBundle <- queryBundle oAuthToken "Bundle 1"
-  case eitherQueryBundle of
-    Right (QuickBooksBundleResponse (bundle:_)) -> do
-      let bundleId' = fromJust (bundleId bundle)
-      assertBool (show $ bundleId') (bundleId' == existingBundleId)
-    _ ->
-      assertEither "Failed to query bundle" eitherQueryBundle
+      eitherQueryBundle <- queryBundle oAuthToken "Bundle 1"
+      case eitherQueryBundle of
+        Left _ ->
+          assertEither "Failed to query bundle" eitherQueryBundle
+        Right (QuickBooksBundleResponse (bundle:_)) -> do
+          let bundleId' = fromJust (bundleId bundle)
+          assertBool (show $ bundleId') (bundleId' == existingBundleId)
 
 
 
@@ -281,8 +289,10 @@ queryCategoryTest oAuthToken = do
     Left _ ->
       assertEither "Failed to query category" eitherQueryCategory
     Right (QuickBooksCategoryResponse (category:_)) -> do
-      let (Right existingId) = filterTextForQB "91"
-      assertBool (show $ categoryId category) (categoryId category == (Just existingId))
+      case filterTextForQB "91" of
+        Left err -> assertEither "Faild to create QBText in queryCategoryTest" (filterTextForQB "91")
+        Right existingId ->
+          assertBool (show $ categoryId category) (categoryId category == (Just existingId))
 
 ---- Query Max Category ----
 queryMaxCategoryTest :: OAuthToken -> Assertion
@@ -514,26 +524,27 @@ makeTestBundleGroupDetail = do
   return $ ItemGroupDetail
     { itemGroupLine = (Just [testItemLine1, testItemLine2]) }
 
+-- The following generated name are always going to be safe for QBText fields
 getTestItemName :: IO QBText
 getTestItemName = do
   arbInt <- generate (choose (0, 100000000000000000) :: Gen Int)
   -- Ignoring case check (Should always be a QBText)
-  let (Right eitherName) = filterTextForQB $ T.pack $ "testItemName" ++ show arbInt
-  return eitherName 
+  case (filterTextForQB $ T.pack $ "testItemName" ++ show arbInt) of
+    Right eitherName -> return eitherName
 
 getTestBundleName :: IO QBText
 getTestBundleName = do
   arbInt <- generate (choose (0, 100000000000000000) :: Gen Int)
   -- Ignoring case check (Should always be a QBText)
-  let (Right eitherName) = filterTextForQB $ T.pack $ "testBundleName" ++ show arbInt
-  return eitherName 
+  case (filterTextForQB $ T.pack $ "testBundleName" ++ show arbInt) of
+    Right eitherName -> return eitherName
 
 getTestCategoryName :: IO QBText
 getTestCategoryName = do
   arbInt <- generate (choose (0, 100000000000000000) :: Gen Int)
   -- Ignoring case check (Should always be a QBText)
-  let (Right eitherName) = filterTextForQB $ T.pack $ "testCategoryName" ++ show arbInt
-  return eitherName 
+  case (filterTextForQB $ T.pack $ "testCategoryName" ++ show arbInt) of
+    Right eitherName -> return eitherName
 
 makeTestItem :: IO Item
 makeTestItem = do
