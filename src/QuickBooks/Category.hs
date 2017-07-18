@@ -140,7 +140,7 @@ queryCategoryRequest tok queryCategoryName = do
     categoryName = [i|#{queryCategoryName}|]
     categorySearch :: String
     categorySearch = if (categoryName == "")
-      then "where Type='Category'" -- All Categorys
+      then " where Type='Category'" -- All Categorys
       else [i| WHERE Type='Category' AND Name='#{queryCategoryName}'|]    -- Category that Matchs Name
 
 
