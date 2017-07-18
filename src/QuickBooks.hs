@@ -58,6 +58,10 @@ module QuickBooks
   , deleteItem'
   , queryItem
   , queryItem'
+  , queryItemCount
+  , queryItemCount'
+  , queryMaxItemsFrom
+  , queryMaxItemsFrom'
   , readBundle
   , readBundle'
   , queryBundle
@@ -72,6 +76,10 @@ module QuickBooks
   , deleteCategory'
   , queryCategory
   , queryCategory'
+  , queryCategoryCount
+  , queryCategoryCount'
+  , queryMaxCategoriesFrom
+  , queryMaxCategoriesFrom'
   ) where
 
 import QuickBooks.Authentication
@@ -202,6 +210,40 @@ queryItem' apiConfig appConfig tok =
   queryQuickBooks' apiConfig appConfig tok . QueryItem
 
 
+queryItemCount
+  :: OAuthToken
+  -> IO (Either String (QuickBooksResponse Int))
+queryItemCount tok =
+  queryQuickBooks tok QueryCountItem
+
+queryItemCount'
+  :: APIConfig
+  -> AppConfig
+  -> OAuthToken
+  -> IO (Either String (QuickBooksResponse Int))
+queryItemCount' apiConfig appConfig tok =
+  queryQuickBooks' apiConfig appConfig tok QueryCountItem
+
+
+queryMaxItemsFrom
+  :: OAuthToken
+  -> Int
+  -> IO (Either String (QuickBooksResponse [Item]))
+queryMaxItemsFrom tok =
+  queryQuickBooks tok . QueryMaxItemsFrom
+
+queryMaxItemsFrom'
+  :: APIConfig
+  -> AppConfig
+  -> OAuthToken
+  -> Int
+  -> IO (Either String (QuickBooksResponse [Item]))
+queryMaxItemsFrom' apiConfig appConfig tok =
+  queryQuickBooks' apiConfig appConfig tok . QueryMaxItemsFrom
+
+-- queryAllItems :: OAuthToken -> IO (Either String ([QuickBooksItemResponse [Item]]))
+-- queryAllItems otk = queryQuickBooks tok . QueryAllItems
+
 ----------------
 -- Bundle R/Q --
 ----------------
@@ -284,6 +326,43 @@ queryCategory'
 queryCategory' apiConfig appConfig tok =
   queryQuickBooks' apiConfig appConfig tok . QueryCategory
 
+
+
+
+
+
+
+
+queryCategoryCount
+  :: OAuthToken
+  -> IO (Either String (QuickBooksResponse Int))
+queryCategoryCount tok =
+  queryQuickBooks tok QueryCountCategory
+
+queryCategoryCount'
+  :: APIConfig
+  -> AppConfig
+  -> OAuthToken
+  -> IO (Either String (QuickBooksResponse Int))
+queryCategoryCount' apiConfig appConfig tok =
+  queryQuickBooks' apiConfig appConfig tok QueryCountCategory
+
+  
+queryMaxCategoriesFrom
+  :: OAuthToken
+  -> Int
+  -> IO (Either String (QuickBooksResponse [Category]))
+queryMaxCategoriesFrom tok =
+  queryQuickBooks tok . QueryMaxCategoriesFrom
+
+queryMaxCategoriesFrom'
+  :: APIConfig
+  -> AppConfig
+  -> OAuthToken
+  -> Int
+  -> IO (Either String (QuickBooksResponse [Category]))
+queryMaxCategoriesFrom' apiConfig appConfig tok =
+  queryQuickBooks' apiConfig appConfig tok . QueryMaxCategoriesFrom
 
 
 
@@ -515,6 +594,9 @@ queryQuickBooks' apiConfig appConfig tok query = do
     UpdateItem item                     -> updateItemRequest tok item
     DeleteItem item                     -> deleteItemRequest tok item
     QueryItem queryItemName             -> queryItemRequest tok queryItemName
+    QueryCountItem                      -> countItemRequest tok
+    QueryMaxItemsFrom startIndex        -> queryMaxItemRequest tok startIndex
+    --QueryAllItems                       -> queryAllItemRequest tok
     ReadBundle iId                      -> readBundleRequest tok iId
     QueryBundle queryBundleName         -> queryBundleRequest tok queryBundleName
     CreateCategory category             -> createCategoryRequest tok category
@@ -522,6 +604,8 @@ queryQuickBooks' apiConfig appConfig tok query = do
     UpdateCategory category             -> updateCategoryRequest tok category
     DeleteCategory category             -> deleteCategoryRequest tok category
     QueryCategory queryCategoryName     -> queryCategoryRequest tok queryCategoryName
+    QueryCountCategory                  -> countCategoryRequest tok
+    QueryMaxCategoriesFrom startIndex   -> queryMaxCategoryRequest tok startIndex
 
 queryQuickBooksOAuth :: Maybe OAuthToken
                      -> QuickBooksOAuthQuery a

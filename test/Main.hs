@@ -17,6 +17,7 @@ import           Data.String
 import qualified Data.Text             as T
 import           Data.Text             (Text)
 import           QuickBooks.Types
+import           QuickBooks.QBText
 import           System.Environment    (getEnvironment)
 import qualified Text.Email.Validate   as E (EmailAddress, emailAddress)
 
@@ -31,11 +32,15 @@ tests tok = testGroup "tests" [ testCase "Query Customer" $ queryCustomerTest to
                               , testCase "Query Bundle" $ queryBundleTest tok
                               , testCase "Read Bundle" $ readBundleTest tok
                               , testCase "Query Category" $ queryCategoryTest tok
+                              , testCase "Query Count Categories" $ queryCountCategoryTest tok
+                              , testCase "Query Max Categories" $ queryMaxCategoryTest tok
                               , testCase "Create Category" $ createCategoryTest tok
                               , testCase "Read Category" $ readCategoryTest tok
                               , testCase "Update Category" $ updateCategoryTest tok
                               , testCase "Delete Category" $ deleteCategoryTest tok
                               , testCase "Query Item" $ queryItemTest tok
+                              , testCase "Query Count Items" $ queryCountItemTest tok
+                              , testCase "Query Max Items" $ queryMaxItemTest tok
                               , testCase "Create Item" $ createItemTest tok
                               , testCase "Read Item" $ readItemTest tok
                               , testCase "Update Item" $ updateItemTest tok
@@ -58,10 +63,13 @@ queryCustomerTest oAuthToken = do
   eitherQueryCustomer <-
       queryCustomer oAuthToken "Rondonuwu Fruit and Vegi"
   case eitherQueryCustomer of
-    Right (QuickBooksCustomerResponse (customer:_)) ->
-      assertBool (show $ customerId customer) (customerId customer == Just "21")
-    _ ->
+    Left _ ->
       assertEither "Faild to query customer" eitherQueryCustomer
+    Right (QuickBooksCustomerResponse (customer:_)) -> do
+      case filterTextForQB "21" of
+        Left err -> assertEither "Error making QBText in queryCustomerTest" (filterTextForQB "21")
+        Right existingId ->
+          assertBool (show $ customerId customer) (customerId customer == Just existingId)
 
 -----------------
 -- Item CRUD-Q --
@@ -84,7 +92,7 @@ readItemTest oAuthToken = do
   testItem <- makeTestItem
   Right (QuickBooksItemResponse (cItem:_)) <- createItem oAuthToken testItem
   let (Just iId) = itemId cItem
-  eitherReadItem <- readItem oAuthToken iId
+  eitherReadItem <- readItem oAuthToken $ textFromQBText iId
   case eitherReadItem of
     Left _ -> do
       deleteItem oAuthToken cItem
@@ -125,10 +133,33 @@ queryItemTest :: OAuthToken -> Assertion
 queryItemTest oAuthToken = do
   eitherQueryItem <- queryItem oAuthToken "Hours"
   case eitherQueryItem of
-    Right (QuickBooksItemResponse (item:_)) ->
-      assertBool (show $ itemId item) (itemId item == Just "2")
-    _ ->
+    Left _ ->
       assertEither "Failed to query item" eitherQueryItem
+    Right (QuickBooksItemResponse (item:_)) -> do
+      case filterTextForQB "2" of
+        Left err -> assertEither "Failed to create QBText in queryItemTest" (filterTextForQB "2")
+        Right existingId ->
+          assertBool (show $ itemId item) (itemId item == Just existingId)
+
+---- Query Max Item ----
+queryMaxItemTest :: OAuthToken -> Assertion
+queryMaxItemTest oAuthToken = do
+  eitherQueryItems <- queryMaxItemsFrom oAuthToken 1
+  case eitherQueryItems of
+    Left _ ->
+      assertEither "Failed to query item" eitherQueryItems
+    Right (QuickBooksItemResponse (item:_)) -> do
+      assertEither "Queried for max size" eitherQueryItems
+
+---- Query Count Item ----
+queryCountItemTest :: OAuthToken -> Assertion
+queryCountItemTest oAuthToken = do
+  eitherCount <- queryItemCount oAuthToken
+  case eitherCount of
+    Left _ ->
+      assertEither "Failed to query item count" eitherCount
+    Right (QuickBooksCountResponse size) ->
+      assertEither "Queried the count" eitherCount
 
 ---------------------
 -- Bundle CRUD-Q --
@@ -137,34 +168,40 @@ queryItemTest oAuthToken = do
 ---- Read Bundle ----
 readBundleTest :: OAuthToken -> Assertion
 readBundleTest oAuthToken = do
-  let existingBundleId = "208" -- this MUST be created in QB Online for the test to pass
+  case filterTextForQB "208" of
+    Left err -> assertEither "Failed to create QBText in readBundleTest" (filterTextForQB "208")
+    Right existingId -> do
+      let existingBundleId = existingId -- this MUST be created in QB Online for the test to pass
                             -- Replace the number the id for the existing bundle
                             -- It can be obtained by querying the bundle name below
                             -- Or through the API Explorer at https://developer.intuit.com/v2/apiexplorer?apiname=V3QBO#?id=Item
                             -- With select * from item where Type='Group'
-  eitherReadBundle <- readBundle oAuthToken existingBundleId
-  case eitherReadBundle of
-    Left _ -> do
-      assertEither "Failed to read bundle" eitherReadBundle
-    Right (QuickBooksBundleResponse (rBundle:_)) -> do
-      let rBundleId = fromJust (bundleId rBundle)
-      assertBool "Read the Bundle" (rBundleId == existingBundleId)
+      eitherReadBundle <- readBundle oAuthToken (textFromQBText existingBundleId)
+      case eitherReadBundle of
+        Left _ -> do
+          assertEither "Failed to read bundle" eitherReadBundle
+        Right (QuickBooksBundleResponse (rBundle:_)) -> do
+          let rBundleId = fromJust (bundleId rBundle)
+          assertBool "Read the Bundle" ((textFromQBText rBundleId) == (textFromQBText existingBundleId))
 
 ---- Query Bundle ----
 queryBundleTest :: OAuthToken -> Assertion
 queryBundleTest oAuthToken = do
-  let existingBundleId = "208" -- this MUST be created in QB Online for the test to pass
+  case filterTextForQB "208" of
+    Left err -> assertEither "Failed to create QBText in queryBundleTest" (filterTextForQB "208")
+    Right existingId -> do
+      let existingBundleId = existingId -- this MUST be created in QB Online for the test to pass
                             -- Replace the number the id for the existing bundle
                             -- It can be obtained by querying the bundle name below
                             -- Or through the API Explorer at https://developer.intuit.com/v2/apiexplorer?apiname=V3QBO#?id=Item
                             -- With select * from item where Type='Group'
-  eitherQueryBundle <- queryBundle oAuthToken "Bundle 1"
-  case eitherQueryBundle of
-    Right (QuickBooksBundleResponse (bundle:_)) -> do
-      let bundleId' = fromJust (bundleId bundle)
-      assertBool (show $ bundleId') (bundleId' == existingBundleId)
-    _ ->
-      assertEither "Failed to query bundle" eitherQueryBundle
+      eitherQueryBundle <- queryBundle oAuthToken "Bundle 1"
+      case eitherQueryBundle of
+        Left _ ->
+          assertEither "Failed to query bundle" eitherQueryBundle
+        Right (QuickBooksBundleResponse (bundle:_)) -> do
+          let bundleId' = fromJust (bundleId bundle)
+          assertBool (show $ bundleId') (bundleId' == existingBundleId)
 
 
 
@@ -186,7 +223,7 @@ createCategoryTest oAuthToken = do
         Nothing ->
           assertBool "Faild to get category id" False
         Just categoryId -> do
-          testCategory2 <- makeTestCategory2 categoryId
+          testCategory2 <- makeTestCategory2 $ textFromQBText categoryId
           resp2 <- createCategory oAuthToken testCategory2
           case resp2 of
             Left err -> assertEither ("My custom error message: " ++ err) resp2
@@ -204,7 +241,7 @@ readCategoryTest oAuthToken = do
   testCategory <- makeTestCategory
   Right (QuickBooksCategoryResponse (cCategory:_)) <- createCategory oAuthToken testCategory
   let (Just iId) = categoryId cCategory
-  eitherReadCategory <- readCategory oAuthToken iId
+  eitherReadCategory <- readCategory oAuthToken $ textFromQBText iId
   case eitherReadCategory of
     Left _ -> do
       deleteCategory oAuthToken cCategory
@@ -218,15 +255,19 @@ updateCategoryTest :: OAuthToken -> Assertion
 updateCategoryTest oAuthToken = do
   testCategory <- makeTestCategory
   Right (QuickBooksCategoryResponse (cCategory:_)) <- createCategory oAuthToken testCategory
-  let nCategory = cCategory { categoryName = ( T.append (categoryName cCategory) "C"), categoryId = (categoryId cCategory) }
-  eitherUpdateCategory <- updateCategory oAuthToken nCategory
-  case eitherUpdateCategory of
-    Left _ -> do
-      deleteCategory oAuthToken cCategory
-      assertEither "Failed to update invoice" eitherUpdateCategory
-    Right (QuickBooksCategoryResponse (uCategory:_)) -> do
-      deleteCategory oAuthToken uCategory
-      assertBool "Updated the Category" (categoryName cCategory /= categoryName uCategory)
+  let eitherCreatedCategoryName = filterTextForQB $ T.append (textFromQBText $ categoryName cCategory) "C"
+  case eitherCreatedCategoryName of
+    Left err -> assertBool "Couldn't make QBText from the created QB Item?" False
+    Right cCategoryName -> do
+      let nCategory = cCategory { categoryName = cCategoryName, categoryId = (categoryId cCategory) }
+      eitherUpdateCategory <- updateCategory oAuthToken nCategory
+      case eitherUpdateCategory of
+        Left _ -> do
+          deleteCategory oAuthToken cCategory
+          assertEither "Failed to update invoice" eitherUpdateCategory
+        Right (QuickBooksCategoryResponse (uCategory:_)) -> do
+          deleteCategory oAuthToken uCategory
+          assertBool "Updated the Category" (categoryName cCategory /= categoryName uCategory)
 
 ---- Delete Category ----
 deleteCategoryTest :: OAuthToken -> Assertion
@@ -245,14 +286,33 @@ queryCategoryTest :: OAuthToken -> Assertion
 queryCategoryTest oAuthToken = do
   eitherQueryCategory <- queryCategory oAuthToken "Cat 1"
   case eitherQueryCategory of
-    Right (QuickBooksCategoryResponse (category:_)) ->
-      assertBool (show $ categoryId category) (categoryId category == Just "91")
-    _ ->
+    Left _ ->
       assertEither "Failed to query category" eitherQueryCategory
+    Right (QuickBooksCategoryResponse (category:_)) -> do
+      case filterTextForQB "91" of
+        Left err -> assertEither "Faild to create QBText in queryCategoryTest" (filterTextForQB "91")
+        Right existingId ->
+          assertBool (show $ categoryId category) (categoryId category == (Just existingId))
 
+---- Query Max Category ----
+queryMaxCategoryTest :: OAuthToken -> Assertion
+queryMaxCategoryTest oAuthToken = do
+  eitherQueryCategories <- queryMaxCategoriesFrom oAuthToken 1
+  case eitherQueryCategories of
+    Left _ ->
+      assertEither "Failed to query category" eitherQueryCategories
+    Right (QuickBooksCategoryResponse (category:_)) -> do
+      assertEither "Queried for max size" eitherQueryCategories
 
-
-
+---- Query Count Category ----
+queryCountCategoryTest :: OAuthToken -> Assertion
+queryCountCategoryTest oAuthToken = do
+  eitherCount <- queryCategoryCount oAuthToken
+  case eitherCount of
+    Left _ ->
+      assertEither "Failed to query category count" eitherCount
+    Right (QuickBooksCountResponse size) ->
+      assertEither "Queried the count" eitherCount
 
 ---- Invoice CRUD-Email ----
 createInvoiceTest :: OAuthToken -> Assertion
@@ -461,23 +521,30 @@ makeTestBundleGroupDetail = do
         { itemRef = (Just testItemRef2)
         , itemQty = (Just 4)
         }
-  return $ ItemGroupDetail 
+  return $ ItemGroupDetail
     { itemGroupLine = (Just [testItemLine1, testItemLine2]) }
 
-getTestItemName :: IO Text
+-- The following generated name are always going to be safe for QBText fields
+getTestItemName :: IO QBText
 getTestItemName = do
   arbInt <- generate (choose (0, 100000000000000000) :: Gen Int)
-  return $ T.pack $ "testItemName" ++ show arbInt
+  -- Ignoring case check (Should always be a QBText)
+  case (filterTextForQB $ T.pack $ "testItemName" ++ show arbInt) of
+    Right eitherName -> return eitherName
 
-getTestBundleName :: IO Text
+getTestBundleName :: IO QBText
 getTestBundleName = do
   arbInt <- generate (choose (0, 100000000000000000) :: Gen Int)
-  return $ T.pack $ "testBundleName" ++ show arbInt
+  -- Ignoring case check (Should always be a QBText)
+  case (filterTextForQB $ T.pack $ "testBundleName" ++ show arbInt) of
+    Right eitherName -> return eitherName
 
-getTestCategoryName :: IO Text
+getTestCategoryName :: IO QBText
 getTestCategoryName = do
   arbInt <- generate (choose (0, 100000000000000000) :: Gen Int)
-  return $ T.pack $ "testCategoryName" ++ show arbInt
+  -- Ignoring case check (Should always be a QBText)
+  case (filterTextForQB $ T.pack $ "testCategoryName" ++ show arbInt) of
+    Right eitherName -> return eitherName
 
 makeTestItem :: IO Item
 makeTestItem = do

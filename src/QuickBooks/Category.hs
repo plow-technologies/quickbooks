@@ -20,6 +20,8 @@
 
 module QuickBooks.Category
   ( queryCategoryRequest
+  , queryMaxCategoryRequest
+  , countCategoryRequest
   , createCategoryRequest
   , readCategoryRequest
   , updateCategoryRequest
@@ -30,12 +32,14 @@ module QuickBooks.Category
 import QuickBooks.Authentication
 import QuickBooks.Logging
 import QuickBooks.Types
+import QuickBooks.QBText
 
 import Data.Aeson                (encode, eitherDecode)
 import Data.String.Interpolate   (i)
 import Data.Text                 (Text)
 import Network.HTTP.Client
 import Network.HTTP.Types.Header (hAccept, hContentType)
+import Network.URI               (escapeURIString, isUnescapedInURI, isUnescapedInURIComponent)
 
 -- | Create an category. (Supply a new Category WITHOUT an id field)
 createCategoryRequest :: APIEnv
@@ -51,7 +55,7 @@ readCategoryRequest ::  APIEnv
                      -> IO (Either String (QuickBooksResponse [Category]))
 readCategoryRequest tok iId = do
   let apiConfig = ?apiConfig
-  req  <- oauthSignRequest tok =<< parseUrl [i|#{categoryURITemplate apiConfig}/#{iId}|]
+  req  <- oauthSignRequest tok =<< parseUrl (escapeURIString isUnescapedInURI [i|#{categoryURITemplate apiConfig}/#{iId}|])
   let oauthHeaders = requestHeaders req
   let req' = req{method = "GET", requestHeaders = oauthHeaders ++ [(hAccept, "application/json")]}
   resp <-  httpLbs req' ?manager
@@ -73,7 +77,7 @@ deleteCategoryRequest :: APIEnv
                      -> IO (Either String (QuickBooksResponse DeletedCategory))
 deleteCategoryRequest tok cCategory = do
   let apiConfig = ?apiConfig
-  req <- parseUrl [i|#{categoryURITemplate apiConfig}?operation=delete&minorversion=4|]
+  req <- parseUrl $ escapeURIString isUnescapedInURI [i|#{categoryURITemplate apiConfig}?operation=delete&minorversion=4|]
   req' <- oauthSignRequest tok req{ method         = "POST"
                                   , requestBody    = RequestBodyLBS $ encode cCategory
                                   , requestHeaders = [ (hAccept, "application/json")
@@ -91,7 +95,7 @@ postCategory :: APIEnv
             -> IO (Either String (QuickBooksResponse [Category]))
 postCategory tok category = do
   let apiConfig = ?apiConfig
-  req <- parseUrl [i|#{categoryURITemplate apiConfig}?minorversion=4|]
+  req <- parseUrl $ escapeURIString isUnescapedInURI [i|#{categoryURITemplate apiConfig}?minorversion=4|]
   req' <- oauthSignRequest tok req{ method         = "POST"
                                   , requestBody    = RequestBodyLBS $ encode category
                                   , requestHeaders = [ (hAccept, "application/json")
@@ -113,7 +117,8 @@ queryCategoryRequest :: APIEnv
                  -> IO (Either String (QuickBooksResponse [Category]))
 queryCategoryRequest tok queryCategoryName = do
   let apiConfig = ?apiConfig
-  let queryURI = parseUrl [i|#{queryURITemplate apiConfig}#{query}#{categorySearch}|]
+  let uriComponent = escapeURIString isUnescapedInURIComponent [i|#{query}#{categorySearch}|]
+  let queryURI = parseUrl $ [i|#{queryURITemplate apiConfig}#{uriComponent}&minorversion=4|]
   req <- oauthSignRequest tok =<< queryURI
   let oauthHeaders = requestHeaders req
   let req' = req { method = "GET"
@@ -136,7 +141,63 @@ queryCategoryRequest tok queryCategoryName = do
     categorySearch :: String
     categorySearch = if (categoryName == "")
       then "where Type='Category'" -- All Categorys
-      else [i| WHERE Type='Category' AND Name='#{queryCategoryName}'&minorversion=4|]    -- Category that Matchs Name
+      else [i| WHERE Type='Category' AND Name='#{queryCategoryName}'|]    -- Category that Matchs Name
+
+
+
+queryMaxCategoryRequest :: APIEnv
+                 => OAuthToken
+                 -> Int
+                 -> IO (Either String (QuickBooksResponse [Category]))
+queryMaxCategoryRequest tok startIndex = do
+  let apiConfig = ?apiConfig
+  let uriComponent = escapeURIString isUnescapedInURIComponent [i|#{query} #{pagination}|]
+  let queryURI = parseUrl $ [i|#{queryURITemplate apiConfig}#{uriComponent}&minorversion=4|]
+  req <- oauthSignRequest tok =<< queryURI
+  let oauthHeaders = requestHeaders req
+  let req' = req { method = "GET"
+                 , requestHeaders = oauthHeaders ++ [(hAccept, "application/json")]
+                 }
+  resp <- httpLbs req' ?manager
+  logAPICall req'
+  let eitherFoundCategories = eitherDecode (responseBody resp)
+  case eitherFoundCategories of
+    Left er -> return (Left er)
+    Right (QuickBooksCategoryResponse foundCategories) ->
+      return $ Right $ QuickBooksCategoryResponse $ foundCategories
+        -- filter (\Category{..} -> itemName == queryCategoryName) FoundCategories
+  where
+    query :: String
+    query = "SELECT * FROM Item WHERE Type='Category'"
+    pagination :: String
+    pagination = [i| startposition #{startIndex} maxresults 1000|] -- Category that Matchs Name
+
+countCategoryRequest :: APIEnv
+                 => OAuthToken
+                 -> IO (Either String (QuickBooksResponse Int))
+countCategoryRequest tok = do
+  let apiConfig = ?apiConfig
+  let uriComponent = escapeURIString isUnescapedInURIComponent [i|#{query}|]
+  let queryURI = parseUrl $ [i|#{queryURITemplate apiConfig}#{uriComponent}&minorversion=4|]
+  req <- oauthSignRequest tok =<< queryURI
+  let oauthHeaders = requestHeaders req
+  let req' = req { method = "GET"
+                 , requestHeaders = oauthHeaders ++ [(hAccept, "application/json")]
+                 }
+  resp <- httpLbs req' ?manager
+  logAPICall req'
+  let eitherFoundCount = eitherDecode (responseBody resp)
+  case eitherFoundCount of
+    Left er -> return (Left er)
+    Right (QuickBooksCountResponse foundCount) ->
+      return $ Right $ QuickBooksCountResponse $ foundCount
+        -- filter (\Category{..} -> itemName == queryCategoryName) FoundCategories
+  where
+    query :: String
+    query = "SELECT COUNT(*) FROM Item WHERE Type='Category'"
+
+
+
 
 -- Template for queries
 queryURITemplate :: APIConfig -> String

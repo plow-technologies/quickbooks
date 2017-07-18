@@ -26,12 +26,15 @@ module QuickBooks.Customer
 import QuickBooks.Authentication
 import QuickBooks.Logging
 import QuickBooks.Types
+import QuickBooks.QBText
 
 import qualified Data.Aeson as Aeson
 import Data.String.Interpolate (i)
 import Data.Text (Text)
 import Network.HTTP.Client
 import Network.HTTP.Types.Header (hAccept)
+import Network.URI               (escapeURIString, isUnescapedInURI, isUnescapedInURIComponent)
+
 
 -- GET /v3/company/<companyID>/query=<selectStatement>
 
@@ -41,7 +44,8 @@ queryCustomerRequest :: APIEnv
                      -> IO (Either String (QuickBooksResponse [Customer]))
 queryCustomerRequest tok queryCustomerName = do
   let apiConfig = ?apiConfig
-  let queryURI = parseUrl [i|#{queryURITemplate apiConfig}#{query}|]
+  let uriComponent =  escapeURIString isUnescapedInURIComponent [i|#{query}|]
+  let queryURI = parseUrl $ [i|#{queryURITemplate apiConfig}#{uriComponent}|]
   req <- oauthSignRequest tok =<< queryURI
   let oauthHeaders = requestHeaders req
   let req' = req { method = "GET"
@@ -54,7 +58,7 @@ queryCustomerRequest tok queryCustomerName = do
     Left er -> return (Left er)
     Right (QuickBooksCustomerResponse allCustomers) ->
       return $ Right $ QuickBooksCustomerResponse $
-        filter (\Customer{..} -> customerDisplayName == queryCustomerName) allCustomers
+        filter (\Customer{..} -> (textFromQBText customerDisplayName) == queryCustomerName) allCustomers
   where
     query :: String
     query = "SELECT * FROM Customer"
