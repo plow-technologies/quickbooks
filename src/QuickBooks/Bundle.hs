@@ -83,7 +83,7 @@ queryBundleRequest tok queryBundleName = do
     bundleName = [i|#{queryBundleName}|]
     bundleSearch :: String
     bundleSearch = if (bundleName == "")
-      then "where Type='Group'" -- All Bundles
+      then " where Type='Group'" -- All Bundles
       else [i| WHERE Type='Group' AND Name='#{queryBundleName}'|]    -- Bundle that Matchs Name
 
 -- Template for queries

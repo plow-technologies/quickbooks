@@ -29,9 +29,11 @@ main = do
 
 tests :: OAuthToken -> TestTree
 tests tok = testGroup "tests" [ testCase "Query Customer" $ queryCustomerTest tok
-                              , testCase "Query Bundle" $ queryBundleTest tok
                               , testCase "Read Bundle" $ readBundleTest tok
+                              , testCase "Query Bundle" $ queryBundleTest tok
+                              , testCase "Query Empty Bundle" $ queryEmptyBundleTest tok
                               , testCase "Query Category" $ queryCategoryTest tok
+                              , testCase "Query Empty Category" $ queryEmptyCategoryTest tok
                               , testCase "Query Count Categories" $ queryCountCategoryTest tok
                               , testCase "Query Max Categories" $ queryMaxCategoryTest tok
                               , testCase "Create Category" $ createCategoryTest tok
@@ -40,6 +42,7 @@ tests tok = testGroup "tests" [ testCase "Query Customer" $ queryCustomerTest to
                               , testCase "Delete Category" $ deleteCategoryTest tok
                               , testCase "Query Item" $ queryItemTest tok
                               , testCase "Query Count Items" $ queryCountItemTest tok
+                              , testCase "Query Empty Item" $ queryEmptyItemTest tok
                               , testCase "Query Max Items" $ queryMaxItemTest tok
                               , testCase "Create Item" $ createItemTest tok
                               , testCase "Read Item" $ readItemTest tok
@@ -141,6 +144,18 @@ queryItemTest oAuthToken = do
         Right existingId ->
           assertBool (show $ itemId item) (itemId item == Just existingId)
 
+---- Query Empty Item ----
+queryEmptyItemTest :: OAuthToken -> Assertion
+queryEmptyItemTest oAuthToken = do
+  eitherQueryItem <- queryItem oAuthToken ""
+  case eitherQueryItem of
+    Left _ ->
+      assertEither "Failed to query item" eitherQueryItem
+    Right (QuickBooksItemResponse []) -> do
+      assertEither "There were no items to query, but the test passes" eitherQueryItem
+    Right (QuickBooksItemResponse (item:_)) -> do
+      assertEither "Query for a list of items" eitherQueryItem
+
 ---- Query Max Item ----
 queryMaxItemTest :: OAuthToken -> Assertion
 queryMaxItemTest oAuthToken = do
@@ -203,6 +218,17 @@ queryBundleTest oAuthToken = do
           let bundleId' = fromJust (bundleId bundle)
           assertBool (show $ bundleId') (bundleId' == existingBundleId)
 
+---- Query Empty Bundle ----
+queryEmptyBundleTest :: OAuthToken -> Assertion
+queryEmptyBundleTest oAuthToken = do
+  eitherQueryBundle <- queryBundle oAuthToken ""
+  case eitherQueryBundle of
+    Left _ ->
+      assertEither "Failed to query bundle" eitherQueryBundle
+    Right (QuickBooksBundleResponse []) -> do
+      assertEither "There were no bundles to query, but the test passes" eitherQueryBundle
+    Right (QuickBooksBundleResponse (bundle:_)) -> do
+      assertEither "Query for a list of bundles" eitherQueryBundle
 
 
 
@@ -293,6 +319,18 @@ queryCategoryTest oAuthToken = do
         Left err -> assertEither "Faild to create QBText in queryCategoryTest" (filterTextForQB "91")
         Right existingId ->
           assertBool (show $ categoryId category) (categoryId category == (Just existingId))
+
+---- Query Empty Category ----
+queryEmptyCategoryTest :: OAuthToken -> Assertion
+queryEmptyCategoryTest oAuthToken = do
+  eitherQueryCategory <- queryCategory oAuthToken ""
+  case eitherQueryCategory of
+    Left _ ->
+      assertEither "Failed to query category" eitherQueryCategory
+    Right (QuickBooksCategoryResponse []) -> do
+      assertEither "There were no categories to query, but the test passes" eitherQueryCategory
+    Right (QuickBooksCategoryResponse (category:_)) -> do
+      assertEither "Query for a list of categories" eitherQueryCategory
 
 ---- Query Max Category ----
 queryMaxCategoryTest :: OAuthToken -> Assertion
