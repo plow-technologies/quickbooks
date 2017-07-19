@@ -149,10 +149,15 @@ instance FromJSON (QuickBooksResponse DeletedInvoice) where
   parseJSON _          = fail "Could not parse deleted invoice response from QuickBooks"
 
 instance FromJSON (QuickBooksResponse [Customer]) where
-  parseJSON (Object o) = do
-    let customers =
-          o .: "QueryResponse" >>= \queryResponse -> queryResponse .: "Customer"
-    fmap QuickBooksCustomerResponse customers
+  parseJSON (Object o) = parseQueryResponse o <|> parseCustomers o <|> parseSingleCustomer o
+    where
+      parseQueryResponse obj = do
+        qResponse <- obj .: "QueryResponse"
+        parseCustomers qResponse <|> (return (QuickBooksCustomerResponse []))
+      parseCustomers obj = QuickBooksCustomerResponse <$> obj .: "Customer"
+      parseSingleCustomer obj = do
+        i <- obj .: "Customer"
+        return $ QuickBooksCustomerResponse [i]
   parseJSON _          = fail "Could not parse customer response from QuickBooks"
 
 instance FromJSON (QuickBooksResponse [Item]) where
@@ -213,6 +218,10 @@ data QuickBooksRequest a where
   DeleteInvoice           :: InvoiceId   -> SyncToken -> QuickBooksQuery DeletedInvoice
   SendInvoice             :: InvoiceId   -> E.EmailAddress -> QuickBooksQuery Invoice
 
+  CreateCustomer          :: Customer -> QuickBooksQuery [Customer]
+  ReadCustomer            :: Text -> QuickBooksQuery [Customer]
+  UpdateCustomer          :: Customer -> QuickBooksQuery [Customer]
+  DeleteCustomer          :: Customer -> QuickBooksQuery [Customer]
   QueryCustomer           :: Text -> QuickBooksQuery [Customer]
 
   CreateItem              :: Item -> QuickBooksQuery [Item]

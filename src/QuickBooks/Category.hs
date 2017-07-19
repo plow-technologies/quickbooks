@@ -88,7 +88,7 @@ deleteCategoryRequest tok cCategory = do
   logAPICall req'
   return $ eitherDecode $ responseBody resp
 
--- Post handles create/update/delete in the api
+-- Post handles create/update in the api
 postCategory :: APIEnv
             => OAuthToken
             -> Category
