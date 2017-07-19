@@ -29,6 +29,10 @@ main = do
 
 tests :: OAuthToken -> TestTree
 tests tok = testGroup "tests" [ testCase "Query Customer" $ queryCustomerTest tok
+                              , testCase "Create Customer" $ createCustomerTest tok
+                              , testCase "Read Customer" $ readCustomerTest tok
+                              , testCase "Update Customer" $ updateCustomerTest tok
+                              , testCase "Delete Customer" $ deleteCustomerTest tok
                               , testCase "Read Bundle" $ readBundleTest tok
                               , testCase "Query Bundle" $ queryBundleTest tok
                               , testCase "Query Empty Bundle" $ queryEmptyBundleTest tok
@@ -59,6 +63,64 @@ tests tok = testGroup "tests" [ testCase "Query Customer" $ queryCustomerTest to
 -----------  Note: There is a very small chance that they may fail due to duplicate name errors on create.
 -- Tests --  Just rerun the tests and they will likely pass.
 -----------
+
+---- Create Customer ----
+createCustomerTest :: OAuthToken -> Assertion
+createCustomerTest oAuthToken = do
+  testCustomer <- makeTestCustomer
+  resp <- createCustomer oAuthToken testCustomer
+  case resp of
+    Left err -> assertEither ("My custom error message: " ++ err) resp
+    Right (QuickBooksCustomerResponse (customer:_)) -> do
+      deleteCustomer oAuthToken customer
+      assertEither "I created a customer!" resp
+
+---- Read Customer ----
+readCustomerTest :: OAuthToken -> Assertion
+readCustomerTest oAuthToken = do
+  testCustomer <- makeTestCustomer
+  Right (QuickBooksCustomerResponse (cCustomer:_)) <- createCustomer oAuthToken testCustomer
+  let (Just iId) = customerId cCustomer
+  eitherReadCustomer <- readCustomer oAuthToken $ textFromQBText iId
+  case eitherReadCustomer of
+    Left _ -> do
+      deleteCustomer oAuthToken cCustomer
+      assertEither "Failed to read customer" eitherReadCustomer
+    Right (QuickBooksCustomerResponse (rCustomer:_)) -> do
+      deleteCustomer oAuthToken cCustomer
+      assertBool "Read the Customer" (customerId cCustomer == customerId rCustomer)
+
+---- Update Customer ----
+updateCustomerTest :: OAuthToken -> Assertion
+updateCustomerTest oAuthToken = do
+  testCustomer <- makeTestCustomer
+  Right (QuickBooksCustomerResponse (cCustomer:_)) <- createCustomer oAuthToken testCustomer
+  let eitherTestQBText = filterTextForQB $ T.pack "Changed"
+  case eitherTestQBText of
+    Left err -> assertEither "Error making QBText in updateCustomerTest" eitherTestQBText
+    Right testQBText -> do
+      let nCustomer = cCustomer { customerGivenName = Just testQBText, customerId = (customerId cCustomer) }
+      eitherUpdateCustomer <- updateCustomer oAuthToken nCustomer
+      case eitherUpdateCustomer of
+        Left _ -> do
+          deleteCustomer oAuthToken cCustomer
+          assertEither "Failed to update invoice" eitherUpdateCustomer
+        Right (QuickBooksCustomerResponse (uCustomer:_)) -> do
+          deleteCustomer oAuthToken uCustomer
+          assertBool "Updated the Customer" (customerGivenName cCustomer /= customerGivenName uCustomer)
+
+---- Delete Customer ----
+deleteCustomerTest :: OAuthToken -> Assertion
+deleteCustomerTest oAuthToken = do
+  -- First, we create a customer (see 'createCustomer'):
+  testCustomer <- makeTestCustomer
+  Right (QuickBooksCustomerResponse (cCustomer:_)) <- createCustomer oAuthToken testCustomer
+  -- Then, we delete it:
+  eitherDeleteCustomer <- deleteCustomer oAuthToken cCustomer
+  case eitherDeleteCustomer of
+    Left e -> assertEither (show e) eitherDeleteCustomer
+    Right _ -> assertEither "I *deleted* a customer!" eitherDeleteCustomer
+
 
 ---- Query Customer ----
 queryCustomerTest :: OAuthToken -> Assertion
@@ -583,6 +645,55 @@ getTestCategoryName = do
   -- Ignoring case check (Should always be a QBText)
   case (filterTextForQB $ T.pack $ "testCategoryName" ++ show arbInt) of
     Right eitherName -> return eitherName
+
+getTestCustomerName :: IO QBText
+getTestCustomerName = do
+  arbInt <- generate (choose (0, 100000000000000000) :: Gen Int)
+  -- Ignoring case check (Should always be a QBText)
+  case (filterTextForQB $ T.pack $ "testCustomerName" ++ show arbInt) of
+    Right eitherName -> return eitherName
+
+makeTestCustomer :: IO Customer
+makeTestCustomer = do
+  customerName' <- getTestCustomerName
+  return $ Customer
+    { customerId = Nothing                      -- Maybe QBText
+    , customerSyncToken = Nothing               -- Maybe SyncToken
+    , customerMetaData = Nothing                -- Maybe ModificationMetaData
+    , customerTitle = Nothing                   -- Maybe QBText -- def null
+    , customerGivenName = Nothing               -- Maybe QBText -- max 25 def null
+    , customerMiddleName = Nothing              -- Maybe QBText -- max 25, def null
+    , customerFamilyName = Nothing              -- Maybe QBText -- max 25, def null
+    , customerSuffix = Nothing                  -- Maybe QBText -- max 10, def null
+    , customerFullyQualifiedName = Nothing      -- Maybe QBText
+    , customerCompanyName = Nothing             -- Maybe QBText -- max 50, def null
+    , customerDisplayName = customerName'       -- QBText -- unique
+    , customerPrintOnCheckName = Nothing        -- Maybe QBText -- max 100
+    , customerActive = Nothing                  -- Maybe Bool -- def true
+    , customerPrimaryPhone = Nothing            -- Maybe TelephoneNumber
+    , customerAlternatePhone = Nothing          -- Maybe TelephoneNumber
+    , customerMobile = Nothing                  -- Maybe TelephoneNumber
+    , customerFax = Nothing                     -- Maybe TelephoneNumber
+    , customerPrimaryEmailAddress = Nothing     -- Maybe EmailAddress
+    , customerWebAddr = Nothing                 -- Maybe WebSiteAddress
+    , customerDefaultTaxCodeRef = Nothing       -- Maybe TaxCodeRef
+    , customerTaxable = Nothing                 -- Maybe Bool
+    , customerBillAddr = Nothing                -- Maybe BillAddr
+    , customerShipAddr = Nothing                -- Maybe ShipAddr
+    , customerNotes = Nothing                   -- Maybe QBText -- max 2000
+    , customerJob = Nothing                     -- Maybe Bool -- def false or null
+    , customerBillWithParent = Nothing          -- Maybe Bool -- def false or null
+    , customerParentRef = Nothing               -- Maybe CustomerRef
+    , customerLevel = Nothing                   -- Maybe Int -- def 0, up to 5
+    , customerSalesTermRef = Nothing            -- Maybe SalesTermRef
+    , customerPaymentMethodRef = Nothing        -- Maybe Reference
+    , customerBalance = Nothing                 -- Maybe Double
+    , customerOpenBalanceDate = Nothing         -- Maybe QBText
+    , customerBalanceWithJobs = Nothing         -- Maybe Double
+    , customerCurrencyRef = Nothing             -- Maybe CurrencyRef
+    , customerPreferredDeliveryMethod = Nothing -- Maybe QBText
+    , customerResaleNum = Nothing               -- Maybe QBText -- max 15
+    }
 
 makeTestItem :: IO Item
 makeTestItem = do

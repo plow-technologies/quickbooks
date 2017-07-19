@@ -45,6 +45,14 @@ module QuickBooks
   , readAppConfigFromFile
     -- * Name list entities
     -- ** Customer
+  , createCustomer
+  , createCustomer'
+  , readCustomer
+  , readCustomer'
+  , updateCustomer
+  , updateCustomer'
+  , deleteCustomer
+  , deleteCustomer'
   , queryCustomer
   , queryCustomer'
     -- ** Line
@@ -109,6 +117,44 @@ import QuickBooks.Category
 import QuickBooks.Logging      (apiLogger, getLogger)
 import Data.Yaml (ParseException, decodeFileEither)
 
+
+------------------
+---- Customer ----
+------------------
+
+-- Create Customer --
+createCustomer :: OAuthToken -> Customer -> IO (Either String (QuickBooksResponse [Customer]))
+createCustomer tok = queryQuickBooks tok . CreateCustomer
+
+-- | Like createCustomer but accepts an APIConfig rather than reading it from the environment
+createCustomer' :: APIConfig -> AppConfig -> OAuthToken -> Customer -> IO (Either String (QuickBooksResponse [Customer]))
+createCustomer' apiConfig appConfig tok = queryQuickBooks' apiConfig appConfig tok . CreateCustomer
+
+-- Read Customer --
+readCustomer :: OAuthToken -> Text -> IO (Either String (QuickBooksResponse [Customer]))
+readCustomer tok = queryQuickBooks tok . ReadCustomer
+
+-- | Like readCustomer but accepts an APIConfig rather than reading it from the environment
+readCustomer' :: APIConfig -> AppConfig -> OAuthToken -> Text -> IO (Either String (QuickBooksResponse [Customer]))
+readCustomer' apiConfig appConfig tok = queryQuickBooks' apiConfig appConfig tok . ReadCustomer
+
+-- Update Customer --
+updateCustomer :: OAuthToken -> Customer -> IO (Either String (QuickBooksResponse [Customer]))
+updateCustomer tok = queryQuickBooks tok . UpdateCustomer
+
+-- | Like updateCustomer but accepts an APIConfig rather than reading it from the environment
+updateCustomer' :: APIConfig -> AppConfig -> OAuthToken -> Customer -> IO (Either String (QuickBooksResponse [Customer]))
+updateCustomer' apiConfig appConfig tok = queryQuickBooks' apiConfig appConfig tok . UpdateCustomer
+
+-- Delete Customer --
+deleteCustomer ::  OAuthToken -> Customer -> IO (Either String (QuickBooksResponse [Customer]))
+deleteCustomer tok = queryQuickBooks tok . DeleteCustomer
+
+-- | Like deleteCustomer but accepts an APIConfig rather than reading it from the environment
+deleteCustomer' :: APIConfig -> AppConfig -> OAuthToken -> Customer -> IO (Either String (QuickBooksResponse [Customer]))
+deleteCustomer' apiConfig appConfig tok = queryQuickBooks' apiConfig appConfig tok . DeleteCustomer
+
+
 -- Unsued DocTest (removed 6-26-17)
 -- $setup
 --
@@ -147,6 +193,10 @@ queryCustomer'
 queryCustomer' apiConfig appConfig tok =
   queryQuickBooks' apiConfig appConfig tok . QueryCustomer
 
+
+--------------
+---- Item ----
+--------------
 
 -- Create Item --
 createItem :: OAuthToken -> Item -> IO (Either String (QuickBooksResponse [Item]))
@@ -587,7 +637,11 @@ queryQuickBooks' apiConfig appConfig tok query = do
     ReadInvoice _invoiceId              -> readInvoiceRequest tok _invoiceId
     UpdateInvoice invoice               -> updateInvoiceRequest tok invoice
     DeleteInvoice _invoiceId syncToken  -> deleteInvoiceRequest tok _invoiceId syncToken
-    SendInvoice _invoiceId emailAddr    -> sendInvoiceRequest tok _invoiceId emailAddr    
+    SendInvoice _invoiceId emailAddr    -> sendInvoiceRequest tok _invoiceId emailAddr
+    CreateCustomer customer             -> createCustomerRequest tok customer
+    ReadCustomer cId                    -> readCustomerRequest tok cId
+    UpdateCustomer customer             -> updateCustomerRequest tok customer
+    DeleteCustomer customer             -> deleteCustomerRequest tok customer    
     QueryCustomer queryCustomerName     -> queryCustomerRequest tok queryCustomerName
     CreateItem item                     -> createItemRequest tok item
     ReadItem iId                        -> readItemRequest tok iId
