@@ -69,6 +69,15 @@ data APIConfig = APIConfig
   , loggingEnabled :: !ByteString
   } deriving (Show, Eq)
 
+instance ToJSON APIConfig where
+  toJSON (APIConfig cId oToken oSecret hName lEnabled) = object [
+                                                                  "companyId" .= (decodeUtf8 cId),
+                                                                  "oauthToken" .= (decodeUtf8 oToken),
+                                                                  "oauthSecret" .= (decodeUtf8 oSecret),
+                                                                  "hostname" .= (decodeUtf8 hName),
+                                                                  "loggingEnabled" .= (decodeUtf8 lEnabled)
+                                                                ]
+
 instance FromJSON APIConfig where
   parseJSON (Object o) = APIConfig <$> (parseByteString o "companyId")
                                    <*> (parseByteString o "oauthToken")
@@ -78,14 +87,6 @@ instance FromJSON APIConfig where
     where parseByteString obj name = encodeUtf8 <$> (obj .: name)
   parseJSON _ = mzero
 
-instance ToJSON APIConfig where
-  toJSON (APIConfig cId oToken oSecret hName lEnabled) = object [
-                                                                  "companyId" .= (decodeUtf8 cId),
-                                                                  "oauthToken" .= (decodeUtf8 oToken),
-                                                                  "oauthSecret" .= (decodeUtf8 oSecret),
-                                                                  "hostname" .= (decodeUtf8 hName),
-                                                                  "loggingEnabled" .= (decodeUtf8 lEnabled)
-                                                                ]
 
 
 type APIEnv = ( ?apiConfig :: APIConfig
