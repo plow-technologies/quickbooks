@@ -21,6 +21,8 @@ dependencies:
   
   override:
     - cd ~ && git clone git@github.com:plow-technologies/plow-scripts.git
+    - mkdir -p config
+    - aws s3 cp s3://plow-configs/testing/plow-backoffice-backend/config/quickbooksConfig.yml config/
     - stack setup
     - stack build --only-dependencies -j2
 

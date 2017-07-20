@@ -685,17 +685,25 @@ queryQuickBooksOAuth' appConfig maybeOauthToken query = do
 
 readAPIConfig :: IO APIConfig
 readAPIConfig = do
-  env <- getEnvironment
-  case lookupAPIConfig env of
-    Just config -> return config
-    Nothing     -> fail "The environment variables INTUIT_COMPANY_ID,INTUIT_TOKEN,INTUIT_SECRET, and INTUIT_HOSTNAME must be set"
+  eitherAPIConfig <- readAPIConfigFromFile $ "config/quickbooksConfig.yml"
+  case eitherAPIConfig of
+    Left err -> fail "The config variables INTUIT_COMPANY_ID,INTUIT_TOKEN,INTUIT_SECRET, and INTUIT_HOSTNAME must be set"
+    Right config -> return config
+  -- env <- getEnvironment
+  -- case lookupAPIConfig env of
+  --   Just config -> return config
+  --   Nothing     -> fail "The environment variables INTUIT_COMPANY_ID,INTUIT_TOKEN,INTUIT_SECRET, and INTUIT_HOSTNAME must be set"
 
 readAppConfig :: IO AppConfig
 readAppConfig = do
-  env <- getEnvironment
-  case lookupAppConfig env of
-    Just config -> return config
-    Nothing     -> fail "The evironment variables INTUIT_CONSUMER_KEY and INTUIT_CONSUMER_SECRET must be set"
+  eitherAppConfig <- readAppConfigFromFile $ "config/quickbooksConfig.yml"
+  case eitherAppConfig of
+    Left err -> fail "The config variables INTUIT_CONSUMER_KEY and INTUIT_CONSUMER_SECRET must be set"
+    Right config -> return config
+  -- env <- getEnvironment
+  -- case lookupAppConfig env of
+  --   Just config -> return config
+  --   Nothing     -> fail "The evironment variables INTUIT_CONSUMER_KEY and INTUIT_CONSUMER_SECRET must be set"
 
 lookupAPIConfig :: [(String, String)] -> Maybe APIConfig
 lookupAPIConfig environment = APIConfig <$> lookup "INTUIT_COMPANY_ID" env
