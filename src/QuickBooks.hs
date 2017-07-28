@@ -193,6 +193,36 @@ queryCustomer'
 queryCustomer' apiConfig appConfig tok =
   queryQuickBooks' apiConfig appConfig tok . QueryCustomer
 
+queryCustomerCount
+  :: OAuthToken
+  -> IO (Either String (QuickBooksResponse Int))
+queryCustomerCount tok =
+  queryQuickBooks tok QueryCountCustomer
+
+queryCustomerCount'
+  :: APIConfig
+  -> AppConfig
+  -> OAuthToken
+  -> IO (Either String (QuickBooksResponse Int))
+queryCustomerCount' apiConfig appConfig tok =
+  queryQuickBooks' apiConfig appConfig tok QueryCountCustomer
+
+
+queryMaxCustomersFrom
+  :: OAuthToken
+  -> Int
+  -> IO (Either String (QuickBooksResponse [Customer]))
+queryMaxCustomersFrom tok =
+  queryQuickBooks tok . QueryMaxCustomersFrom
+
+queryMaxCustomersFrom'
+  :: APIConfig
+  -> AppConfig
+  -> OAuthToken
+  -> Int
+  -> IO (Either String (QuickBooksResponse [Customer]))
+queryMaxCustomersFrom' apiConfig appConfig tok =
+  queryQuickBooks' apiConfig appConfig tok . QueryMaxCustomersFrom
 
 --------------
 ---- Item ----
@@ -643,6 +673,8 @@ queryQuickBooks' apiConfig appConfig tok query = do
     UpdateCustomer customer             -> updateCustomerRequest tok customer
     DeleteCustomer customer             -> deleteCustomerRequest tok customer    
     QueryCustomer queryCustomerName     -> queryCustomerRequest tok queryCustomerName
+    QueryCountCustomer                  -> countCustomerRequest tok
+    QueryMaxCustomersFrom startIndex    -> queryMaxCustomerRequest tok startIndex
     CreateItem item                     -> createItemRequest tok item
     ReadItem iId                        -> readItemRequest tok iId
     UpdateItem item                     -> updateItemRequest tok item
