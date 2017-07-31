@@ -55,6 +55,10 @@ module QuickBooks
   , deleteCustomer'
   , queryCustomer
   , queryCustomer'
+  , queryCustomerCount
+  , queryCustomerCount'
+  , queryMaxCustomersFrom
+  , queryMaxCustomersFrom'
     -- ** Line
   , createItem
   , createItem'
