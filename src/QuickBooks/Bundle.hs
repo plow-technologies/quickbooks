@@ -27,7 +27,7 @@ module QuickBooks.Bundle
 import QuickBooks.Authentication
 import QuickBooks.Logging
 import QuickBooks.Types
-import QuickBooks.QBText
+-- import QuickBooks.QBText
 
 import Data.Aeson                (eitherDecode)
 import Data.String.Interpolate   (i)
@@ -43,7 +43,7 @@ readBundleRequest ::  APIEnv
                      -> IO (Either String (QuickBooksResponse [Bundle]))
 readBundleRequest tok iId = do
   let apiConfig = ?apiConfig
-  req  <- oauthSignRequest tok =<< parseUrl (escapeURIString isUnescapedInURI [i|#{bundleURITemplate apiConfig}/#{iId}|])
+  req  <- oauthSignRequest tok =<< parseUrlThrow (escapeURIString isUnescapedInURI [i|#{bundleURITemplate apiConfig}/#{iId}|])
   let oauthHeaders = requestHeaders req
   let req' = req{method = "GET", requestHeaders = oauthHeaders ++ [(hAccept, "application/json")]}
   resp <-  httpLbs req' ?manager
@@ -61,7 +61,7 @@ queryBundleRequest :: APIEnv
 queryBundleRequest tok queryBundleName = do
   let apiConfig = ?apiConfig
   let uriComponent = escapeURIString isUnescapedInURIComponent [i|#{query}#{bundleSearch}|]
-  let queryURI = parseUrl $ [i|#{queryURITemplate apiConfig}#{uriComponent}&minorversion=4|]
+  let queryURI = parseUrlThrow $ [i|#{queryURITemplate apiConfig}#{uriComponent}&minorversion=4|]
   req <- oauthSignRequest tok =<< queryURI
   let oauthHeaders = requestHeaders req
   let req' = req { method = "GET"

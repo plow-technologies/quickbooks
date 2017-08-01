@@ -32,7 +32,7 @@ module QuickBooks.Category
 import QuickBooks.Authentication
 import QuickBooks.Logging
 import QuickBooks.Types
-import QuickBooks.QBText
+-- import QuickBooks.QBText
 
 import Data.Aeson                (encode, eitherDecode)
 import Data.String.Interpolate   (i)
@@ -55,7 +55,7 @@ readCategoryRequest ::  APIEnv
                      -> IO (Either String (QuickBooksResponse [Category]))
 readCategoryRequest tok iId = do
   let apiConfig = ?apiConfig
-  req  <- oauthSignRequest tok =<< parseUrl (escapeURIString isUnescapedInURI [i|#{categoryURITemplate apiConfig}/#{iId}|])
+  req  <- oauthSignRequest tok =<< parseUrlThrow (escapeURIString isUnescapedInURI [i|#{categoryURITemplate apiConfig}/#{iId}|])
   let oauthHeaders = requestHeaders req
   let req' = req{method = "GET", requestHeaders = oauthHeaders ++ [(hAccept, "application/json")]}
   resp <-  httpLbs req' ?manager
@@ -77,7 +77,7 @@ deleteCategoryRequest :: APIEnv
                      -> IO (Either String (QuickBooksResponse DeletedCategory))
 deleteCategoryRequest tok cCategory = do
   let apiConfig = ?apiConfig
-  req <- parseUrl $ escapeURIString isUnescapedInURI [i|#{categoryURITemplate apiConfig}?operation=delete&minorversion=4|]
+  req <- parseUrlThrow $ escapeURIString isUnescapedInURI [i|#{categoryURITemplate apiConfig}?operation=delete&minorversion=4|]
   req' <- oauthSignRequest tok req{ method         = "POST"
                                   , requestBody    = RequestBodyLBS $ encode cCategory
                                   , requestHeaders = [ (hAccept, "application/json")
@@ -95,7 +95,7 @@ postCategory :: APIEnv
             -> IO (Either String (QuickBooksResponse [Category]))
 postCategory tok category = do
   let apiConfig = ?apiConfig
-  req <- parseUrl $ escapeURIString isUnescapedInURI [i|#{categoryURITemplate apiConfig}?minorversion=4|]
+  req <- parseUrlThrow $ escapeURIString isUnescapedInURI [i|#{categoryURITemplate apiConfig}?minorversion=4|]
   req' <- oauthSignRequest tok req{ method         = "POST"
                                   , requestBody    = RequestBodyLBS $ encode category
                                   , requestHeaders = [ (hAccept, "application/json")
@@ -118,7 +118,7 @@ queryCategoryRequest :: APIEnv
 queryCategoryRequest tok queryCategoryName = do
   let apiConfig = ?apiConfig
   let uriComponent = escapeURIString isUnescapedInURIComponent [i|#{query}#{categorySearch}|]
-  let queryURI = parseUrl $ [i|#{queryURITemplate apiConfig}#{uriComponent}&minorversion=4|]
+  let queryURI = parseUrlThrow $ [i|#{queryURITemplate apiConfig}#{uriComponent}&minorversion=4|]
   req <- oauthSignRequest tok =<< queryURI
   let oauthHeaders = requestHeaders req
   let req' = req { method = "GET"
@@ -152,7 +152,7 @@ queryMaxCategoryRequest :: APIEnv
 queryMaxCategoryRequest tok startIndex = do
   let apiConfig = ?apiConfig
   let uriComponent = escapeURIString isUnescapedInURIComponent [i|#{query} #{pagination}|]
-  let queryURI = parseUrl $ [i|#{queryURITemplate apiConfig}#{uriComponent}&minorversion=4|]
+  let queryURI = parseUrlThrow $ [i|#{queryURITemplate apiConfig}#{uriComponent}&minorversion=4|]
   req <- oauthSignRequest tok =<< queryURI
   let oauthHeaders = requestHeaders req
   let req' = req { method = "GET"
@@ -178,7 +178,7 @@ countCategoryRequest :: APIEnv
 countCategoryRequest tok = do
   let apiConfig = ?apiConfig
   let uriComponent = escapeURIString isUnescapedInURIComponent [i|#{query}|]
-  let queryURI = parseUrl $ [i|#{queryURITemplate apiConfig}#{uriComponent}&minorversion=4|]
+  let queryURI = parseUrlThrow $ [i|#{queryURITemplate apiConfig}#{uriComponent}&minorversion=4|]
   req <- oauthSignRequest tok =<< queryURI
   let oauthHeaders = requestHeaders req
   let req' = req { method = "GET"

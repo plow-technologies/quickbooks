@@ -56,7 +56,7 @@ readCustomerRequest ::  APIEnv
                      -> IO (Either String (QuickBooksResponse [Customer]))
 readCustomerRequest tok iId = do
   let apiConfig = ?apiConfig
-  req  <- oauthSignRequest tok =<< parseUrl (escapeURIString isUnescapedInURI [i|#{customerURITemplate apiConfig}/#{iId}|])
+  req  <- oauthSignRequest tok =<< parseUrlThrow (escapeURIString isUnescapedInURI [i|#{customerURITemplate apiConfig}/#{iId}|])
   let oauthHeaders = requestHeaders req
   let req' = req{method = "GET", requestHeaders = oauthHeaders ++ [(hAccept, "application/json")]}
   resp <-  httpLbs req' ?manager
@@ -89,7 +89,7 @@ postCustomer :: APIEnv
             -> IO (Either String (QuickBooksResponse [Customer]))
 postCustomer tok customer = do
   let apiConfig = ?apiConfig
-  req <- parseUrl $ escapeURIString isUnescapedInURI [i|#{customerURITemplate apiConfig}?minorversion=4|]
+  req <- parseUrlThrow $ escapeURIString isUnescapedInURI [i|#{customerURITemplate apiConfig}?minorversion=4|]
   req' <- oauthSignRequest tok req{ method         = "POST"
                                   , requestBody    = RequestBodyLBS $ encode customer
                                   , requestHeaders = [ (hAccept, "application/json")
@@ -110,7 +110,7 @@ queryCustomerRequest :: APIEnv
 queryCustomerRequest tok queryCustomerName = do
   let apiConfig = ?apiConfig
   let uriComponent =  escapeURIString isUnescapedInURIComponent [i|#{query}|]
-  let queryURI = parseUrl $ [i|#{queryURITemplate apiConfig}#{uriComponent}|]
+  let queryURI = parseUrlThrow $ [i|#{queryURITemplate apiConfig}#{uriComponent}|]
   req <- oauthSignRequest tok =<< queryURI
   let oauthHeaders = requestHeaders req
   let req' = req { method = "GET"

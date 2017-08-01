@@ -104,6 +104,11 @@ type NetworkEnv = ( ?manager :: Manager
 
 -- | A request or access OAuth token.
 
+
+data OAuthTokens = OAuth1 OAuthToken
+
+
+
 data OAuthToken = OAuthToken
   { token       :: ByteString
   , tokenSecret :: ByteString

@@ -15,10 +15,10 @@
 
 module QuickBooks
   ( -- * Authentication and authorization
-    getAccessTokens
-  , getAccessTokens'
-  , getTempTokens
-  , getTempTokens'
+    getAccessToken
+  , getAccessToken'
+  , getTempToken
+  , getTempToken'
   , authorizationURLForToken
   , cancelOAuthAuthorization
   , cancelOAuthAuthorization'
@@ -100,7 +100,7 @@ import Data.Maybe              (fromJust)
 import Data.Text               (Text)
 import Network.HTTP.Client.TLS (tlsManagerSettings)
 import Network.HTTP.Client     (newManager)
-import System.Environment      (getEnvironment)
+-- import System.Environment      (getEnvironment)
 import Text.Email.Validate     (EmailAddress, emailAddress)
 
 
@@ -161,8 +161,8 @@ deleteCustomer' apiConfig appConfig tok = queryQuickBooks' apiConfig appConfig t
 -- >>> import Data
 --
 -- >>> :set -XOverloadedStrings
--- >>> maybeTestOAuthToken <- lookupTestOAuthTokenFromEnv
--- >>> let oAuthToken = maybe (error "") id maybeTestOAuthToken
+-- >>> maybeTestOAuthTokens <- lookupTestOAuthTokensFromEnv
+-- >>> let oAuthToken = maybe (error "") id maybeTestOAuthTokens
 
 -- |
 --
@@ -580,31 +580,31 @@ sendInvoice' apiConfig appConfig tok invId  =
 -- Example:
 --
 -- >>> :{
--- do eitherTempTokens <- getTempTokens "localhost"
---    case eitherTempTokens of
+-- do eitherTempToken <- getTempToken "localhost"
+--    case eitherTempToken of
 --      Left e -> putStrLn e
 --      Right _ -> putStrLn "I got my request tokens!"
 -- :}
 -- I got my request tokens!
 
-getTempTokens :: CallbackURL -> IO (Either String (QuickBooksResponse OAuthToken))
-getTempTokens =
+getTempToken :: CallbackURL -> IO (Either String (QuickBooksResponse OAuthToken))
+getTempToken =
   queryQuickBooksOAuth Nothing . GetTempOAuthCredentials
 
-getTempTokens' :: AppConfig -> CallbackURL -> IO (Either String (QuickBooksResponse OAuthToken))
-getTempTokens' appConfig =
+getTempToken' :: AppConfig -> CallbackURL -> IO (Either String (QuickBooksResponse OAuthToken))
+getTempToken' appConfig =
   queryQuickBooksOAuth' appConfig Nothing . GetTempOAuthCredentials
  
 -- | Exchange oauth_verifier for access tokens
-getAccessTokens :: OAuthToken -> OAuthVerifier -> IO (Either String (QuickBooksResponse OAuthToken))
-getAccessTokens tempToken =
+getAccessToken :: OAuthToken -> OAuthVerifier -> IO (Either String (QuickBooksResponse OAuthToken))
+getAccessToken tempToken =
   queryQuickBooksOAuth (Just tempToken) . GetAccessTokens
 
-getAccessTokens' :: AppConfig          -- Your application's consumer key and consumer secret
-                 -> OAuthToken         -- The temporary OAuth tokens obtained from getTempTokens
+getAccessToken' :: AppConfig          -- Your application's consumer key and consumer secret
+                 -> OAuthToken         -- The temporary OAuth tokens obtained from getTempToken
                  -> OAuthVerifier      -- The OAuthVerifier returned by QuickBooks when it calls your callback
                  -> IO (Either String (QuickBooksResponse OAuthToken))
-getAccessTokens' appConfig tempToken = do
+getAccessToken' appConfig tempToken = do
   queryQuickBooksOAuth' appConfig (Just tempToken) . GetAccessTokens
 
 -- | Invalidate an OAuth access token and disconnect from QuickBooks.
@@ -680,14 +680,14 @@ queryQuickBooksOAuth' appConfig maybeOauthToken query = do
   let ?logger    = logger
   case query of
     (GetTempOAuthCredentials callbackURL) -> getTempOAuthCredentialsRequest callbackURL
-    (GetAccessTokens oauthVerifier)       -> getAccessTokensRequest (fromJust maybeOauthToken) oauthVerifier
+    (GetAccessTokens oauthVerifier)       -> getAccessTokenRequest (fromJust maybeOauthToken) oauthVerifier
     DisconnectQuickBooks                  -> disconnectRequest (fromJust maybeOauthToken)
 
 readAPIConfig :: IO APIConfig
 readAPIConfig = do
   eitherAPIConfig <- readAPIConfigFromFile $ "config/quickbooksConfig.yml"
   case eitherAPIConfig of
-    Left err -> fail "The config variables INTUIT_COMPANY_ID,INTUIT_TOKEN,INTUIT_SECRET, and INTUIT_HOSTNAME must be set"
+    Left _ -> fail "The config variables INTUIT_COMPANY_ID,INTUIT_TOKEN,INTUIT_SECRET, and INTUIT_HOSTNAME must be set"
     Right config -> return config
   -- env <- getEnvironment
   -- case lookupAPIConfig env of
@@ -698,19 +698,19 @@ readAppConfig :: IO AppConfig
 readAppConfig = do
   eitherAppConfig <- readAppConfigFromFile $ "config/quickbooksConfig.yml"
   case eitherAppConfig of
-    Left err -> fail "The config variables INTUIT_CONSUMER_KEY and INTUIT_CONSUMER_SECRET must be set"
+    Left _ -> fail "The config variables INTUIT_CONSUMER_KEY and INTUIT_CONSUMER_SECRET must be set"
     Right config -> return config
   -- env <- getEnvironment
   -- case lookupAppConfig env of
   --   Just config -> return config
   --   Nothing     -> fail "The evironment variables INTUIT_CONSUMER_KEY and INTUIT_CONSUMER_SECRET must be set"
 
-lookupAPIConfig :: [(String, String)] -> Maybe APIConfig
-lookupAPIConfig environment = APIConfig <$> lookup "INTUIT_COMPANY_ID" env
-                                        <*> lookup "INTUIT_TOKEN" env
-                                        <*> lookup "INTUIT_SECRET" env
-                                        <*> lookup "INTUIT_HOSTNAME" env
-                                        <*> (lookup "INTUIT_API_LOGGING_ENABLED" env <|> Just "true")
+_lookupAPIConfig :: [(String, String)] -> Maybe APIConfig
+_lookupAPIConfig environment = APIConfig <$> lookup "INTUIT_COMPANY_ID" env
+                                         <*> lookup "INTUIT_TOKEN" env
+                                         <*> lookup "INTUIT_SECRET" env
+                                         <*> lookup "INTUIT_HOSTNAME" env
+                                         <*> (lookup "INTUIT_API_LOGGING_ENABLED" env <|> Just "true")
     where env = map (second pack) environment
 
 readAPIConfigFromFile :: FilePath -> IO (Either ParseException APIConfig)
@@ -719,7 +719,7 @@ readAPIConfigFromFile = decodeFileEither
 readAppConfigFromFile :: FilePath -> IO (Either ParseException AppConfig)
 readAppConfigFromFile = decodeFileEither
 
-lookupAppConfig :: [(String, String)] -> Maybe AppConfig
-lookupAppConfig environment = AppConfig <$> lookup "INTUIT_CONSUMER_KEY" env
-                                        <*> lookup "INTUIT_CONSUMER_SECRET" env
+_lookupAppConfig :: [(String, String)] -> Maybe AppConfig
+_lookupAppConfig environment = AppConfig <$> lookup "INTUIT_CONSUMER_KEY" env
+                                         <*> lookup "INTUIT_CONSUMER_SECRET" env
     where env = map (second pack) environment

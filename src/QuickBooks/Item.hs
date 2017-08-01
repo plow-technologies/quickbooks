@@ -54,7 +54,7 @@ readItemRequest ::  APIEnv
                      -> IO (Either String (QuickBooksResponse [Item]))
 readItemRequest tok iId = do
   let apiConfig = ?apiConfig
-  req  <- oauthSignRequest tok =<< parseUrl (escapeURIString isUnescapedInURI [i|#{itemURITemplate apiConfig}/#{iId}|])
+  req  <- oauthSignRequest tok =<< parseUrlThrow (escapeURIString isUnescapedInURI [i|#{itemURITemplate apiConfig}/#{iId}|])
   let oauthHeaders = requestHeaders req
   let req' = req{method = "GET", requestHeaders = oauthHeaders ++ [(hAccept, "application/json")]}
   resp <-  httpLbs req' ?manager
@@ -86,7 +86,7 @@ postItem :: APIEnv
             -> IO (Either String (QuickBooksResponse [Item]))
 postItem tok item = do
   let apiConfig = ?apiConfig
-  req <- parseUrl $ [i|#{itemURITemplate apiConfig}?|]
+  req <- parseUrlThrow $ [i|#{itemURITemplate apiConfig}?|]
   req' <- oauthSignRequest tok req{ method         = "POST"
                                   , requestBody    = RequestBodyLBS $ encode item
                                   , requestHeaders = [ (hAccept, "application/json")
@@ -109,7 +109,7 @@ queryItemRequest :: APIEnv
 queryItemRequest tok queryItemName = do
   let apiConfig = ?apiConfig
   let uriComponent = escapeURIString isUnescapedInURIComponent [i|#{query}#{itemSearch}|]
-  let queryURI = parseUrl $ [i|#{queryURITemplate apiConfig}#{uriComponent}|]
+  let queryURI = parseUrlThrow $ [i|#{queryURITemplate apiConfig}#{uriComponent}|]
   req <- oauthSignRequest tok =<< queryURI
   let oauthHeaders = requestHeaders req
   let req' = req { method = "GET"
@@ -142,7 +142,7 @@ queryMaxItemRequest :: APIEnv
 queryMaxItemRequest tok startIndex = do
   let apiConfig = ?apiConfig
   let uriComponent = escapeURIString isUnescapedInURIComponent [i|#{query} #{pagination}|]
-  let queryURI = parseUrl $ [i|#{queryURITemplate apiConfig}#{uriComponent}|]
+  let queryURI = parseUrlThrow $ [i|#{queryURITemplate apiConfig}#{uriComponent}|]
   req <- oauthSignRequest tok =<< queryURI
   let oauthHeaders = requestHeaders req
   let req' = req { method = "GET"
@@ -168,7 +168,7 @@ countItemRequest :: APIEnv
 countItemRequest tok = do
   let apiConfig = ?apiConfig
   let uriComponent = escapeURIString isUnescapedInURIComponent [i|#{query}|]
-  let queryURI = parseUrl $ [i|#{queryURITemplate apiConfig}#{uriComponent}|]
+  let queryURI = parseUrlThrow $ [i|#{queryURITemplate apiConfig}#{uriComponent}|]
   req <- oauthSignRequest tok =<< queryURI
   let oauthHeaders = requestHeaders req
   let req' = req { method = "GET"
