@@ -239,6 +239,8 @@ data QuickBooksRequest a where
   UpdateCustomer          :: Customer -> QuickBooksQuery [Customer]
   DeleteCustomer          :: Customer -> QuickBooksQuery [Customer]
   QueryCustomer           :: Text -> QuickBooksQuery [Customer]
+  QueryCountCustomer      :: (QuickBooksQuery Int)
+  QueryMaxCustomersFrom   :: Int -> QuickBooksQuery [Customer]
 
   CreateItem              :: Item -> QuickBooksQuery [Item]
   ReadItem                :: Text -> QuickBooksQuery [Item]

@@ -24,6 +24,8 @@ module QuickBooks.Customer
   , readCustomerRequest
   , updateCustomerRequest
   , deleteCustomerRequest
+  , queryMaxCustomerRequest
+  , countCustomerRequest
   )
   where
 
@@ -204,6 +206,135 @@ queryCustomerRequestOAuth2 tok queryCustomerName = do
   where
     query :: String
     query = "SELECT * FROM Customer"
+
+
+queryMaxCustomerRequest :: APIEnv
+                 => OAuthTokens
+                 -> Int
+                 -> IO (Either String (QuickBooksResponse [Customer]))
+queryMaxCustomerRequest (OAuth1 tok) startIndex = queryMaxCustomerRequestOAuth tok startIndex
+queryMaxCustomerRequest (OAuth2 tok) startIndex = queryMaxCustomerRequestOAuth2 tok startIndex
+
+--- OAuth 1 ---
+queryMaxCustomerRequestOAuth :: APIEnv
+                              => OAuthToken
+                              -> Int
+                              -> IO (Either String (QuickBooksResponse [Customer]))
+queryMaxCustomerRequestOAuth tok startIndex = do
+  let apiConfig = ?apiConfig
+  let uriComponent = escapeURIString isUnescapedInURIComponent [i|#{query} #{pagination}|]
+  let queryURI = parseUrl $ [i|#{queryURITemplate apiConfig}#{uriComponent}&minorversion=4|]
+  req <- oauthSignRequest tok =<< queryURI
+  let oauthHeaders = requestHeaders req
+  let req' = req { method = "GET"
+                 , requestHeaders = oauthHeaders ++ [(hAccept, "application/json")]
+                 }
+  resp <- httpLbs req' ?manager
+  logAPICall req'
+  let eitherFoundCustomers = eitherDecode (responseBody resp)
+  case eitherFoundCustomers of
+    Left er -> return (Left er)
+    Right (QuickBooksCustomerResponse foundCustomers) ->
+      return $ Right $ QuickBooksCustomerResponse $ foundCustomers
+        -- filter (\Customer{..} -> itemName == queryCustomerName) FoundCustomers
+  where
+    query :: String
+    query = "SELECT * FROM Customer"
+    pagination :: String
+    pagination = [i| startposition #{startIndex} maxresults 1000|]
+
+--- OAuth 2 ---
+queryMaxCustomerRequestOAuth2 :: APIEnv
+                              => OAuth2.AccessToken
+                              -> Int
+                              -> IO (Either String (QuickBooksResponse [Customer]))
+queryMaxCustomerRequestOAuth2 tok startIndex = do
+  let apiConfig = ?apiConfig
+  let uriComponent = escapeURIString isUnescapedInURIComponent [i|#{query} #{pagination}|]
+  let eitherQueryURI = parseURI strictURIParserOptions . pack $ [i|#{queryURITemplate apiConfig}#{uriComponent}&minorversion=4|]
+  -- Made for logging
+  req' <- parseUrlThrow $ [i|#{queryURITemplate apiConfig}#{uriComponent}&minorversion=4|]
+  case eitherQueryURI of
+    Left err -> return (Left . show $ err)
+    Right queryURI -> do
+      -- Make the call
+      eitherResponse <- qbAuthGetBS ?manager tok queryURI
+      logAPICall req'
+      case eitherResponse of
+        (Left err) -> return (Left . show $ err)
+        (Right resp) -> do
+          let eitherFoundCustomers = eitherDecode resp
+          case eitherFoundCustomers of
+            Left er -> return (Left er)
+            Right (QuickBooksCustomerResponse foundCustomers) ->
+              return $ Right $ QuickBooksCustomerResponse $ foundCustomers
+                -- filter (\Customer{..} -> itemName == queryCustomerName) FoundCustomers
+  where
+    query :: String
+    query = "SELECT * FROM Customer"
+    pagination :: String
+    pagination = [i| startposition #{startIndex} maxresults 1000|]
+
+
+countCustomerRequest :: APIEnv
+                 => OAuthTokens
+                 -> IO (Either String (QuickBooksResponse Int))
+countCustomerRequest (OAuth1 tok) = countCustomerRequestOAuth tok
+countCustomerRequest (OAuth2 tok) = countCustomerRequestOAuth2 tok
+
+--- OAuth 1 ---
+countCustomerRequestOAuth :: APIEnv
+                 => OAuthToken
+                 -> IO (Either String (QuickBooksResponse Int))
+countCustomerRequestOAuth tok = do
+  let apiConfig = ?apiConfig
+  let uriComponent = escapeURIString isUnescapedInURIComponent [i|#{query}|]
+  let queryURI = parseUrl $ [i|#{queryURITemplate apiConfig}#{uriComponent}&minorversion=4|]
+  req <- oauthSignRequest tok =<< queryURI
+  let oauthHeaders = requestHeaders req
+  let req' = req { method = "GET"
+                 , requestHeaders = oauthHeaders ++ [(hAccept, "application/json")]
+                 }
+  resp <- httpLbs req' ?manager
+  logAPICall req'
+  let eitherFoundCount = eitherDecode (responseBody resp)
+  case eitherFoundCount of
+    Left er -> return (Left er)
+    Right (QuickBooksCountResponse foundCount) ->
+      return $ Right $ QuickBooksCountResponse $ foundCount
+        -- filter (\Customer{..} -> itemName == queryCustomerName) FoundCustomers
+  where
+    query :: String
+    query = "SELECT COUNT(*) FROM Customer"
+
+countCustomerRequestOAuth2 :: APIEnv
+                 => OAuth2.AccessToken
+                 -> IO (Either String (QuickBooksResponse Int))
+countCustomerRequestOAuth2 tok = do
+  let apiConfig = ?apiConfig
+  let uriComponent = escapeURIString isUnescapedInURIComponent [i|#{query}|]
+  let eitherQueryURI = parseURI strictURIParserOptions . pack $ [i|#{queryURITemplate apiConfig}#{uriComponent}&minorversion=4|]
+  -- Made for logging
+  req' <- parseUrlThrow $ [i|#{queryURITemplate apiConfig}#{uriComponent}&minorversion=4|]
+  case eitherQueryURI of
+    Left err -> return (Left . show $ err)
+    Right queryURI -> do
+      -- Make the call
+      eitherResponse <- qbAuthGetBS ?manager tok queryURI
+      logAPICall req'
+      case eitherResponse of
+        (Left err) -> return (Left . show $ err)
+        (Right resp) -> do
+          let eitherFoundCount = eitherDecode resp
+          case eitherFoundCount of
+            Left er -> return (Left er)
+            Right (QuickBooksCountResponse foundCount) ->
+              return $ Right $ QuickBooksCountResponse $ foundCount
+                -- filter (\Customer{..} -> itemName == queryCustomerName) FoundCustomers
+  where
+    query :: String
+    query = "SELECT COUNT(*) FROM Customer"
+
 
 queryURITemplate :: APIConfig -> String
 queryURITemplate APIConfig{..} =

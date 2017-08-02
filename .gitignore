@@ -54,3 +54,6 @@ tramp
 
 # cask packages
 .cask/
+
+# config files
+config/

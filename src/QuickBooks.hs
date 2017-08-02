@@ -55,6 +55,10 @@ module QuickBooks
   , deleteCustomer'
   , queryCustomer
   , queryCustomer'
+  , queryCustomerCount
+  , queryCustomerCount'
+  , queryMaxCustomersFrom
+  , queryMaxCustomersFrom'
     -- ** Line
   , createItem
   , createItem'
@@ -193,6 +197,36 @@ queryCustomer'
 queryCustomer' apiConfig appConfig tok =
   queryQuickBooks' apiConfig appConfig tok . QueryCustomer
 
+queryCustomerCount
+  :: OAuthTokens
+  -> IO (Either String (QuickBooksResponse Int))
+queryCustomerCount tok =
+  queryQuickBooks tok QueryCountCustomer
+
+queryCustomerCount'
+  :: APIConfig
+  -> AppConfig
+  -> OAuthTokens
+  -> IO (Either String (QuickBooksResponse Int))
+queryCustomerCount' apiConfig appConfig tok =
+  queryQuickBooks' apiConfig appConfig tok QueryCountCustomer
+
+
+queryMaxCustomersFrom
+  :: OAuthTokens
+  -> Int
+  -> IO (Either String (QuickBooksResponse [Customer]))
+queryMaxCustomersFrom tok =
+  queryQuickBooks tok . QueryMaxCustomersFrom
+
+queryMaxCustomersFrom'
+  :: APIConfig
+  -> AppConfig
+  -> OAuthTokens
+  -> Int
+  -> IO (Either String (QuickBooksResponse [Customer]))
+queryMaxCustomersFrom' apiConfig appConfig tok =
+  queryQuickBooks' apiConfig appConfig tok . QueryMaxCustomersFrom
 
 --------------
 ---- Item ----
@@ -642,6 +676,8 @@ queryQuickBooks' apiConfig appConfig tokens' query = do
     UpdateCustomer customer             -> updateCustomerRequest tokens' customer
     DeleteCustomer customer             -> deleteCustomerRequest tokens' customer    
     QueryCustomer queryCustomerName     -> queryCustomerRequest tokens' queryCustomerName
+    QueryMaxCustomersFrom startIndex    -> queryMaxCustomerRequest tokens' startIndex
+    QueryCountCustomer                  -> countCustomerRequest tokens'
     CreateItem item                     -> createItemRequest tokens' item
     ReadItem iId                        -> readItemRequest tokens' iId
     UpdateItem item                     -> updateItemRequest tokens' item

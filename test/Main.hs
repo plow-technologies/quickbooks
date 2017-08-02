@@ -33,6 +33,9 @@ main = do
 
 tests :: OAuthTokens -> TestTree
 tests tok = testGroup "OAuth" [ testCase "Query Customer" $ queryCustomerTest (OAuth2 authTokens)
+                              , testCase "Query Empty Customer" $ queryEmptyCustomerTest (OAuth2 authTokens)
+                              , testCase "Query Max Customer" $ queryMaxCustomerTest (OAuth2 authTokens)
+                              , testCase "Query Count Customer" $ queryCountCustomerTest (OAuth2 authTokens)
                               , testCase "Create Customer" $ createCustomerTest (OAuth2 authTokens)
                               , testCase "Read Customer" $ readCustomerTest (OAuth2 authTokens)
                               , testCase "Update Customer" $ updateCustomerTest (OAuth2 authTokens)
@@ -138,6 +141,40 @@ queryCustomerTest oAuthToken = do
         Left err -> assertEither "Error making QBText in queryCustomerTest" (filterTextForQB "21")
         Right existingId ->
           assertBool (show $ customerId customer) (customerId customer == Just existingId)
+
+---- Query Empty Customer ----
+queryEmptyCustomerTest :: OAuthTokens -> Assertion
+queryEmptyCustomerTest oAuthToken = do
+  eitherQueryCustomer <- queryCustomer oAuthToken ""
+  case eitherQueryCustomer of
+    Left _ ->
+      assertEither "Failed to query customer" eitherQueryCustomer
+    Right (QuickBooksCustomerResponse []) -> do
+      assertEither "There were no customers to query, but the test passes" eitherQueryCustomer
+    Right (QuickBooksCustomerResponse (customer:_)) -> do
+      assertEither "Query for a list of customers" eitherQueryCustomer
+
+---- Query Max Customer ----
+queryMaxCustomerTest :: OAuthTokens -> Assertion
+queryMaxCustomerTest oAuthToken = do
+  eitherQueryCustomers <- queryMaxCustomersFrom oAuthToken 1
+  case eitherQueryCustomers of
+    Left _ ->
+      assertEither "Failed to query customer" eitherQueryCustomers
+    Right (QuickBooksCustomerResponse []) -> do
+      assertEither "There were no customers to query, but the test passes" eitherQueryCustomers
+    Right (QuickBooksCustomerResponse (customer:_)) -> do
+      assertEither "Queried for max size" eitherQueryCustomers
+
+---- Query Count Customer ----
+queryCountCustomerTest :: OAuthTokens -> Assertion
+queryCountCustomerTest oAuthToken = do
+  eitherCount <- queryCustomerCount oAuthToken
+  case eitherCount of
+    Left _ ->
+      assertEither "Failed to query customer count" eitherCount
+    Right (QuickBooksCountResponse size) ->
+      assertEither "Queried the count" eitherCount
 
 -----------------
 -- Item CRUD-Q --
