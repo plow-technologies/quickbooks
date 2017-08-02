@@ -25,9 +25,9 @@ main :: IO ()
 main = do
     maybeTestOAuthToken <- lookupTestOAuthTokenFromEnv
     let oAuthToken' = maybe (error "") id maybeTestOAuthToken
-    defaultMain $ tests oAuthToken'
+    defaultMain $ tests (OAuth1 oAuthToken')
 
-tests :: OAuthToken -> TestTree
+tests :: OAuthTokens -> TestTree
 tests tok = testGroup "tests" [ testCase "Query Customer" $ queryCustomerTest tok
                               , testCase "Create Customer" $ createCustomerTest tok
                               , testCase "Read Customer" $ readCustomerTest tok
@@ -65,7 +65,7 @@ tests tok = testGroup "tests" [ testCase "Query Customer" $ queryCustomerTest to
 -----------
 
 ---- Create Customer ----
-createCustomerTest :: OAuthToken -> Assertion
+createCustomerTest :: OAuthTokens -> Assertion
 createCustomerTest oAuthToken = do
   testCustomer <- makeTestCustomer
   resp <- createCustomer oAuthToken testCustomer
@@ -76,7 +76,7 @@ createCustomerTest oAuthToken = do
       assertEither "I created a customer!" resp
 
 ---- Read Customer ----
-readCustomerTest :: OAuthToken -> Assertion
+readCustomerTest :: OAuthTokens -> Assertion
 readCustomerTest oAuthToken = do
   testCustomer <- makeTestCustomer
   Right (QuickBooksCustomerResponse (cCustomer:_)) <- createCustomer oAuthToken testCustomer
@@ -91,7 +91,7 @@ readCustomerTest oAuthToken = do
       assertBool "Read the Customer" (customerId cCustomer == customerId rCustomer)
 
 ---- Update Customer ----
-updateCustomerTest :: OAuthToken -> Assertion
+updateCustomerTest :: OAuthTokens -> Assertion
 updateCustomerTest oAuthToken = do
   testCustomer <- makeTestCustomer
   Right (QuickBooksCustomerResponse (cCustomer:_)) <- createCustomer oAuthToken testCustomer
@@ -110,7 +110,7 @@ updateCustomerTest oAuthToken = do
           assertBool "Updated the Customer" (customerGivenName cCustomer /= customerGivenName uCustomer)
 
 ---- Delete Customer ----
-deleteCustomerTest :: OAuthToken -> Assertion
+deleteCustomerTest :: OAuthTokens -> Assertion
 deleteCustomerTest oAuthToken = do
   -- First, we create a customer (see 'createCustomer'):
   testCustomer <- makeTestCustomer
@@ -123,7 +123,7 @@ deleteCustomerTest oAuthToken = do
 
 
 ---- Query Customer ----
-queryCustomerTest :: OAuthToken -> Assertion
+queryCustomerTest :: OAuthTokens -> Assertion
 queryCustomerTest oAuthToken = do
   eitherQueryCustomer <-
       queryCustomer oAuthToken "Rondonuwu Fruit and Vegi"
@@ -141,7 +141,7 @@ queryCustomerTest oAuthToken = do
 -----------------
 
 ---- Create Item ----
-createItemTest :: OAuthToken -> Assertion
+createItemTest :: OAuthTokens -> Assertion
 createItemTest oAuthToken = do
   testItem <- makeTestItem
   resp <- createItem oAuthToken testItem
@@ -152,7 +152,7 @@ createItemTest oAuthToken = do
       assertEither "I created an item!" resp
 
 ---- Read Item ----
-readItemTest :: OAuthToken -> Assertion
+readItemTest :: OAuthTokens -> Assertion
 readItemTest oAuthToken = do
   testItem <- makeTestItem
   Right (QuickBooksItemResponse (cItem:_)) <- createItem oAuthToken testItem
@@ -167,7 +167,7 @@ readItemTest oAuthToken = do
       assertBool "Read the Item" (itemId cItem == itemId rItem)
 
 ---- Update Item ----
-updateItemTest :: OAuthToken -> Assertion
+updateItemTest :: OAuthTokens -> Assertion
 updateItemTest oAuthToken = do
   testItem <- makeTestItem
   Right (QuickBooksItemResponse (cItem:_)) <- createItem oAuthToken testItem
@@ -182,7 +182,7 @@ updateItemTest oAuthToken = do
       assertBool "Updated the Item" (itemPurchaseDesc cItem /= itemPurchaseDesc uItem)
 
 ---- Delete Item ----
-deleteItemTest :: OAuthToken -> Assertion
+deleteItemTest :: OAuthTokens -> Assertion
 deleteItemTest oAuthToken = do
   -- First, we create an item (see 'createItem'):
   testItem <- makeTestItem
@@ -194,7 +194,7 @@ deleteItemTest oAuthToken = do
     Right _ -> assertEither "I *deleted* an item!" eitherDeleteItem
 
 ---- Query Item ----
-queryItemTest :: OAuthToken -> Assertion
+queryItemTest :: OAuthTokens -> Assertion
 queryItemTest oAuthToken = do
   eitherQueryItem <- queryItem oAuthToken "Hours"
   case eitherQueryItem of
@@ -207,7 +207,7 @@ queryItemTest oAuthToken = do
           assertBool (show $ itemId item) (itemId item == Just existingId)
 
 ---- Query Empty Item ----
-queryEmptyItemTest :: OAuthToken -> Assertion
+queryEmptyItemTest :: OAuthTokens -> Assertion
 queryEmptyItemTest oAuthToken = do
   eitherQueryItem <- queryItem oAuthToken ""
   case eitherQueryItem of
@@ -219,7 +219,7 @@ queryEmptyItemTest oAuthToken = do
       assertEither "Query for a list of items" eitherQueryItem
 
 ---- Query Max Item ----
-queryMaxItemTest :: OAuthToken -> Assertion
+queryMaxItemTest :: OAuthTokens -> Assertion
 queryMaxItemTest oAuthToken = do
   eitherQueryItems <- queryMaxItemsFrom oAuthToken 1
   case eitherQueryItems of
@@ -229,7 +229,7 @@ queryMaxItemTest oAuthToken = do
       assertEither "Queried for max size" eitherQueryItems
 
 ---- Query Count Item ----
-queryCountItemTest :: OAuthToken -> Assertion
+queryCountItemTest :: OAuthTokens -> Assertion
 queryCountItemTest oAuthToken = do
   eitherCount <- queryItemCount oAuthToken
   case eitherCount of
@@ -243,7 +243,7 @@ queryCountItemTest oAuthToken = do
 ---------------------
 
 ---- Read Bundle ----
-readBundleTest :: OAuthToken -> Assertion
+readBundleTest :: OAuthTokens -> Assertion
 readBundleTest oAuthToken = do
   case filterTextForQB "208" of
     Left err -> assertEither "Failed to create QBText in readBundleTest" (filterTextForQB "208")
@@ -262,7 +262,7 @@ readBundleTest oAuthToken = do
           assertBool "Read the Bundle" ((textFromQBText rBundleId) == (textFromQBText existingBundleId))
 
 ---- Query Bundle ----
-queryBundleTest :: OAuthToken -> Assertion
+queryBundleTest :: OAuthTokens -> Assertion
 queryBundleTest oAuthToken = do
   case filterTextForQB "208" of
     Left err -> assertEither "Failed to create QBText in queryBundleTest" (filterTextForQB "208")
@@ -281,7 +281,7 @@ queryBundleTest oAuthToken = do
           assertBool (show $ bundleId') (bundleId' == existingBundleId)
 
 ---- Query Empty Bundle ----
-queryEmptyBundleTest :: OAuthToken -> Assertion
+queryEmptyBundleTest :: OAuthTokens -> Assertion
 queryEmptyBundleTest oAuthToken = do
   eitherQueryBundle <- queryBundle oAuthToken ""
   case eitherQueryBundle of
@@ -299,7 +299,7 @@ queryEmptyBundleTest oAuthToken = do
 ---------------------
 
 ---- Create Category ----
-createCategoryTest :: OAuthToken -> Assertion
+createCategoryTest :: OAuthTokens -> Assertion
 createCategoryTest oAuthToken = do
   testCategory <- makeTestCategory
   resp <- createCategory oAuthToken testCategory
@@ -324,7 +324,7 @@ createCategoryTest oAuthToken = do
           assertEither "I created an invoice!" resp
 
 ---- Read Category ----
-readCategoryTest :: OAuthToken -> Assertion
+readCategoryTest :: OAuthTokens -> Assertion
 readCategoryTest oAuthToken = do
   testCategory <- makeTestCategory
   Right (QuickBooksCategoryResponse (cCategory:_)) <- createCategory oAuthToken testCategory
@@ -339,7 +339,7 @@ readCategoryTest oAuthToken = do
       assertBool "Read the Category" (categoryId cCategory == categoryId rCategory)
 
 ---- Update Category ----
-updateCategoryTest :: OAuthToken -> Assertion
+updateCategoryTest :: OAuthTokens -> Assertion
 updateCategoryTest oAuthToken = do
   testCategory <- makeTestCategory
   Right (QuickBooksCategoryResponse (cCategory:_)) <- createCategory oAuthToken testCategory
@@ -358,7 +358,7 @@ updateCategoryTest oAuthToken = do
           assertBool "Updated the Category" (categoryName cCategory /= categoryName uCategory)
 
 ---- Delete Category ----
-deleteCategoryTest :: OAuthToken -> Assertion
+deleteCategoryTest :: OAuthTokens -> Assertion
 deleteCategoryTest oAuthToken = do
   -- First, we create an category (see 'createCategory'):
   testCategory <- makeTestCategory
@@ -370,7 +370,7 @@ deleteCategoryTest oAuthToken = do
     Right _ -> assertEither "I *deleted* an category!" eitherDeleteCategory
 
 ---- Query Category ----
-queryCategoryTest :: OAuthToken -> Assertion
+queryCategoryTest :: OAuthTokens -> Assertion
 queryCategoryTest oAuthToken = do
   eitherQueryCategory <- queryCategory oAuthToken "Cat 1"
   case eitherQueryCategory of
@@ -383,7 +383,7 @@ queryCategoryTest oAuthToken = do
           assertBool (show $ categoryId category) (categoryId category == (Just existingId))
 
 ---- Query Empty Category ----
-queryEmptyCategoryTest :: OAuthToken -> Assertion
+queryEmptyCategoryTest :: OAuthTokens -> Assertion
 queryEmptyCategoryTest oAuthToken = do
   eitherQueryCategory <- queryCategory oAuthToken ""
   case eitherQueryCategory of
@@ -395,7 +395,7 @@ queryEmptyCategoryTest oAuthToken = do
       assertEither "Query for a list of categories" eitherQueryCategory
 
 ---- Query Max Category ----
-queryMaxCategoryTest :: OAuthToken -> Assertion
+queryMaxCategoryTest :: OAuthTokens -> Assertion
 queryMaxCategoryTest oAuthToken = do
   eitherQueryCategories <- queryMaxCategoriesFrom oAuthToken 1
   case eitherQueryCategories of
@@ -405,7 +405,7 @@ queryMaxCategoryTest oAuthToken = do
       assertEither "Queried for max size" eitherQueryCategories
 
 ---- Query Count Category ----
-queryCountCategoryTest :: OAuthToken -> Assertion
+queryCountCategoryTest :: OAuthTokens -> Assertion
 queryCountCategoryTest oAuthToken = do
   eitherCount <- queryCategoryCount oAuthToken
   case eitherCount of
@@ -415,7 +415,7 @@ queryCountCategoryTest oAuthToken = do
       assertEither "Queried the count" eitherCount
 
 ---- Invoice CRUD-Email ----
-createInvoiceTest :: OAuthToken -> Assertion
+createInvoiceTest :: OAuthTokens -> Assertion
 createInvoiceTest oAuthToken = do
   resp <- createInvoice oAuthToken testInvoice
   case resp of
@@ -424,7 +424,7 @@ createInvoiceTest oAuthToken = do
      deleteInvoice oAuthToken (fromJust (invoiceId invoice)) (fromJust (invoiceSyncToken invoice))
      assertEither "I created an invoice!" resp
 
-readInvoiceTest :: OAuthToken -> Assertion
+readInvoiceTest :: OAuthTokens -> Assertion
 readInvoiceTest oAuthToken = do
   -- First, we create an invoice (see 'createInvoice'):
   Right (QuickBooksInvoiceResponse cInvoice) <- createInvoice oAuthToken testInvoice
@@ -442,7 +442,7 @@ readInvoiceTest oAuthToken = do
         deleteInvoice oAuthToken cInvoiceId (fromJust (invoiceSyncToken cInvoice))
         assertBool "Read the invoice correctly" (cInvoice == rInvoice)
 
-updateInvoiceTest :: OAuthToken -> Assertion
+updateInvoiceTest :: OAuthTokens -> Assertion
 updateInvoiceTest oAuthToken = do
   --First, we create an invoice (see 'createInvoice'):
   Right (QuickBooksInvoiceResponse cInvoice) <- createInvoice oAuthToken testInvoice
@@ -462,7 +462,7 @@ updateInvoiceTest oAuthToken = do
         deleteInvoice oAuthToken (fromJust (invoiceId cInvoice)) (fromJust (invoiceSyncToken cInvoice))
         assertBool "Updated the invoice" (invoiceCustomerRef cInvoice /= invoiceCustomerRef uInvoice)
 
-deleteInvoiceTest :: OAuthToken -> Assertion
+deleteInvoiceTest :: OAuthTokens -> Assertion
 deleteInvoiceTest oAuthToken = do
   -- First, we create an invoice (see 'createInvoice'):
   Right (QuickBooksInvoiceResponse cInvoice) <- createInvoice oAuthToken testInvoice
@@ -475,7 +475,7 @@ deleteInvoiceTest oAuthToken = do
       Left e -> assertEither (show e) eitherDeleteInvoice
       Right _ -> assertEither "I deleted an invoice!" eitherDeleteInvoice
 
-emailInvoiceTest :: OAuthToken -> Assertion
+emailInvoiceTest :: OAuthTokens -> Assertion
 emailInvoiceTest oAuthToken = do
   -- First, we create an invoice (see 'createInvoice'):
   Right (QuickBooksInvoiceResponse cInvoice) <- createInvoice oAuthToken testInvoice
