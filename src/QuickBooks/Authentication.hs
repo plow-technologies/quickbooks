@@ -31,6 +31,7 @@ module QuickBooks.Authentication
   , oauthSignRequest
   , authorizationURLForToken
   , disconnectRequest
+  , qbAuthGetBS
  ) where
 
 import Control.Monad (void, liftM, ap)
@@ -52,7 +53,7 @@ import Network.URI               (escapeURIString
 
 import qualified Network.HTTP.Client.TLS as TLS
 
-import URI.ByteString (urlDecodeQuery,serializeURIRef')
+import URI.ByteString (urlDecodeQuery,serializeURIRef',URI)
 import URI.ByteString.QQ
 import Web.Authenticate.OAuth (signOAuth
                               ,newCredential
@@ -71,6 +72,12 @@ import qualified Network.OAuth.OAuth2.HttpClient as OAuth2
 import qualified Network.OAuth.OAuth2.Internal   as OAuth2
 
 
+
+
+qbAuthGetBS ::  Manager	-> OAuth2.AccessToken	 
+            -> URI	 
+            -> IO (OAuth2.OAuth2Result String BSL.ByteString)
+qbAuthGetBS = OAuth2.authGetBS
 --------------------------------------------------
 -- OAUTH2
 --------------------------------------------------
