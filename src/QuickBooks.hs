@@ -637,11 +637,11 @@ queryQuickBooks' apiConfig appConfig tokens' query = do
     UpdateInvoice invoice               -> updateInvoiceRequest tok invoice
     DeleteInvoice _invoiceId syncToken  -> deleteInvoiceRequest tok _invoiceId syncToken
     SendInvoice _invoiceId emailAddr    -> sendInvoiceRequest tok _invoiceId emailAddr
-    CreateCustomer customer             -> createCustomerRequest tok customer
-    ReadCustomer cId                    -> readCustomerRequest tok cId
-    UpdateCustomer customer             -> updateCustomerRequest tok customer
-    DeleteCustomer customer             -> deleteCustomerRequest tok customer    
-    QueryCustomer queryCustomerName     -> queryCustomerRequest tok queryCustomerName
+    CreateCustomer customer             -> createCustomerRequest tokens' customer
+    ReadCustomer cId                    -> readCustomerRequest tokens' cId
+    UpdateCustomer customer             -> updateCustomerRequest tokens' customer
+    DeleteCustomer customer             -> deleteCustomerRequest tokens' customer    
+    QueryCustomer queryCustomerName     -> queryCustomerRequest tokens' queryCustomerName
     CreateItem item                     -> createItemRequest tokens' item
     ReadItem iId                        -> readItemRequest tokens' iId
     UpdateItem item                     -> updateItemRequest tokens' item
