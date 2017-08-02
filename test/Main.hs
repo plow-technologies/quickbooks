@@ -22,7 +22,7 @@ import           System.Environment    (getEnvironment)
 import qualified Text.Email.Validate   as E (EmailAddress, emailAddress)
 import qualified Network.OAuth.OAuth2            as OAuth2
 
-authTokens = OAuth2.AccessToken "eyJlbmMiOiJBMTI4Q0JDLUhTMjU2IiwiYWxnIjoiZGlyIn0..xoLTdrB7ZAj6kLOdpIkSnA.0vF4bkRkWD3WM2obgV9rnsBwVFeZldVWc5utloeysr3pJDOpC1x7O28bbDo1rvOmztOpH_Z9-v-VLnGgxBIpGfzCBM082XsLFjU8p487X0Ukwx6BN-9AAuM0pojKxirSwdfEkFdsVBb3FlXUJrXwIZeJ4M-EWTPg0FNzDJiFum2XAKsVF7F3QTnSnxm_F6WeoUiZ2VvbYncqfyXj-ynLuh7lrVaDAJHcD8XKocaflQWC39ZNMK_xebh3vjj6fadGYEvwKUCohItrTBDp3vwAu2k9I0ObYUEVeKV98sAglMFe-qV1giF-CAfh7f_8AuPBPJidpLYplGD05liP4L-bO7l4N_WTzgiZDNlGyPOsv6Ua1IPP3rFBORt8Jd0dQdy1nBfK1a6krhlWHKH0Zu5Hiqq63rnVwp9iAGwJnHXvoz7uzkaqemrNcSy9nOHD-6bM54v7v1bVIskBb8xiPi4erBk1OADmclMaP24BopgGr2fAp4NlXJsPuno2tMu2okNEATqDNztIJ1rXVnbNn6d-obF2bfNUjCJ1KTgitvunUbw5T_VD6fPvJYzodIii1HCz1yUTb5QwwQXgmhDTCRG_MVE54Jdq-5oT0DuohVaz4lNm9TqfgCqGBN1u9ib-gqMqqWr9B8_uHPga7_GhY7toqy6oW3KhSTu5DYiAvRmXVllXdYUj-WptsJpCwNNekj-C.bY_cAmaxj1LGYBsXepUkIg"
+authTokens = OAuth2.AccessToken "eyJlbmMiOiJBMTI4Q0JDLUhTMjU2IiwiYWxnIjoiZGlyIn0..oNrRt2gm749wofVH7GeOBQ.K9-wQefPLfW2mcPhHTe89WvAlXk1czZ9NSqv8uol99FfFolWfXKBdyNIy4nhZhgmg11c9MSlLAoeYhj92s9MTt0yW4qL7j2WFQ1DAm4rd3J8oS7u8E-XzCTEpjFqUhPrgzd-VxgBHrJBfWdjwdVodVzCL8NsHh_qh2vU76xjYUwfc9ergZ1SnbDf6tdudKAKN1dEDIsCzAT5MMU4PxOHhq50Y2WPah9a5h_8drjKk7hi0xXDI0E9fwykYXYRaymCH8DUscQMW089C9OOZgJmHlKs0_D1HiqEi6YL4UHMDKiY9GnCwEEsEHQ2fyaBKdswGVYr7WJizCxYImbtQvBT5vF7gjZV0ko-ARPhgGPpcZXaOMMcqJ-6wQLAiry8-CoFbwOsN2YyJAeJs5SxcJvumAGxn1jNExyum0OalC_24hipI5_V6yTT7AlWJc2FuGrPaMApdfG1tnrCStt0_QURkLr0uk_scqa3QozAhw-YGkZe6y81crKbFe1R-c3VYyQMNDpC1DX3KFFKMIZwjyemL9PnXpW6776jT_RLrrBrk8kcvqA0s7LiTj27enrzJNAepmFUmRKVmSezwWkC9spknp316-6Y1Tr6N1_qW9hU7rL9WZDLEF6J3uzcBYZHNri6P_frymDJk5xbnD6OelP6Qlc6qQZ9eQud6q9PvCgYgpWHuZHUnvssf_vb9dQSS7v-.8HwUlExgOVULqxeWVux6Dg"
 
 main :: IO ()
 main = do
@@ -40,9 +40,9 @@ tests tok = testGroup "OAuth" [ testCase "Query Customer" $ queryCustomerTest (O
                               , testCase "Read Customer" $ readCustomerTest (OAuth2 authTokens)
                               , testCase "Update Customer" $ updateCustomerTest (OAuth2 authTokens)
                               , testCase "Delete Customer" $ deleteCustomerTest (OAuth2 authTokens)
-                              , testCase "Read Bundle" $ readBundleTest tok
-                              , testCase "Query Bundle" $ queryBundleTest tok
-                              , testCase "Query Empty Bundle" $ queryEmptyBundleTest tok
+                              , testCase "Read Bundle" $ readBundleTest (OAuth2 authTokens)
+                              , testCase "Query Bundle" $ queryBundleTest (OAuth2 authTokens)
+                              , testCase "Query Empty Bundle" $ queryEmptyBundleTest (OAuth2 authTokens)
                               , testCase "Query Category" $ queryCategoryTest tok
                               , testCase "Query Empty Category" $ queryEmptyCategoryTest tok
                               , testCase "Query Count Categories" $ queryCountCategoryTest tok
@@ -285,8 +285,8 @@ queryCountItemTest oAuthToken = do
 ---- Read Bundle ----
 readBundleTest :: OAuthTokens -> Assertion
 readBundleTest oAuthToken = do
-  case filterTextForQB "208" of
-    Left err -> assertEither "Failed to create QBText in readBundleTest" (filterTextForQB "208")
+  case filterTextForQB "19" of
+    Left err -> assertEither "Failed to create QBText in readBundleTest" (filterTextForQB "19")
     Right existingId -> do
       let existingBundleId = existingId -- this MUST be created in QB Online for the test to pass
                             -- Replace the number the id for the existing bundle
@@ -304,8 +304,8 @@ readBundleTest oAuthToken = do
 ---- Query Bundle ----
 queryBundleTest :: OAuthTokens -> Assertion
 queryBundleTest oAuthToken = do
-  case filterTextForQB "208" of
-    Left err -> assertEither "Failed to create QBText in queryBundleTest" (filterTextForQB "208")
+  case filterTextForQB "19" of
+    Left err -> assertEither "Failed to create QBText in queryBundleTest" (filterTextForQB "19")
     Right existingId -> do
       let existingBundleId = existingId -- this MUST be created in QB Online for the test to pass
                             -- Replace the number the id for the existing bundle

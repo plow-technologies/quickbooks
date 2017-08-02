@@ -686,8 +686,8 @@ queryQuickBooks' apiConfig appConfig tokens' query = do
     QueryCountItem                      -> countItemRequest tokens'
     QueryMaxItemsFrom startIndex        -> queryMaxItemRequest tokens' startIndex
     --QueryAllItems                       -> queryAllItemRequest tok
-    ReadBundle iId                      -> readBundleRequest tok iId
-    QueryBundle queryBundleName         -> queryBundleRequest tok queryBundleName
+    ReadBundle iId                      -> readBundleRequest tokens' iId
+    QueryBundle queryBundleName         -> queryBundleRequest tokens' queryBundleName
     CreateCategory category             -> createCategoryRequest tok category
     ReadCategory iId                    -> readCategoryRequest tok iId
     UpdateCategory category             -> updateCategoryRequest tok category
