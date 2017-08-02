@@ -642,13 +642,13 @@ queryQuickBooks' apiConfig appConfig tokens' query = do
     UpdateCustomer customer             -> updateCustomerRequest tok customer
     DeleteCustomer customer             -> deleteCustomerRequest tok customer    
     QueryCustomer queryCustomerName     -> queryCustomerRequest tok queryCustomerName
-    CreateItem item                     -> createItemRequest tok item
-    ReadItem iId                        -> readItemRequest tok iId
-    UpdateItem item                     -> updateItemRequest tok item
-    DeleteItem item                     -> deleteItemRequest tok item
-    QueryItem queryItemName             -> queryItemRequest tok queryItemName
+    CreateItem item                     -> createItemRequest tokens' item
+    ReadItem iId                        -> readItemRequest tokens' iId
+    UpdateItem item                     -> updateItemRequest tokens' item
+    DeleteItem item                     -> deleteItemRequest tokens' item
+    QueryItem queryItemName             -> queryItemRequest tokens' queryItemName
     QueryCountItem                      -> countItemRequest tokens'
-    QueryMaxItemsFrom startIndex        -> queryMaxItemRequest tok startIndex
+    QueryMaxItemsFrom startIndex        -> queryMaxItemRequest tokens' startIndex
     --QueryAllItems                       -> queryAllItemRequest tok
     ReadBundle iId                      -> readBundleRequest tok iId
     QueryBundle queryBundleName         -> queryBundleRequest tok queryBundleName

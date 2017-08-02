@@ -32,6 +32,7 @@ module QuickBooks.Authentication
   , authorizationURLForToken
   , disconnectRequest
   , qbAuthGetBS
+  , qbAuthPostBS
  ) where
 
 import Control.Monad (void, liftM, ap)
@@ -78,6 +79,12 @@ qbAuthGetBS ::  Manager	-> OAuth2.AccessToken
             -> URI	 
             -> IO (OAuth2.OAuth2Result String BSL.ByteString)
 qbAuthGetBS = OAuth2.authGetBS
+
+qbAuthPostBS ::  Manager	-> OAuth2.AccessToken	 
+            -> URI
+            -> OAuth2.PostBody
+            -> IO (OAuth2.OAuth2Result String BSL.ByteString)
+qbAuthPostBS = OAuth2.authPostBS
 --------------------------------------------------
 -- OAUTH2
 --------------------------------------------------

@@ -22,7 +22,7 @@ import           System.Environment    (getEnvironment)
 import qualified Text.Email.Validate   as E (EmailAddress, emailAddress)
 import qualified Network.OAuth.OAuth2            as OAuth2
 
-authTokens = OAuth2.AccessToken  ""
+authTokens = OAuth2.AccessToken  "eyJlbmMiOiJBMTI4Q0JDLUhTMjU2IiwiYWxnIjoiZGlyIn0..bMHDlHkSoyWe4aMKyCpxyA.qGMt8d7NG2XguWt_BFUlCnqTP_D3gEvu6748F4QQYWh2VKyGz7qUOpWOWd1vOn-gputFOQc7Zy5TJKPi_NGZUDULBpoM_NZfN2Z1tOVF_OkOMdFiP-zUBnAobTgyChHpxtm1qZ10ffhQA7IoH_SeY6AOpeXMBotB_Q7Umc-YHXPdFiA99ow7DCwQcPlqEN74PopxTVJrN8TOD8TyyIJXQIqknZ6t2gCS5la7N3zsXM3_9n6ehT1I6oo3cbHvo7-v94ekCv14YzuK2hcRAZpxG3ZatrH-3fWVNr-oc5Yys5tqzC2p9NrgtGxjm8WX2biJTJwNXskoOJIR5MAA1aLws-1w1V62dAD3pwqWRsvpPpcl5H-kwoEzGc8kjA8Pho3zKloW4Ti3J8cJn9Q4BgzK0T7cOaJS7WDDE_UGxA3fYzS_bfN7eoz23zfmIzEcRxx89yrxlbvt5bDcISKFbRT5Sdelnn69SzOMjOL7WwxNc-50ksOkao-vCAoU_s6IJPVF8IJZx0ZDdla5YLIHQWZzdap8V6pxxB8JmTz_CGp6kmr2EdA1UW8uxdGTzm_HbbMhaMHkTa3QVU0cTU5hqAtJuJq0cym8jm1MOJtSHzIRjR_7B418rKAXMc27n46NsOt7_rGfJ-auN6V4wz0ukJdlj1lNk6--dZVs99oaprBWf1ZmugN-AoeawT-AsaCJ2Wuf.a7dqhmTBHx7E30REL92pGw"
 
 main :: IO ()
 main = do
@@ -32,36 +32,36 @@ main = do
     defaultMain $ tests (OAuth1 oAuthToken')
 
 tests :: OAuthTokens -> TestTree
-tests tok = testGroup "OAuth" [ testCase "Query Customer" $ queryCustomerTest tok
-                              , testCase "Create Customer" $ createCustomerTest tok
-                              , testCase "Read Customer" $ readCustomerTest tok
-                              , testCase "Update Customer" $ updateCustomerTest tok
-                              , testCase "Delete Customer" $ deleteCustomerTest tok
-                              , testCase "Read Bundle" $ readBundleTest tok
-                              , testCase "Query Bundle" $ queryBundleTest tok
-                              , testCase "Query Empty Bundle" $ queryEmptyBundleTest tok
-                              , testCase "Query Category" $ queryCategoryTest tok
-                              , testCase "Query Empty Category" $ queryEmptyCategoryTest tok
-                              , testCase "Query Count Categories" $ queryCountCategoryTest tok
-                              , testCase "Query Max Categories" $ queryMaxCategoryTest tok
-                              , testCase "Create Category" $ createCategoryTest tok
-                              , testCase "Read Category" $ readCategoryTest tok
-                              , testCase "Update Category" $ updateCategoryTest tok
-                              , testCase "Delete Category" $ deleteCategoryTest tok
-                              , testCase "Query Item" $ queryItemTest tok
+tests tok = testGroup "OAuth" [ --testCase "Query Customer" $ queryCustomerTest tok
+                              -- , testCase "Create Customer" $ createCustomerTest tok
+                              -- , testCase "Read Customer" $ readCustomerTest tok
+                              -- , testCase "Update Customer" $ updateCustomerTest tok
+                              -- , testCase "Delete Customer" $ deleteCustomerTest tok
+                              -- , testCase "Read Bundle" $ readBundleTest tok
+                              -- , testCase "Query Bundle" $ queryBundleTest tok
+                              -- , testCase "Query Empty Bundle" $ queryEmptyBundleTest tok
+                              -- , testCase "Query Category" $ queryCategoryTest tok
+                              -- , testCase "Query Empty Category" $ queryEmptyCategoryTest tok
+                              -- , testCaseoauth1Only "Query Count Categories" $ queryCountCategoryTest tok
+                              -- , testCase "Query Max Categories" $ queryMaxCategoryTest tok
+                              -- , testCase "Create Category" $ createCategoryTest tok
+                              -- , testCase "Read Category" $ readCategoryTest tok
+                              -- , testCase "Update Category" $ updateCategoryTest tok
+                              -- , testCase "Delete Category" $ deleteCategoryTest tok
+                                testCase "Query Item" $ queryItemTest (OAuth2 authTokens)
                               , testCase "Query Count Items" $ queryCountItemTest (OAuth2 authTokens)
-                              , testCase "Query Empty Item" $ queryEmptyItemTest tok
-                              , testCase "Query Max Items" $ queryMaxItemTest tok
-                              , testCase "Create Item" $ createItemTest tok
-                              , testCase "Read Item" $ readItemTest tok
-                              , testCase "Update Item" $ updateItemTest tok
-                              , testCase "Delete Item" $ deleteItemTest tok
-                              , testCase "Create Invoice" $ createInvoiceTest tok
-                              , testCase "Read Invoice" $ readInvoiceTest tok
-                              , testCase "Update Invoice" $ updateInvoiceTest tok
-                              , testCase "Delete Invoice" $ deleteInvoiceTest tok
-                              , testCase "Email Invoice" $ emailInvoiceTest tok
-                              , testCase "Temp Tokens" $ tempTokenTest
+                              , testCase "Query Empty Item" $ queryEmptyItemTest (OAuth2 authTokens)
+                              , testCase "Query Max Items" $ queryMaxItemTest (OAuth2 authTokens)
+                              , testCase "Create Item" $ createItemTest (OAuth2 authTokens)
+                              , testCase "Read Item" $ readItemTest (OAuth2 authTokens)
+                              , testCase "Update Item" $ updateItemTest (OAuth2 authTokens)
+                              , testCase "Delete Item" $ deleteItemTest (OAuth2 authTokens)
+                              -- , testCase "Create Invoice" $ createInvoiceTest tok
+                              -- , testCase "Read Invoice" $ readInvoiceTest tok
+                              -- , testCase "Update Invoice" $ updateInvoiceTest tok
+                              -- , testCase "Delete Invoice" $ deleteInvoiceTest tok
+                              -- , testCase "Email Invoice" $ emailInvoiceTest tok
+                              -- , testCase "Temp Tokens" $ tempTokenTest
                               ]
 
 -----------  Note: There is a very small chance that they may fail due to duplicate name errors on create.
