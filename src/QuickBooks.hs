@@ -688,13 +688,13 @@ queryQuickBooks' apiConfig appConfig tokens' query = do
     --QueryAllItems                       -> queryAllItemRequest tok
     ReadBundle iId                      -> readBundleRequest tokens' iId
     QueryBundle queryBundleName         -> queryBundleRequest tokens' queryBundleName
-    CreateCategory category             -> createCategoryRequest tok category
-    ReadCategory iId                    -> readCategoryRequest tok iId
-    UpdateCategory category             -> updateCategoryRequest tok category
-    DeleteCategory category             -> deleteCategoryRequest tok category
-    QueryCategory queryCategoryName     -> queryCategoryRequest tok queryCategoryName
-    QueryCountCategory                  -> countCategoryRequest tok
-    QueryMaxCategoriesFrom startIndex   -> queryMaxCategoryRequest tok startIndex
+    CreateCategory category             -> createCategoryRequest tokens' category
+    ReadCategory iId                    -> readCategoryRequest tokens' iId
+    UpdateCategory category             -> updateCategoryRequest tokens' category
+    DeleteCategory category             -> deleteCategoryRequest tokens' category
+    QueryCategory queryCategoryName     -> queryCategoryRequest tokens' queryCategoryName
+    QueryCountCategory                  -> countCategoryRequest tokens'
+    QueryMaxCategoriesFrom startIndex   -> queryMaxCategoryRequest tokens' startIndex
 
 queryQuickBooksOAuth :: Maybe OAuthToken
                      -> QuickBooksOAuthQuery a

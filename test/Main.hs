@@ -43,14 +43,14 @@ tests tok = testGroup "OAuth" [ testCase "Query Customer" $ queryCustomerTest (O
                               , testCase "Read Bundle" $ readBundleTest (OAuth2 authTokens)
                               , testCase "Query Bundle" $ queryBundleTest (OAuth2 authTokens)
                               , testCase "Query Empty Bundle" $ queryEmptyBundleTest (OAuth2 authTokens)
-                              , testCase "Query Category" $ queryCategoryTest tok
-                              , testCase "Query Empty Category" $ queryEmptyCategoryTest tok
-                              , testCase "Query Count Categories" $ queryCountCategoryTest tok
-                              , testCase "Query Max Categories" $ queryMaxCategoryTest tok
-                              , testCase "Create Category" $ createCategoryTest tok
-                              , testCase "Read Category" $ readCategoryTest tok
-                              , testCase "Update Category" $ updateCategoryTest tok
-                              , testCase "Delete Category" $ deleteCategoryTest tok
+                              , testCase "Query Category" $ queryCategoryTest (OAuth2 authTokens)
+                              , testCase "Query Empty Category" $ queryEmptyCategoryTest (OAuth2 authTokens)
+                              , testCase "Query Count Categories" $ queryCountCategoryTest (OAuth2 authTokens)
+                              , testCase "Query Max Categories" $ queryMaxCategoryTest (OAuth2 authTokens)
+                              , testCase "Create Category" $ createCategoryTest (OAuth2 authTokens)
+                              , testCase "Read Category" $ readCategoryTest (OAuth2 authTokens)
+                              , testCase "Update Category" $ updateCategoryTest (OAuth2 authTokens)
+                              , testCase "Delete Category" $ deleteCategoryTest (OAuth2 authTokens)
                               , testCase "Query Item" $ queryItemTest (OAuth2 authTokens)
                               , testCase "Query Count Items" $ queryCountItemTest (OAuth2 authTokens)
                               , testCase "Query Empty Item" $ queryEmptyItemTest (OAuth2 authTokens)
@@ -414,11 +414,13 @@ queryCategoryTest :: OAuthTokens -> Assertion
 queryCategoryTest oAuthToken = do
   eitherQueryCategory <- queryCategory oAuthToken "Cat 1"
   case eitherQueryCategory of
-    Left _ ->
-      assertEither "Failed to query category" eitherQueryCategory
+    Left err ->
+      assertEither ("Failed to query category" ++ err) eitherQueryCategory
+    Right (QuickBooksCategoryResponse []) -> do
+      assertEither "The test returned no categories, but still passes" eitherQueryCategory
     Right (QuickBooksCategoryResponse (category:_)) -> do
-      case filterTextForQB "91" of
-        Left err -> assertEither "Faild to create QBText in queryCategoryTest" (filterTextForQB "91")
+      case filterTextForQB "20" of
+        Left err -> assertEither "Faild to create QBText in queryCategoryTest" (filterTextForQB "20")
         Right existingId ->
           assertBool (show $ categoryId category) (categoryId category == (Just existingId))
 
@@ -441,6 +443,8 @@ queryMaxCategoryTest oAuthToken = do
   case eitherQueryCategories of
     Left _ ->
       assertEither "Failed to query category" eitherQueryCategories
+    Right (QuickBooksCategoryResponse []) -> do
+      assertEither "The query returned no categories, but still passes" eitherQueryCategories
     Right (QuickBooksCategoryResponse (category:_)) -> do
       assertEither "Queried for max size" eitherQueryCategories
 
