@@ -99,6 +99,24 @@ postItem tok item = do
 
 
 
+
+postItemOAuth2 :: APIEnv
+                  => OAuthToken
+                  -> Item
+                  -> IO (Either String (QuickBooksResponse [Item]))
+postItemOAuth2 tok item = do
+  let apiConfig = ?apiConfig
+  req <- parseUrlThrow $ [i|#{itemURITemplate apiConfig}?|]
+  req' <- oauthSignRequest tok req{ method         = "POST"
+                                  , requestBody    = RequestBodyLBS $ encode item
+                                  , requestHeaders = [ (hAccept, "application/json")
+                                                     , (hContentType, "application/json")
+                                                     ]
+                                  }
+  resp <- httpLbs req' ?manager
+  logAPICall req'
+  return $ eitherDecode $ responseBody resp
+
 -- GET /v3/company/<companyID>/query=<selectStatement>
 
 -- Searches by name

@@ -1,8 +1,30 @@
 {-# LANGUAGE ImplicitParams     #-}
 {-# LANGUAGE OverloadedStrings  #-}
 {-# LANGUAGE RankNTypes         #-}
+{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ConstraintKinds    #-}
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
+
+
+
+{- |
+Module      : QuickBooks.Authentication
+Description : Module for gaining Access Tokens, OAuth and OAuth2
+Copyright   : Plow Technologies LLC
+License     : MIT License
+
+Maintainer  : Scott Murphy
+
+
+https://developer.intuit.com/docs/0100_quickbooks_online/0100_essentials/000500_authentication_and_authorization/implement_single_sign-on_with_openid#/Initiating_the_authentication_request
+
+https://developer.intuit.com/docs/0100_quickbooks_online/0100_essentials/000500_authentication_and_authorization/implement_single_sign-on_with_openid#/Discovery_document
+
+
+
+
+-}
+
 module QuickBooks.Authentication 
   ( getTempOAuthCredentialsRequest
   , getAccessTokenRequest
@@ -15,25 +37,23 @@ import Control.Monad (void, liftM, ap)
 import Data.Monoid ((<>))
 import qualified Data.ByteString.Lazy as BSL
 import Data.ByteString.Char8 (unpack, ByteString)
-
-import Network.HTTP.Client (-- Manager
-                            Request(..)
+import Network.HTTP.Client (Manager
+                            ,Request(..)
                              ,RequestBody(RequestBodyLBS)
                              ,responseBody
                              ,parseUrlThrow
                              ,setQueryString
-                            --  ,queryString
-                            -- ,getUri
-                               ,httpLbs)
+                            ,getUri
+                            ,httpLbs)
 
 import Network.HTTP.Types.URI (parseSimpleQuery)
 import Network.URI               (escapeURIString
                                  , isUnescapedInURI)
---                                 , isUnescapedInURIComponent)
+
 import qualified Network.HTTP.Client.TLS as TLS
 
-
-
+import URI.ByteString (urlDecodeQuery,serializeURIRef')
+import URI.ByteString.QQ
 import Web.Authenticate.OAuth (signOAuth
                               ,newCredential
                               ,emptyCredential
@@ -43,59 +63,68 @@ import Web.Authenticate.OAuth (signOAuth
                               
 
 
--- https://developer.intuit.com/docs/0100_quickbooks_online/0100_essentials/000500_authentication_and_authorization/implement_single_sign-on_with_openid#/Initiating_the_authentication_request
+import           Data.Text.Encoding (encodeUtf8)
+import           QuickBooks.Logging (logAPICall')
+import           QuickBooks.Types
+import qualified Network.OAuth.OAuth2            as OAuth2
+import qualified Network.OAuth.OAuth2.HttpClient as OAuth2
+import qualified Network.OAuth.OAuth2.Internal   as OAuth2
 
 
--- https://developer.intuit.com/docs/0100_quickbooks_online/0100_essentials/000500_authentication_and_authorization/implement_single_sign-on_with_openid#/Discovery_document
+--------------------------------------------------
+-- OAUTH2
+--------------------------------------------------
+fetchRequestToken :: OAuth2.OAuth2 -> IO OAuth2.OAuth2Token
+fetchRequestToken  oauth = do
+   mgr <- TLS.getGlobalManager
+   oauthTokenRslt <- OAuth2.fetchRefreshToken mgr oauth refreshToken
+   case oauthTokenRslt of
+     Left e       -> fail $ show e
+     Right tok  -> do
+       return tok
 
-import QuickBooks.Logging (logAPICall')
-import QuickBooks.Types
--- import Network.OAuth.OAuth2 (OAuth2 (..))
-import qualified Network.OAuth.OAuth2 as OAuth2
--- import Data.Monoid ((<>))
+refreshToken = OAuth2.RefreshToken ""
+
+
+testOAuth :: OAuth2.OAuth2
+testOAuth = OAuth2.OAuth2 {
+    OAuth2.oauthClientId            = ""
+  , OAuth2.oauthClientSecret        = ""
+  , OAuth2.oauthOAuthorizeEndpoint  = [uri|https://appcenter.intuit.com/connect/obbauth2|]
+  , OAuth2.oauthAccessTokenEndpoint = [uri|https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer|] 
+  , OAuth2.oauthCallback            =  Just [uri|https://developer.intuit.com/v2/OAuth2Playground/RedirectUrl|]
+  }
 
 
 
 
--- _accessToken :: OAuth2.AccessToken
-
-
-
-_Tryfetchaccesstoken :: IO ()
-_Tryfetchaccesstoken  = do
-  mgr <- TLS.getGlobalManager
-  oauthTokenRslt <- OAuth2.authGetBS mgr accessToken "https://accounts.platform.intuit.com/v1/openid_connect/userinfo"
-  case oauthTokenRslt of
-    Left e       -> fail $ show e
-    Right _  -> do
-      print "wheee"
-  where   _refreshToken = ""
-          accessToken = OAuth2.AccessToken ("") Nothing Nothing Nothing Nothing
-          _exchangeToken = ""
-          _testOAuth :: OAuth2.OAuth2
-          _testOAuth = OAuth2.OAuth2 {
-             OAuth2.oauthClientId            = ""
-           , OAuth2.oauthClientSecret        = "" 
-           , OAuth2.oauthOAuthorizeEndpoint  = "https://appcenter.intuit.com/connect/oauth2" 
-           , OAuth2.oauthAccessTokenEndpoint = "https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer"
-           , OAuth2.oauthCallback            =  Just "https://developer.intuit.com/v2/OAuth2Playground/RedirectUrl"
-           }
-
-_quickbooksAuthRequest :: IO ()
-_quickbooksAuthRequest = do
+-- Need to add something on the actual page to enable the token 
+quickbooksAuthRequest oauth = do
             req <- parseUrlThrow "https://appcenter.intuit.com/connect/oauth2"
             mgr <- TLS.getGlobalManager
             let newReq = setQueryString parameters req 
---            return $ (getUri newReq)
-            _ <- httpLbs newReq mgr
-            return ()
+--           return $ (getUri newReq)
+            httpLbs newReq mgr
+
   where
     parameters = [
-       ("client_id"    , Just "" )
+       ("client_id"    , Just $ encodeUtf8 . OAuth2.oauthClientId $ oauth )
       ,("scope"        , Just ".intuit.quickbooks.accounting openid email profile")
-      ,("redirect_uri" , Just "https://localhost/oauth2/callback")
+      ,("redirect_uri" , fmap serializeURIRef' . OAuth2.oauthCallback $ oauth)
       ,("response_type", Just "code")
       ,("state"        , Just "PlaygroundAuth")]
+
+
+
+
+
+
+
+
+
+--------------------------------------------------
+-- OAUTH
+--------------------------------------------------
 
 getTempOAuthCredentialsRequest :: AppEnv
                                => CallbackURL

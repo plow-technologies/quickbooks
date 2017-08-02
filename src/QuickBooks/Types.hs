@@ -28,10 +28,11 @@ module QuickBooks.Types where
 import           Control.Applicative ((<$>), (<*>), (<|>))
 import           Control.Monad       (mzero)
 import           Data.Aeson          (FromJSON (..), ToJSON(..), Value (Object),
-                                      (.:), object, (.=))
+                                      (.:), object, (.=),(.:?))
 import           Data.Aeson.TH       (Options (fieldLabelModifier, omitNothingFields),
                                       defaultOptions, deriveJSON)
 import           Data.ByteString     (ByteString)
+import           Data.Maybe          (fromMaybe)
 import           Data.Char           (toLower)
 import           Data.Text           (Text)
 import           Data.Text.Encoding  (encodeUtf8, decodeUtf8)
@@ -40,7 +41,7 @@ import qualified Text.Email.Validate as E (EmailAddress)
 import           System.Log.FastLogger (LoggerSet)
 import           Network.HTTP.Client   (Manager)
 import           QuickBooks.QBText
-
+import qualified Network.OAuth.OAuth2            as OAuth2
 type Logger = LoggerSet
 
 type CallbackURL = String
@@ -61,6 +62,10 @@ instance FromJSON AppConfig where
     where parseByteString obj name = encodeUtf8 <$> (obj .: name)
   parseJSON _ = mzero
 
+
+
+
+
 data APIConfig = APIConfig
   { companyId      :: !ByteString
   , oauthToken     :: !ByteString
@@ -68,6 +73,8 @@ data APIConfig = APIConfig
   , hostname       :: !ByteString
   , loggingEnabled :: !ByteString
   } deriving (Show, Eq)
+
+
 
 instance ToJSON APIConfig where
   toJSON (APIConfig cId oToken oSecret hName lEnabled) = object [
@@ -84,7 +91,7 @@ instance FromJSON APIConfig where
                                    <*> (parseByteString o "oauthSecret")
                                    <*> (parseByteString o "hostname")
                                    <*> (parseByteString o "loggingEnabled")
-    where parseByteString obj name = encodeUtf8 <$> (obj .: name)
+    where parseByteString  obj name = encodeUtf8 <$> (obj .: name)
   parseJSON _ = mzero
 
 

@@ -5,3 +5,8 @@ packages:
 
 
 resolver: lts-7.4
+
+extra-deps:
+ - hoauth2-1.3.0
+ - uri-bytestring-aeson-0.1.0.1
+ - uri-bytestring-0.2.3.3
