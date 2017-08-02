@@ -113,6 +113,7 @@ type NetworkEnv = ( ?manager :: Manager
 
 
 data OAuthTokens = OAuth1 OAuthToken
+                 | OAuth2 OAuth2.AccessToken
 
 
 

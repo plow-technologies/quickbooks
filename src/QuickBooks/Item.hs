@@ -28,11 +28,13 @@ module QuickBooks.Item
   , deleteItemRequest
   )
   where
-
+import URI.ByteString
+import Data.ByteString.Char8
+import Data.ByteString.Lazy (fromStrict)
 import QuickBooks.Authentication
 import QuickBooks.Logging
 import QuickBooks.Types
-
+import qualified Network.OAuth.OAuth2            as OAuth2
 import Data.Aeson                (encode, eitherDecode)
 import Data.String.Interpolate   (i)
 import Data.Text                 (Text)
@@ -180,13 +182,69 @@ queryMaxItemRequest tok startIndex = do
     pagination :: String
     pagination = [i| startposition #{startIndex} maxresults 1000|] -- Item that Matchs Name
 
+
+      
 countItemRequest :: APIEnv
-                 => OAuthToken
+                 => OAuthTokens
                  -> IO (Either String (QuickBooksResponse Int))
-countItemRequest tok = do
+countItemRequest (OAuth1 tok) = countItemRequestOAuth tok
+countItemRequest (OAuth2 tok) = countItemRequestOAuth2 tok
+
+
+
+
+
+
+
+countItemRequestOAuth2
+  :: (?manager::Manager, ?logger::Logger, ?appConfig::AppConfig,
+      ?apiConfig::APIConfig) =>
+     OAuth2.AccessToken  -> IO (Either String (QuickBooksResponse Int))
+countItemRequestOAuth2 tok = do
   let apiConfig = ?apiConfig
   let uriComponent = escapeURIString isUnescapedInURIComponent [i|#{query}|]
-  let queryURI = parseUrlThrow $ [i|#{queryURITemplate apiConfig}#{uriComponent}|]
+  let
+    eitherQueryURI = parseURI strictURIParserOptions . pack $ [i|#{queryURITemplate apiConfig}#{uriComponent}|]
+  req' <- parseUrlThrow [i|#{queryURITemplate apiConfig}#{uriComponent}|]
+  case eitherQueryURI of
+    Left err -> return (Left . show $ err)
+    Right queryURI -> do
+      eitherResponse <- qbAuthGetBS ?manager tok queryURI
+--      logAPICall req'
+      case eitherResponse of
+        (Left err) -> return (Left . show $ err)
+        (Right resp) -> do
+           let eitherFoundCount = eitherDecode resp
+           case eitherFoundCount of
+             Left er -> return (Left er)
+             Right (QuickBooksCountResponse foundCount) ->
+               return $ Right $ QuickBooksCountResponse $ foundCount
+                  -- filter (\Item{..} -> itemName == queryItemName) FoundItems
+  where
+    query :: String
+    query = "SELECT COUNT(*) FROM Item"
+
+
+
+
+
+
+
+
+
+
+
+
+
+countItemRequestOAuth
+  :: (?manager::Manager, ?logger::Logger, ?appConfig::AppConfig,
+      ?apiConfig::APIConfig) =>
+     OAuthToken -> IO (Either String (QuickBooksResponse Int))
+countItemRequestOAuth tok = do
+  let apiConfig = ?apiConfig
+  let uriComponent = escapeURIString isUnescapedInURIComponent [i|#{query}|]
+  let
+    queryURI = parseUrlThrow $ [i|#{queryURITemplate apiConfig}#{uriComponent}|]
   req <- oauthSignRequest tok =<< queryURI
   let oauthHeaders = requestHeaders req
   let req' = req { method = "GET"
