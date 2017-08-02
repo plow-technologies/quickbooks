@@ -234,8 +234,6 @@ countItemRequestOAuth2 tok = do
 
 
 
-
-
 countItemRequestOAuth
   :: (?manager::Manager, ?logger::Logger, ?appConfig::AppConfig,
       ?apiConfig::APIConfig) =>

@@ -17,8 +17,8 @@ module QuickBooks
   ( -- * Authentication and authorization
     getAccessToken
   , getAccessToken'
-  , getTempToken
-  , getTempToken'
+  , getTempTokens
+  , getTempTokens'
   , authorizationURLForToken
   , cancelOAuthAuthorization
   , cancelOAuthAuthorization'
@@ -587,12 +587,12 @@ sendInvoice' apiConfig appConfig tok invId  =
 -- :}
 -- I got my request tokens!
 
-getTempToken :: CallbackURL -> IO (Either String (QuickBooksResponse OAuthToken))
-getTempToken =
+getTempTokens :: CallbackURL -> IO (Either String (QuickBooksResponse OAuthToken))
+getTempTokens =
   queryQuickBooksOAuth Nothing . GetTempOAuthCredentials
 
-getTempToken' :: AppConfig -> CallbackURL -> IO (Either String (QuickBooksResponse OAuthToken))
-getTempToken' appConfig =
+getTempTokens' :: AppConfig -> CallbackURL -> IO (Either String (QuickBooksResponse OAuthToken))
+getTempTokens' appConfig =
   queryQuickBooksOAuth' appConfig Nothing . GetTempOAuthCredentials
  
 -- | Exchange oauth_verifier for access tokens
