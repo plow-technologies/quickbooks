@@ -259,7 +259,6 @@ queryItem'
 queryItem' apiConfig appConfig tok =
   queryQuickBooks' apiConfig appConfig tok . QueryItem
 
-
 queryItemCount
   :: OAuthTokens
   -> IO (Either String (QuickBooksResponse Int))
@@ -273,7 +272,6 @@ queryItemCount'
   -> IO (Either String (QuickBooksResponse Int))
 queryItemCount' apiConfig appConfig tok =
   queryQuickBooks' apiConfig appConfig tok QueryCountItem
-
 
 queryMaxItemsFrom
   :: OAuthTokens

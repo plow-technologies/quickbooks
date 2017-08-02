@@ -20,15 +20,19 @@ import           QuickBooks.Types
 import           QuickBooks.QBText
 import           System.Environment    (getEnvironment)
 import qualified Text.Email.Validate   as E (EmailAddress, emailAddress)
+import qualified Network.OAuth.OAuth2            as OAuth2
+
+authTokens = OAuth2.AccessToken  ""
 
 main :: IO ()
 main = do
     maybeTestOAuthToken <- lookupTestOAuthTokenFromEnv
+    print maybeTestOAuthToken
     let oAuthToken' = maybe (error "") id maybeTestOAuthToken
     defaultMain $ tests (OAuth1 oAuthToken')
 
 tests :: OAuthTokens -> TestTree
-tests tok = testGroup "tests" [ testCase "Query Customer" $ queryCustomerTest tok
+tests tok = testGroup "OAuth" [ testCase "Query Customer" $ queryCustomerTest tok
                               , testCase "Create Customer" $ createCustomerTest tok
                               , testCase "Read Customer" $ readCustomerTest tok
                               , testCase "Update Customer" $ updateCustomerTest tok
@@ -45,7 +49,7 @@ tests tok = testGroup "tests" [ testCase "Query Customer" $ queryCustomerTest to
                               , testCase "Update Category" $ updateCategoryTest tok
                               , testCase "Delete Category" $ deleteCategoryTest tok
                               , testCase "Query Item" $ queryItemTest tok
-                              , testCase "Query Count Items" $ queryCountItemTest tok
+                              , testCase "Query Count Items" $ queryCountItemTest (OAuth2 authTokens)
                               , testCase "Query Empty Item" $ queryEmptyItemTest tok
                               , testCase "Query Max Items" $ queryMaxItemTest tok
                               , testCase "Create Item" $ createItemTest tok
