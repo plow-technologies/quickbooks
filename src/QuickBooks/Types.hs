@@ -115,6 +115,8 @@ type NetworkEnv = ( ?manager :: Manager
 data OAuthTokens = OAuth1 OAuthToken
                  | OAuth2 OAuth2.AccessToken
 
+oauth1Only :: OAuthTokens -> OAuthToken
+oauth1Only (OAuth1 t) = t
 
 
 data OAuthToken = OAuthToken
