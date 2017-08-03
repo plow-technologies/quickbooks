@@ -75,7 +75,7 @@ import           QuickBooks.Types
 import qualified Network.OAuth.OAuth2            as OAuth2
 import qualified Network.OAuth.OAuth2.HttpClient as OAuth2
 import qualified Network.OAuth.OAuth2.Internal   as OAuth2
-
+import qualified Network.HTTP.Types            as HT
 
 
 
@@ -84,11 +84,21 @@ qbAuthGetBS ::  Manager	-> OAuth2.AccessToken
             -> IO (OAuth2.OAuth2Result String BSL.ByteString)
 qbAuthGetBS = OAuth2.authGetBS
 
+
+-- | Conduct POST request for Quickbooks.
+
 qbAuthPostBS ::ToJSON a =>  Manager	-> OAuth2.AccessToken	 
             -> URI
             -> a
             -> IO (OAuth2.OAuth2Result String BSL.ByteString)
-qbAuthPostBS = undefined
+qbAuthPostBS manager token url pb = do
+  req <- OAuth2.uriToRequest url
+  OAuth2.authRequest req upReq manager
+  where upBody req = req {requestBody =  RequestBodyLBS $ encode pb }
+        upHeaders = OAuth2.updateRequestHeaders (Just token) . OAuth2.setMethod HT.POST
+        upReq = upHeaders . upBody
+
+
 --------------------------------------------------
 -- OAUTH2
 --------------------------------------------------
