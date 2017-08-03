@@ -18,6 +18,8 @@ companyId           : ""
 oauth2ClientId      : ""
 oauth2ClientSecret  : ""
 oauth2RefreshToken  : ""
+consumerToken       : "" Leave empty
+consumerSecret      : "" Leave empty
 hostname            : "sandbox-quickbooks.api.intuit.com"
 loggingEnabled      : "true"
 
