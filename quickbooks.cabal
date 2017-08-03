@@ -117,6 +117,7 @@ test-suite api-tests
                 , MissingH
                 , QuickCheck
                 , aeson
+                , aeson-qq
                 , authenticate-oauth
                 , bytestring
                 , email-validate
