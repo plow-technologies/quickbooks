@@ -28,52 +28,56 @@ module QuickBooks.Invoice
  , sendInvoiceRequest
  ) where
 
-import Data.Aeson                (encode, eitherDecode, object, Value(String))
-import Data.String.Interpolate   (i)
-import Network.HTTP.Client       (httpLbs
-                                 ,parseUrlThrow
-                                 ,Request(..)
-                                 ,RequestBody(..)
-                                 ,Response(responseBody))
-import Network.HTTP.Types.Header (hAccept,hContentType)
-import Network.URI               ( escapeURIString
-                                 , isUnescapedInURI)
+import qualified Network.OAuth.OAuth2      as OAuth2
+import qualified Text.Email.Validate       as Email (EmailAddress, toByteString)
 
+import           Data.ByteString.Char8
+import           Data.ByteString.Lazy      (fromStrict)
+import           Data.Aeson                (encode, eitherDecode, object, Value(String))
+import           Data.String.Interpolate   (i)
+import           Network.HTTP.Client       (httpLbs
+                                           ,parseUrlThrow
+                                           ,Request(..)
+                                           ,RequestBody(..)
+                                           ,Response(responseBody))
+import           Network.HTTP.Types.Header (hAccept,hContentType)
+import           Network.URI               ( escapeURIString
+                                           , isUnescapedInURI)
+import           URI.ByteString
 
-import QuickBooks.Authentication (oauthSignRequest)
+import           QuickBooks.Authentication
+import           QuickBooks.Types
 
-import QuickBooks.Types (APIConfig(..)
-                        ,Invoice
-                        ,InvoiceId(..)
-                        ,QuickBooksResponse
-                        ,SyncToken(..)
-                        ,DeletedInvoice(..)
-                        ,OAuthToken
-                        ,APIEnv)
-
-import Text.Email.Validate (EmailAddress, toByteString)
 import QuickBooks.Logging  (logAPICall)
 
 -- | Create an invoice.
 createInvoiceRequest :: APIEnv
-                     => OAuthToken
-                     -> Invoice                        
+                     => OAuthTokens
+                     -> Invoice
                      -> IO (Either String (QuickBooksResponse Invoice))
 createInvoiceRequest tok = postInvoice tok
-                           
+
 -- | Update an invoice.
 updateInvoiceRequest :: APIEnv
-                     => OAuthToken
+                     => OAuthTokens
                      -> Invoice
                      -> IO (Either String (QuickBooksResponse Invoice))
 updateInvoiceRequest tok = postInvoice tok
 
 -- | Read an invoice.
 readInvoiceRequest :: APIEnv
+                   => OAuthTokens
+                   -> InvoiceId
+                   -> IO (Either String (QuickBooksResponse Invoice))
+readInvoiceRequest (OAuth1 tok) iId = readInvoiceRequestOAuth tok iId
+readInvoiceRequest (OAuth2 tok) iId = readInvoiceRequestOAuth2 tok iId
+
+--- OAuth 1 ---
+readInvoiceRequestOAuth :: APIEnv
                    => OAuthToken
                    -> InvoiceId
                    -> IO (Either String (QuickBooksResponse Invoice))
-readInvoiceRequest tok iId = do
+readInvoiceRequestOAuth tok iId = do
   let apiConfig = ?apiConfig
   req  <- oauthSignRequest tok =<< parseUrlThrow (escapeURIString isUnescapedInURI [i|#{invoiceURITemplate apiConfig}#{unInvoiceId iId}|])
   let oauthHeaders = requestHeaders req
@@ -82,13 +86,45 @@ readInvoiceRequest tok iId = do
   logAPICall req'
   return $ eitherDecode $ responseBody resp
 
+--- OAuth 2 ---
+readInvoiceRequestOAuth2 :: APIEnv
+                   => OAuth2.AccessToken
+                   -> InvoiceId
+                   -> IO (Either String (QuickBooksResponse Invoice))
+readInvoiceRequestOAuth2 tok iId = do
+  let apiConfig = ?apiConfig
+  let eitherQueryURI = parseURI strictURIParserOptions . pack $ [i|#{invoiceURITemplate apiConfig}#{unInvoiceId iId}|]
+  -- Made for logging
+  req' <- parseUrlThrow (escapeURIString isUnescapedInURI [i|#{invoiceURITemplate apiConfig}#{unInvoiceId iId}|])
+  case eitherQueryURI of
+    Left err -> return (Left . show $ err)
+    Right queryURI -> do
+      -- Make the call
+      eitherResponse <- qbAuthGetBS ?manager tok queryURI
+      logAPICall req'
+      case eitherResponse of
+        (Left err) -> return (Left . show $ err)
+        (Right resp) -> do
+          return $ eitherDecode resp
+
+
 -- | Delete an invoice.
 deleteInvoiceRequest :: APIEnv
+                     => OAuthTokens
+                     -> InvoiceId
+                     -> SyncToken
+                     -> IO (Either String (QuickBooksResponse DeletedInvoice))
+deleteInvoiceRequest (OAuth1 tok) iId syncToken = deleteInvoiceRequestOAuth tok iId syncToken
+deleteInvoiceRequest (OAuth2 tok) iId syncToken = return $ Left "Not implemented" --deleteInvoiceRequestOAuth2 tok iId syncToken
+
+
+--- OAuth 1 ---
+deleteInvoiceRequestOAuth :: APIEnv
                      => OAuthToken
                      -> InvoiceId
                      -> SyncToken
                      -> IO (Either String (QuickBooksResponse DeletedInvoice))
-deleteInvoiceRequest tok iId syncToken = do
+deleteInvoiceRequestOAuth tok iId syncToken = do
   let apiConfig = ?apiConfig
   req  <- parseUrlThrow $ escapeURIString isUnescapedInURI [i|#{invoiceURITemplate apiConfig}?operation=delete|]
   req' <- oauthSignRequest tok req{ method = "POST"
@@ -105,15 +141,42 @@ deleteInvoiceRequest tok iId syncToken = do
                   , ("SyncToken", String (unSyncToken syncToken))
                   ]
 
+--- OAuth 2 ---
+-- deleteInvoiceRequestOAuth2 :: APIEnv
+--                      => OAuth2.AccessToken
+--                      -> InvoiceId
+--                      -> SyncToken
+--                      -> IO (Either String (QuickBooksResponse DeletedInvoice))
+-- deleteInvoiceRequestOAuth2 tok iId syncToken = do
+--   let apiConfig = ?apiConfig
+--   -- Made for logging 
+--   req'  <- parseUrlThrow $ escapeURIString isUnescapedInURI [i|#{invoiceURITemplate apiConfig}?operation=delete|]
+--   -- OAuth 2 stuff
+--   logAPICall req'
+--   return $ eitherDecode $ responseBody resp
+--   where
+--     body = object [ ("Id", String (unInvoiceId iId))
+--                   , ("SyncToken", String (unSyncToken syncToken))
+--                   ]
+
 -- | email and invoice
 sendInvoiceRequest :: APIEnv
-                   => OAuthToken
-                   -> InvoiceId 
-                   -> EmailAddress 
+                   => OAuthTokens
+                   -> InvoiceId
+                   -> Email.EmailAddress
                    -> IO (Either String (QuickBooksResponse Invoice))
-sendInvoiceRequest tok iId emailAddr =  do
+sendInvoiceRequest (OAuth1 tok) iId emailAddr = sendInvoiceRequestOAuth tok iId emailAddr
+sendInvoiceRequest (OAuth2 tok) iId emailAddr = return $ Left "Not implemented" --sendInvoiceRequestOAuth2 tok iId emailAddr
+
+--- OAuth 1 ---
+sendInvoiceRequestOAuth :: APIEnv
+                   => OAuthToken
+                   -> InvoiceId
+                   -> Email.EmailAddress
+                   -> IO (Either String (QuickBooksResponse Invoice))
+sendInvoiceRequestOAuth tok iId emailAddr =  do
   let apiConfig = ?apiConfig
-  req  <- parseUrlThrow $ escapeURIString isUnescapedInURI [i|#{invoiceURITemplate apiConfig}#{unInvoiceId iId}/send?sendTo=#{toByteString emailAddr}|]
+  req  <- parseUrlThrow $ escapeURIString isUnescapedInURI [i|#{invoiceURITemplate apiConfig}#{unInvoiceId iId}/send?sendTo=#{Email.toByteString emailAddr}|]
   req' <- oauthSignRequest tok req{ method = "POST"
                                   , requestHeaders = [ (hAccept, "application/json")
                                                      ]
@@ -125,12 +188,39 @@ sendInvoiceRequest tok iId emailAddr =  do
 invoiceURITemplate :: APIConfig -> String
 invoiceURITemplate APIConfig{..} = [i|https://#{hostname}/v3/company/#{companyId}/invoice/|]
 
+--- OAuth 2 ---
+-- sendInvoiceRequestOAuth2 :: APIEnv
+--                    => OAuth2.AccessToken
+--                    -> InvoiceId
+--                    -> Email.EmailAddress
+--                    -> IO (Either String (QuickBooksResponse Invoice))
+-- sendInvoiceRequestOAuth2 tok iId emailAddr =  do
+--   let apiConfig = ?apiConfig
+--   -- Made for logging
+--   req'  <- parseUrlThrow $ escapeURIString isUnescapedInURI [i|#{invoiceURITemplate apiConfig}#{unInvoiceId iId}/send?sendTo=#{Email.toByteString emailAddr}|]
+--   -- OAuth 2 stuff
+--   logAPICall req'
+--   resp <-  httpLbs req' ?manager
+--   return $ eitherDecode $ responseBody resp
 
+-- invoiceURITemplate :: APIConfig -> String
+-- invoiceURITemplate APIConfig{..} = [i|https://#{hostname}/v3/company/#{companyId}/invoice/|]
+
+
+----- Post Invoice -----
 postInvoice :: APIEnv
+            => OAuthTokens
+            -> Invoice
+            -> IO (Either String (QuickBooksResponse Invoice))
+postInvoice (OAuth1 tok) invoice = postInvoiceOAuth tok invoice
+postInvoice (OAuth2 tok) invoice = return $ Left "Not implemented" -- postInvoiceOAuth2 tok invoice
+
+--- OAuth 1 ---
+postInvoiceOAuth :: APIEnv
             => OAuthToken
             -> Invoice
             -> IO (Either String (QuickBooksResponse Invoice))
-postInvoice tok invoice = do
+postInvoiceOAuth tok invoice = do
   let apiConfig = ?apiConfig
   req <- parseUrlThrow $ escapeURIString isUnescapedInURI [i|#{invoiceURITemplate apiConfig}|]
   req' <- oauthSignRequest tok req{ method         = "POST"
@@ -138,7 +228,20 @@ postInvoice tok invoice = do
                                   , requestHeaders = [ (hAccept, "application/json")
                                                      , (hContentType, "application/json")
                                                      ]
-                                  } 
+                                  }
   resp <- httpLbs req' ?manager
   logAPICall req'
   return $ eitherDecode $ responseBody resp
+
+--- OAuth 2 ---
+-- postInvoiceOAuth2 :: APIEnv
+--             => OAuth2.AccessToken
+--             -> Invoice
+--             -> IO (Either String (QuickBooksResponse Invoice))
+-- postInvoiceOAuth2 tok invoice = do
+--   let apiConfig = ?apiConfig
+--   -- Made for logging
+--   req' <- parseUrlThrow $ escapeURIString isUnescapedInURI [i|#{invoiceURITemplate apiConfig}|]
+--   --- OAuth 2 stuff
+--   logAPICall req'
+--   return $ eitherDecode $ responseBody resp

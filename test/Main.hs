@@ -22,7 +22,7 @@ import           System.Environment    (getEnvironment)
 import qualified Text.Email.Validate   as E (EmailAddress, emailAddress)
 import qualified Network.OAuth.OAuth2            as OAuth2
 
-authTokens = OAuth2.AccessToken "eyJlbmMiOiJBMTI4Q0JDLUhTMjU2IiwiYWxnIjoiZGlyIn0..oNrRt2gm749wofVH7GeOBQ.K9-wQefPLfW2mcPhHTe89WvAlXk1czZ9NSqv8uol99FfFolWfXKBdyNIy4nhZhgmg11c9MSlLAoeYhj92s9MTt0yW4qL7j2WFQ1DAm4rd3J8oS7u8E-XzCTEpjFqUhPrgzd-VxgBHrJBfWdjwdVodVzCL8NsHh_qh2vU76xjYUwfc9ergZ1SnbDf6tdudKAKN1dEDIsCzAT5MMU4PxOHhq50Y2WPah9a5h_8drjKk7hi0xXDI0E9fwykYXYRaymCH8DUscQMW089C9OOZgJmHlKs0_D1HiqEi6YL4UHMDKiY9GnCwEEsEHQ2fyaBKdswGVYr7WJizCxYImbtQvBT5vF7gjZV0ko-ARPhgGPpcZXaOMMcqJ-6wQLAiry8-CoFbwOsN2YyJAeJs5SxcJvumAGxn1jNExyum0OalC_24hipI5_V6yTT7AlWJc2FuGrPaMApdfG1tnrCStt0_QURkLr0uk_scqa3QozAhw-YGkZe6y81crKbFe1R-c3VYyQMNDpC1DX3KFFKMIZwjyemL9PnXpW6776jT_RLrrBrk8kcvqA0s7LiTj27enrzJNAepmFUmRKVmSezwWkC9spknp316-6Y1Tr6N1_qW9hU7rL9WZDLEF6J3uzcBYZHNri6P_frymDJk5xbnD6OelP6Qlc6qQZ9eQud6q9PvCgYgpWHuZHUnvssf_vb9dQSS7v-.8HwUlExgOVULqxeWVux6Dg"
+authTokens = OAuth2.AccessToken ""
 
 main :: IO ()
 main = do
@@ -59,11 +59,11 @@ tests tok = testGroup "OAuth" [ testCase "Query Customer" $ queryCustomerTest (O
                               , testCase "Read Item" $ readItemTest (OAuth2 authTokens)
                               , testCase "Update Item" $ updateItemTest (OAuth2 authTokens)
                               , testCase "Delete Item" $ deleteItemTest (OAuth2 authTokens)
-                              , testCase "Create Invoice" $ createInvoiceTest tok
-                              , testCase "Read Invoice" $ readInvoiceTest tok
-                              , testCase "Update Invoice" $ updateInvoiceTest tok
-                              , testCase "Delete Invoice" $ deleteInvoiceTest tok
-                              , testCase "Email Invoice" $ emailInvoiceTest tok
+                              , testCase "Create Invoice" $ createInvoiceTest (OAuth2 authTokens)
+                              , testCase "Read Invoice" $ readInvoiceTest (OAuth2 authTokens)
+                              , testCase "Update Invoice" $ updateInvoiceTest (OAuth2 authTokens)
+                              , testCase "Delete Invoice" $ deleteInvoiceTest (OAuth2 authTokens)
+                              , testCase "Email Invoice" $ emailInvoiceTest (OAuth2 authTokens)
                               , testCase "Temp Tokens" $ tempTokenTest
                               ]
 

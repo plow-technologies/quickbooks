@@ -666,11 +666,11 @@ queryQuickBooks' apiConfig appConfig tokens' query = do
   let ?manager   = manager
   let ?logger    = logger
   case query of
-    CreateInvoice invoice               -> createInvoiceRequest tok invoice
-    ReadInvoice _invoiceId              -> readInvoiceRequest tok _invoiceId
-    UpdateInvoice invoice               -> updateInvoiceRequest tok invoice
-    DeleteInvoice _invoiceId syncToken  -> deleteInvoiceRequest tok _invoiceId syncToken
-    SendInvoice _invoiceId emailAddr    -> sendInvoiceRequest tok _invoiceId emailAddr
+    CreateInvoice invoice               -> createInvoiceRequest tokens' invoice
+    ReadInvoice _invoiceId              -> readInvoiceRequest tokens' _invoiceId
+    UpdateInvoice invoice               -> updateInvoiceRequest tokens' invoice
+    DeleteInvoice _invoiceId syncToken  -> deleteInvoiceRequest tokens' _invoiceId syncToken
+    SendInvoice _invoiceId emailAddr    -> sendInvoiceRequest tokens' _invoiceId emailAddr
     CreateCustomer customer             -> createCustomerRequest tokens' customer
     ReadCustomer cId                    -> readCustomerRequest tokens' cId
     UpdateCustomer customer             -> updateCustomerRequest tokens' customer
