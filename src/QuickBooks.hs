@@ -722,7 +722,7 @@ readAPIConfig :: IO APIConfig
 readAPIConfig = do
   eitherAPIConfig <- readAPIConfigFromFile $ "config/quickbooksConfig.yml"
   case eitherAPIConfig of
-    Left _ -> fail "The config variables INTUIT_COMPANY_ID,INTUIT_TOKEN,INTUIT_SECRET, and INTUIT_HOSTNAME must be set"
+    Left _ -> fail "The config variables companyId, hostname, and loggingEnabled must be set"
     Right config -> return config
   -- env <- getEnvironment
   -- case lookupAPIConfig env of
@@ -742,8 +742,6 @@ readAppConfig = do
 
 _lookupAPIConfig :: [(String, String)] -> Maybe APIConfig
 _lookupAPIConfig environment = APIConfig <$> lookup "INTUIT_COMPANY_ID" env
-                                         <*> lookup "INTUIT_TOKEN" env
-                                         <*> lookup "INTUIT_SECRET" env
                                          <*> lookup "INTUIT_HOSTNAME" env
                                          <*> (lookup "INTUIT_API_LOGGING_ENABLED" env <|> Just "true")
     where env = map (second pack) environment

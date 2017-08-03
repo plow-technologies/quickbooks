@@ -33,10 +33,14 @@ module QuickBooks.Authentication
   , disconnectRequest
   , qbAuthGetBS
   , qbAuthPostBS
+  , fetchAccessToken
+  , readOAuth2Config
+  , makeOAuth2
  ) where
 
 import Control.Monad (void, liftM, ap)
 import Data.Monoid ((<>))
+import Data.Yaml (ParseException, decodeFileEither)
 import qualified Data.ByteString.Lazy as BSL
 import Data.ByteString.Char8 (unpack, ByteString)
 import Network.HTTP.Client (Manager
@@ -88,20 +92,38 @@ qbAuthPostBS = OAuth2.authPostBS
 --------------------------------------------------
 -- OAUTH2
 --------------------------------------------------
-fetchRequestToken :: OAuth2.OAuth2 -> IO OAuth2.OAuth2Token
-fetchRequestToken  oauth = do
+fetchAccessToken :: OAuth2Config -> IO OAuth2.OAuth2Token
+fetchAccessToken oauth2Config = do
    mgr <- TLS.getGlobalManager
-   oauthTokenRslt <- OAuth2.fetchRefreshToken mgr oauth refreshToken
+   let newOAuth2 = makeOAuth2 oauth2Config
+   let refreshToken = OAuth2.RefreshToken $ oauthRefreshToken oauth2Config
+   oauthTokenRslt <- OAuth2.fetchRefreshToken mgr newOAuth2 refreshToken
    case oauthTokenRslt of
      Left e       -> fail $ show e
      Right tok  -> do
        return tok
 
-refreshToken = OAuth2.RefreshToken ""
+readOAuth2Config :: IO (Either String OAuth2Config)
+readOAuth2Config = do
+  eitherOAuth2Config <- readOAuth2ConfigFromFile $ "config/quickbooksConfig.yml"
+  case eitherOAuth2Config of
+    Left _ -> return $ Left "The config variables oauth2ClientId, oauth2ClientSecret, and oauth2RefreshToken must be set"
+    Right config -> return $ Right config
 
+readOAuth2ConfigFromFile :: FilePath -> IO (Either ParseException OAuth2Config)
+readOAuth2ConfigFromFile = decodeFileEither
 
-testOAuth :: OAuth2.OAuth2
-testOAuth = OAuth2.OAuth2 {
+makeOAuth2 :: OAuth2Config -> OAuth2.OAuth2
+makeOAuth2 config = OAuth2.OAuth2 {
+    OAuth2.oauthClientId            = (oauthClientId config)
+  , OAuth2.oauthClientSecret        = (oauthClientSecret config)
+  , OAuth2.oauthOAuthorizeEndpoint  = [uri|https://appcenter.intuit.com/connect/obbauth2|]
+  , OAuth2.oauthAccessTokenEndpoint = [uri|https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer|] 
+  , OAuth2.oauthCallback            =  Just [uri|https://developer.intuit.com/v2/OAuth2Playground/RedirectUrl|]
+  }
+
+testOAuth2 :: OAuth2.OAuth2
+testOAuth2 = OAuth2.OAuth2 {
     OAuth2.oauthClientId            = ""
   , OAuth2.oauthClientSecret        = ""
   , OAuth2.oauthOAuthorizeEndpoint  = [uri|https://appcenter.intuit.com/connect/obbauth2|]

@@ -63,32 +63,38 @@ instance FromJSON AppConfig where
   parseJSON _ = mzero
 
 
+-- Config types for OAuth2 data
+data OAuth2Config = OAuth2Config
+  { oauthClientId      :: !Text
+  , oauthClientSecret  :: !Text
+  , oauthRefreshToken  :: !Text
+  } deriving (Show)
 
+instance FromJSON OAuth2Config where
+  parseJSON (Object o) = OAuth2Config <$> o .: "oauth2ClientId"
+                                      <*> o .: "oauth2ClientSecret"
+                                      <*> o .: "oauth2RefreshToken"
+    where parseByteString obj name = encodeUtf8 <$> (obj .: name)
+  parseJSON _ = mzero  
 
 
 data APIConfig = APIConfig
-  { companyId      :: !ByteString
-  , oauthToken     :: !ByteString
-  , oauthSecret    :: !ByteString
-  , hostname       :: !ByteString
-  , loggingEnabled :: !ByteString
+  { companyId          :: !ByteString
+  , hostname           :: !ByteString
+  , loggingEnabled     :: !ByteString
   } deriving (Show, Eq)
 
 
 
 instance ToJSON APIConfig where
-  toJSON (APIConfig cId oToken oSecret hName lEnabled) = object [
+  toJSON (APIConfig cId hName lEnabled) = object [
                                                                   "companyId" .= (decodeUtf8 cId),
-                                                                  "oauthToken" .= (decodeUtf8 oToken),
-                                                                  "oauthSecret" .= (decodeUtf8 oSecret),
                                                                   "hostname" .= (decodeUtf8 hName),
                                                                   "loggingEnabled" .= (decodeUtf8 lEnabled)
                                                                 ]
 
 instance FromJSON APIConfig where
   parseJSON (Object o) = APIConfig <$> (parseByteString o "companyId")
-                                   <*> (parseByteString o "oauthToken")
-                                   <*> (parseByteString o "oauthSecret")
                                    <*> (parseByteString o "hostname")
                                    <*> (parseByteString o "loggingEnabled")
     where parseByteString  obj name = encodeUtf8 <$> (obj .: name)

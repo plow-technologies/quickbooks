@@ -16,54 +16,62 @@ import           Data.Maybe            (fromJust)
 import           Data.String
 import qualified Data.Text             as T
 import           Data.Text             (Text)
+import           QuickBooks.Authentication
 import           QuickBooks.Types
 import           QuickBooks.QBText
 import           System.Environment    (getEnvironment)
 import qualified Text.Email.Validate   as E (EmailAddress, emailAddress)
 import qualified Network.OAuth.OAuth2            as OAuth2
 
-authTokens = OAuth2.AccessToken ""
 
 main :: IO ()
 main = do
-    maybeTestOAuthToken <- lookupTestOAuthTokenFromEnv
-    print maybeTestOAuthToken
-    let oAuthToken' = maybe (error "") id maybeTestOAuthToken
-    defaultMain $ tests (OAuth1 oAuthToken')
+    eitherOath2Config <- readOAuth2Config
+    case eitherOath2Config of
+      Left err -> do
+        putStrLn ("Error with OAuth2, defaulting to OAuth1: " ++ err)
+        maybeTestOAuthToken <- lookupTestOAuthTokenFromEnv
+        print maybeTestOAuthToken
+        let oAuthToken' = maybe (error "") id maybeTestOAuthToken
+        defaultMain $ tests (OAuth1 oAuthToken')
+      Right oath2Config -> do
+        putStrLn "Running with OAuth2"
+        authTokens <- fetchAccessToken oath2Config
+        defaultMain $ tests (OAuth2 $ OAuth2.accessToken authTokens)
 
 tests :: OAuthTokens -> TestTree
-tests tok = testGroup "OAuth" [ testCase "Query Customer" $ queryCustomerTest (OAuth2 authTokens)
-                              , testCase "Query Empty Customer" $ queryEmptyCustomerTest (OAuth2 authTokens)
-                              , testCase "Query Max Customer" $ queryMaxCustomerTest (OAuth2 authTokens)
-                              , testCase "Query Count Customer" $ queryCountCustomerTest (OAuth2 authTokens)
-                              , testCase "Create Customer" $ createCustomerTest (OAuth2 authTokens)
-                              , testCase "Read Customer" $ readCustomerTest (OAuth2 authTokens)
-                              , testCase "Update Customer" $ updateCustomerTest (OAuth2 authTokens)
-                              , testCase "Delete Customer" $ deleteCustomerTest (OAuth2 authTokens)
-                              , testCase "Read Bundle" $ readBundleTest (OAuth2 authTokens)
-                              , testCase "Query Bundle" $ queryBundleTest (OAuth2 authTokens)
-                              , testCase "Query Empty Bundle" $ queryEmptyBundleTest (OAuth2 authTokens)
-                              , testCase "Query Category" $ queryCategoryTest (OAuth2 authTokens)
-                              , testCase "Query Empty Category" $ queryEmptyCategoryTest (OAuth2 authTokens)
-                              , testCase "Query Count Categories" $ queryCountCategoryTest (OAuth2 authTokens)
-                              , testCase "Query Max Categories" $ queryMaxCategoryTest (OAuth2 authTokens)
-                              , testCase "Create Category" $ createCategoryTest (OAuth2 authTokens)
-                              , testCase "Read Category" $ readCategoryTest (OAuth2 authTokens)
-                              , testCase "Update Category" $ updateCategoryTest (OAuth2 authTokens)
-                              , testCase "Delete Category" $ deleteCategoryTest (OAuth2 authTokens)
-                              , testCase "Query Item" $ queryItemTest (OAuth2 authTokens)
-                              , testCase "Query Count Items" $ queryCountItemTest (OAuth2 authTokens)
-                              , testCase "Query Empty Item" $ queryEmptyItemTest (OAuth2 authTokens)
-                              , testCase "Query Max Items" $ queryMaxItemTest (OAuth2 authTokens)
-                              , testCase "Create Item" $ createItemTest (OAuth2 authTokens)
-                              , testCase "Read Item" $ readItemTest (OAuth2 authTokens)
-                              , testCase "Update Item" $ updateItemTest (OAuth2 authTokens)
-                              , testCase "Delete Item" $ deleteItemTest (OAuth2 authTokens)
-                              , testCase "Create Invoice" $ createInvoiceTest (OAuth2 authTokens)
-                              , testCase "Read Invoice" $ readInvoiceTest (OAuth2 authTokens)
-                              , testCase "Update Invoice" $ updateInvoiceTest (OAuth2 authTokens)
-                              , testCase "Delete Invoice" $ deleteInvoiceTest (OAuth2 authTokens)
-                              , testCase "Email Invoice" $ emailInvoiceTest (OAuth2 authTokens)
+tests tok = testGroup "API Calls" [ testCase "Query Customer" $ queryCustomerTest tok
+                              , testCase "Query Empty Customer" $ queryEmptyCustomerTest tok
+                              , testCase "Query Max Customer" $ queryMaxCustomerTest tok
+                              , testCase "Query Count Customer" $ queryCountCustomerTest tok
+                              , testCase "Create Customer" $ createCustomerTest tok
+                              , testCase "Read Customer" $ readCustomerTest tok
+                              , testCase "Update Customer" $ updateCustomerTest tok
+                              , testCase "Delete Customer" $ deleteCustomerTest tok
+                              , testCase "Read Bundle" $ readBundleTest tok
+                              , testCase "Query Bundle" $ queryBundleTest tok
+                              , testCase "Query Empty Bundle" $ queryEmptyBundleTest tok
+                              , testCase "Query Category" $ queryCategoryTest tok
+                              , testCase "Query Empty Category" $ queryEmptyCategoryTest tok
+                              , testCase "Query Count Categories" $ queryCountCategoryTest tok
+                              , testCase "Query Max Categories" $ queryMaxCategoryTest tok
+                              , testCase "Create Category" $ createCategoryTest tok
+                              , testCase "Read Category" $ readCategoryTest tok
+                              , testCase "Update Category" $ updateCategoryTest tok
+                              , testCase "Delete Category" $ deleteCategoryTest tok
+                              , testCase "Query Item" $ queryItemTest tok
+                              , testCase "Query Count Items" $ queryCountItemTest tok
+                              , testCase "Query Empty Item" $ queryEmptyItemTest tok
+                              , testCase "Query Max Items" $ queryMaxItemTest tok
+                              , testCase "Create Item" $ createItemTest tok
+                              , testCase "Read Item" $ readItemTest tok
+                              , testCase "Update Item" $ updateItemTest tok
+                              , testCase "Delete Item" $ deleteItemTest tok
+                              , testCase "Create Invoice" $ createInvoiceTest tok
+                              , testCase "Read Invoice" $ readInvoiceTest tok
+                              , testCase "Update Invoice" $ updateInvoiceTest tok
+                              , testCase "Delete Invoice" $ deleteInvoiceTest tok
+                              , testCase "Email Invoice" $ emailInvoiceTest tok
                               , testCase "Temp Tokens" $ tempTokenTest
                               ]
 
