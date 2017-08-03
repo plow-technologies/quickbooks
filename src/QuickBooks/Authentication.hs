@@ -68,7 +68,7 @@ import Web.Authenticate.OAuth (signOAuth
                               ,OAuth(..))
                               
 
-
+import           Data.Aeson 
 import           Data.Text.Encoding (encodeUtf8)
 import           QuickBooks.Logging (logAPICall')
 import           QuickBooks.Types
@@ -84,11 +84,11 @@ qbAuthGetBS ::  Manager	-> OAuth2.AccessToken
             -> IO (OAuth2.OAuth2Result String BSL.ByteString)
 qbAuthGetBS = OAuth2.authGetBS
 
-qbAuthPostBS ::  Manager	-> OAuth2.AccessToken	 
+qbAuthPostBS ::ToJSON a =>  Manager	-> OAuth2.AccessToken	 
             -> URI
-            -> OAuth2.PostBody
+            -> a
             -> IO (OAuth2.OAuth2Result String BSL.ByteString)
-qbAuthPostBS = OAuth2.authPostBS
+qbAuthPostBS = undefined
 --------------------------------------------------
 -- OAUTH2
 --------------------------------------------------
