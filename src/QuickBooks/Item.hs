@@ -114,8 +114,7 @@ postItem :: APIEnv =>
             Item ->
             IO (Either String (QuickBooksResponse [Item]))
 postItem (OAuth1 tok) item = postItemOAuth tok item
--- postItem (OAuth2 tok) item = postItemOAuth2 tok item
-postItem (OAuth2 tok) item = return $ Left $ "Not implemented"
+postItem (OAuth2 tok) item = postItemOAuth2 tok item
 
 -- Post handles create/update/delete in the api
 postItemOAuth :: APIEnv =>
@@ -138,26 +137,25 @@ postItemOAuth tok item = do
 
 
 
--- postItemOAuth2 :: APIEnv
---                   => OAuth2.AccessToken
---                   -> Item
---                   -> IO (Either String (QuickBooksResponse [Item]))
--- postItemOAuth2 tok item = do
---   let apiConfig = ?apiConfig
---   let eitherQueryURI = parseURI strictURIParserOptions . pack $ [i|#{itemURITemplate apiConfig}?|]
---   let requestBody = encode item
---   -- Made for providing an error log
---   req' <- parseUrlThrow $ [i|#{itemURITemplate apiConfig}?|]
---   case eitherQueryURI of
---     Left err -> return (Left . show $ err)
---     Right queryURI -> do
---       -- Make the call
---       eitherResponse <- qbAuthPostBS ?manager tok queryURI requestBody
---       logAPICall req'
---       case eitherResponse of
---         (Left err) -> return (Left . show $ err)
---         (Right resp) -> do
---           return $ eitherDecode resp
+postItemOAuth2 :: APIEnv
+                  => OAuth2.AccessToken
+                  -> Item
+                  -> IO (Either String (QuickBooksResponse [Item]))
+postItemOAuth2 tok item = do
+  let apiConfig = ?apiConfig
+  let eitherQueryURI = parseURI strictURIParserOptions . pack $ [i|#{itemURITemplate apiConfig}?|]
+  -- Made for providing an error log
+  req' <- parseUrlThrow $ [i|#{itemURITemplate apiConfig}?|]
+  case eitherQueryURI of
+    Left err -> return (Left . show $ err)
+    Right queryURI -> do
+      -- Make the call
+      eitherResponse <- qbAuthPostBS ?manager tok queryURI item
+      logAPICall req'
+      case eitherResponse of
+        (Left err) -> return (Left . show $ err)
+        (Right resp) -> do
+          return $ eitherDecode resp
 
 -- GET /v3/company/<companyID>/query=<selectStatement>
 

@@ -115,7 +115,7 @@ deleteInvoiceRequest :: APIEnv
                      -> SyncToken
                      -> IO (Either String (QuickBooksResponse DeletedInvoice))
 deleteInvoiceRequest (OAuth1 tok) iId syncToken = deleteInvoiceRequestOAuth tok iId syncToken
-deleteInvoiceRequest (OAuth2 tok) iId syncToken = return $ Left "Not implemented" --deleteInvoiceRequestOAuth2 tok iId syncToken
+deleteInvoiceRequest (OAuth2 tok) iId syncToken = deleteInvoiceRequestOAuth2 tok iId syncToken
 
 
 --- OAuth 1 ---
@@ -142,22 +142,30 @@ deleteInvoiceRequestOAuth tok iId syncToken = do
                   ]
 
 --- OAuth 2 ---
--- deleteInvoiceRequestOAuth2 :: APIEnv
---                      => OAuth2.AccessToken
---                      -> InvoiceId
---                      -> SyncToken
---                      -> IO (Either String (QuickBooksResponse DeletedInvoice))
--- deleteInvoiceRequestOAuth2 tok iId syncToken = do
---   let apiConfig = ?apiConfig
---   -- Made for logging 
---   req'  <- parseUrlThrow $ escapeURIString isUnescapedInURI [i|#{invoiceURITemplate apiConfig}?operation=delete|]
---   -- OAuth 2 stuff
---   logAPICall req'
---   return $ eitherDecode $ responseBody resp
---   where
---     body = object [ ("Id", String (unInvoiceId iId))
---                   , ("SyncToken", String (unSyncToken syncToken))
---                   ]
+deleteInvoiceRequestOAuth2 :: APIEnv
+                     => OAuth2.AccessToken
+                     -> InvoiceId
+                     -> SyncToken
+                     -> IO (Either String (QuickBooksResponse DeletedInvoice))
+deleteInvoiceRequestOAuth2 tok iId syncToken = do
+  let apiConfig = ?apiConfig
+  let eitherQueryURI = parseURI strictURIParserOptions . pack $ [i|#{invoiceURITemplate apiConfig}?operation=delete|]
+  -- Made for logging 
+  req'  <- parseUrlThrow $ escapeURIString isUnescapedInURI [i|#{invoiceURITemplate apiConfig}?operation=delete|]
+  case eitherQueryURI of
+    Left err -> return (Left . show $ err)
+    Right queryURI -> do
+      -- Make the call
+      eitherResponse <- qbAuthPostBS ?manager tok queryURI body
+      logAPICall req'
+      case eitherResponse of
+        (Left err) -> return (Left . show $ err)
+        (Right resp) -> do
+          return $ eitherDecode resp
+  where
+    body = object [ ("Id", String (unInvoiceId iId))
+                  , ("SyncToken", String (unSyncToken syncToken))
+                  ]
 
 -- | email and invoice
 sendInvoiceRequest :: APIEnv
@@ -166,7 +174,7 @@ sendInvoiceRequest :: APIEnv
                    -> Email.EmailAddress
                    -> IO (Either String (QuickBooksResponse Invoice))
 sendInvoiceRequest (OAuth1 tok) iId emailAddr = sendInvoiceRequestOAuth tok iId emailAddr
-sendInvoiceRequest (OAuth2 tok) iId emailAddr = return $ Left "Not implemented" --sendInvoiceRequestOAuth2 tok iId emailAddr
+sendInvoiceRequest (OAuth2 tok) iId emailAddr = return $ Left "Not implemented " -- sendInvoiceRequestOAuth2 tok iId emailAddr
 
 --- OAuth 1 ---
 sendInvoiceRequestOAuth :: APIEnv
@@ -196,12 +204,19 @@ invoiceURITemplate APIConfig{..} = [i|https://#{hostname}/v3/company/#{companyId
 --                    -> IO (Either String (QuickBooksResponse Invoice))
 -- sendInvoiceRequestOAuth2 tok iId emailAddr =  do
 --   let apiConfig = ?apiConfig
+--   let eitherQueryURI = parseURI strictURIParserOptions . pack $ [i|#{invoiceURITemplate apiConfig}#{unInvoiceId iId}/send?sendTo=#{Email.toByteString emailAddr}|]
 --   -- Made for logging
 --   req'  <- parseUrlThrow $ escapeURIString isUnescapedInURI [i|#{invoiceURITemplate apiConfig}#{unInvoiceId iId}/send?sendTo=#{Email.toByteString emailAddr}|]
---   -- OAuth 2 stuff
---   logAPICall req'
---   resp <-  httpLbs req' ?manager
---   return $ eitherDecode $ responseBody resp
+--   case eitherQueryURI of
+--     Left err -> return (Left . show $ err)
+--     Right queryURI -> do
+--       -- Make the call
+--       eitherResponse <- qbAuthPostBS ?manager tok queryURI ------ !!! Something goes here !!! -------
+--       logAPICall req'
+--       case eitherResponse of
+--         (Left err) -> return (Left . show $ err)
+--         (Right resp) -> do
+--           return $ eitherDecode resp
 
 -- invoiceURITemplate :: APIConfig -> String
 -- invoiceURITemplate APIConfig{..} = [i|https://#{hostname}/v3/company/#{companyId}/invoice/|]
@@ -213,7 +228,7 @@ postInvoice :: APIEnv
             -> Invoice
             -> IO (Either String (QuickBooksResponse Invoice))
 postInvoice (OAuth1 tok) invoice = postInvoiceOAuth tok invoice
-postInvoice (OAuth2 tok) invoice = return $ Left "Not implemented" -- postInvoiceOAuth2 tok invoice
+postInvoice (OAuth2 tok) invoice = postInvoiceOAuth2 tok invoice
 
 --- OAuth 1 ---
 postInvoiceOAuth :: APIEnv
@@ -234,14 +249,22 @@ postInvoiceOAuth tok invoice = do
   return $ eitherDecode $ responseBody resp
 
 --- OAuth 2 ---
--- postInvoiceOAuth2 :: APIEnv
---             => OAuth2.AccessToken
---             -> Invoice
---             -> IO (Either String (QuickBooksResponse Invoice))
--- postInvoiceOAuth2 tok invoice = do
---   let apiConfig = ?apiConfig
---   -- Made for logging
---   req' <- parseUrlThrow $ escapeURIString isUnescapedInURI [i|#{invoiceURITemplate apiConfig}|]
---   --- OAuth 2 stuff
---   logAPICall req'
---   return $ eitherDecode $ responseBody resp
+postInvoiceOAuth2 :: APIEnv
+            => OAuth2.AccessToken
+            -> Invoice
+            -> IO (Either String (QuickBooksResponse Invoice))
+postInvoiceOAuth2 tok invoice = do
+  let apiConfig = ?apiConfig
+  let eitherQueryURI = parseURI strictURIParserOptions . pack $ [i|#{invoiceURITemplate apiConfig}|]
+  -- Made for logging
+  req' <- parseUrlThrow $ escapeURIString isUnescapedInURI [i|#{invoiceURITemplate apiConfig}|]
+  case eitherQueryURI of
+    Left err -> return (Left . show $ err)
+    Right queryURI -> do
+      -- Make the call
+      eitherResponse <- qbAuthPostBS ?manager tok queryURI invoice
+      logAPICall req'
+      case eitherResponse of
+        (Left err) -> return (Left . show $ err)
+        (Right resp) -> do
+          return $ eitherDecode resp

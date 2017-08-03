@@ -108,7 +108,7 @@ deleteCategoryRequest :: APIEnv
                      -> Category
                      -> IO (Either String (QuickBooksResponse DeletedCategory))
 deleteCategoryRequest (OAuth1 tok) category = deleteCategoryRequestOAuth tok category
-deleteCategoryRequest (OAuth2 tok) category = return $ Left "Not implemented" --deleteCategoryRequestOAuth2 tok category
+deleteCategoryRequest (OAuth2 tok) category = deleteCategoryRequestOAuth2 tok category
 
 --- OAuth 1 ---
 deleteCategoryRequestOAuth :: APIEnv
@@ -129,16 +129,25 @@ deleteCategoryRequestOAuth tok cCategory = do
   return $ eitherDecode $ responseBody resp
 
 --- OAuth 2 ---
--- deleteCategoryRequestOAuth2 :: APIEnv
---                      => OAuth2.AccessToken
---                      -> Category
---                      -> IO (Either String (QuickBooksResponse DeletedCategory))
--- deleteCategoryRequestOAuth2 tok cCategory = do
---   let apiConfig = ?apiConfig
---   -- Made for logging
---   req' <- parseUrlThrow $ escapeURIString isUnescapedInURI [i|#{categoryURITemplate apiConfig}?operation=delete&minorversion=4|]
---   -- New post stuff
---   return $ eitherDecode $ responseBody resp
+deleteCategoryRequestOAuth2 :: APIEnv
+                     => OAuth2.AccessToken
+                     -> Category
+                     -> IO (Either String (QuickBooksResponse DeletedCategory))
+deleteCategoryRequestOAuth2 tok cCategory = do
+  let apiConfig = ?apiConfig
+  -- Made for logging
+  let eitherQueryURI = parseURI strictURIParserOptions . pack $ [i|#{categoryURITemplate apiConfig}?operation=delete&minorversion=4|]
+  req' <- parseUrlThrow $ escapeURIString isUnescapedInURI [i|#{categoryURITemplate apiConfig}?operation=delete&minorversion=4|]
+  case eitherQueryURI of
+    Left err -> return (Left . show $ err)
+    Right queryURI -> do
+      -- Make the call
+      eitherResponse <- qbAuthPostBS ?manager tok queryURI cCategory
+      logAPICall req'
+      case eitherResponse of
+        (Left err) -> return (Left . show $ err)
+        (Right resp) -> do
+          return $ eitherDecode resp
 
 
 -- Post handles create/update in the api
@@ -147,7 +156,7 @@ postCategory :: APIEnv
             -> Category
             -> IO (Either String (QuickBooksResponse [Category]))
 postCategory (OAuth1 tok) category = postCategoryOAuth tok category
-postCategory (OAuth2 tok) category = return $ Left "Not implemented" --postCategoryOAuth2 tok category
+postCategory (OAuth2 tok) category = postCategoryOAuth2 tok category
 
 --- OAuth 1 ---
 postCategoryOAuth :: APIEnv
@@ -168,16 +177,25 @@ postCategoryOAuth tok category = do
   return $ eitherDecode $ responseBody resp
 
 --- OAuth 2 ---
--- postCategoryOAuth :: APIEnv
---             => OAuth2.AccessToken
---             -> Category
---             -> IO (Either String (QuickBooksResponse [Category]))
--- postCategoryOAuth tok category = do
---   let apiConfig = ?apiConfig
---   -- Made for logging
---   req' <- parseUrlThrow $ escapeURIString isUnescapedInURI [i|#{categoryURITemplate apiConfig}?minorversion=4|]
---   --New Post Stuff
---   return $ eitherDecode $ responseBody resp
+postCategoryOAuth2 :: APIEnv
+            => OAuth2.AccessToken
+            -> Category
+            -> IO (Either String (QuickBooksResponse [Category]))
+postCategoryOAuth2 tok category = do
+  let apiConfig = ?apiConfig
+  let eitherQueryURI = parseURI strictURIParserOptions . pack $ [i|#{categoryURITemplate apiConfig}?minorversion=4|]
+  -- Made for logging
+  req' <- parseUrlThrow $ escapeURIString isUnescapedInURI [i|#{categoryURITemplate apiConfig}?minorversion=4|]
+  case eitherQueryURI of
+    Left err -> return (Left . show $ err)
+    Right queryURI -> do
+      -- Make the call
+      eitherResponse <- qbAuthPostBS ?manager tok queryURI category
+      logAPICall req'
+      case eitherResponse of
+        (Left err) -> return (Left . show $ err)
+        (Right resp) -> do
+          return $ eitherDecode resp
 
 -- GET /v3/company/<companyID>/query=<selectStatement>
 

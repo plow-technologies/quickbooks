@@ -123,8 +123,9 @@ postCustomer :: APIEnv
             -> Customer
             -> IO (Either String (QuickBooksResponse [Customer]))
 postCustomer (OAuth1 tok) customer = postCustomerOAuth tok customer
-postCustomer (OAuth2 tok) customer = return $ Left "Not implemented"
+postCustomer (OAuth2 tok) customer = postCustomerOAuth2 tok customer
 
+--- OAuth 1 ---
 postCustomerOAuth :: APIEnv
                   => OAuthToken
                   -> Customer
@@ -141,6 +142,27 @@ postCustomerOAuth tok customer = do
   resp <- httpLbs req' ?manager
   logAPICall req'
   return $ eitherDecode $ responseBody resp
+
+--- OAuth 2 ---
+postCustomerOAuth2 :: APIEnv
+                  => OAuth2.AccessToken
+                  -> Customer
+                  -> IO (Either String (QuickBooksResponse [Customer]))
+postCustomerOAuth2 tok customer = do
+  let apiConfig = ?apiConfig
+  let eitherQueryURI = parseURI strictURIParserOptions . pack $ [i|#{customerURITemplate apiConfig}?minorversion=4|]
+  -- Made for providing an error log
+  req' <- parseUrlThrow $ escapeURIString isUnescapedInURI [i|#{customerURITemplate apiConfig}?minorversion=4|]
+  case eitherQueryURI of
+    Left err -> return (Left . show $ err)
+    Right queryURI -> do
+      -- Make the call
+      eitherResponse <- qbAuthPostBS ?manager tok queryURI customer
+      logAPICall req'
+      case eitherResponse of
+        (Left err) -> return (Left . show $ err)
+        (Right resp) -> do
+          return $ eitherDecode resp
 
 
 -- GET /v3/company/<companyID>/query=<selectStatement>
