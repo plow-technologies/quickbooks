@@ -150,9 +150,9 @@ postCustomerOAuth2 :: APIEnv
                   -> IO (Either String (QuickBooksResponse [Customer]))
 postCustomerOAuth2 tok customer = do
   let apiConfig = ?apiConfig
-  let eitherQueryURI = parseURI strictURIParserOptions . pack $ [i|#{customerURITemplate apiConfig}?minorversion=4|]
+  let eitherQueryURI = parseURI strictURIParserOptions . pack $ [i|#{customerURITemplate apiConfig}|]
   -- Made for providing an error log
-  req' <- parseUrlThrow $ escapeURIString isUnescapedInURI [i|#{customerURITemplate apiConfig}?minorversion=4|]
+  req' <- parseUrlThrow $ escapeURIString isUnescapedInURI [i|#{customerURITemplate apiConfig}|]
   case eitherQueryURI of
     Left err -> return (Left . show $ err)
     Right queryURI -> do

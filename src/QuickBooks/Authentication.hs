@@ -45,7 +45,8 @@ import qualified Data.ByteString.Lazy as BSL
 import Data.ByteString.Char8 (unpack, ByteString)
 import Network.HTTP.Client (Manager
                             ,Request(..)
-                             ,RequestBody(RequestBodyLBS)
+                             ,RequestBody(RequestBodyLBS,RequestBodyBS)
+                             ,requestBody
                              ,responseBody
                              ,parseUrlThrow
                              ,setQueryString
@@ -93,10 +94,17 @@ qbAuthPostBS ::ToJSON a =>  Manager	-> OAuth2.AccessToken
             -> IO (OAuth2.OAuth2Result String BSL.ByteString)
 qbAuthPostBS manager token url pb = do
   req <- OAuth2.uriToRequest url
+  let (RequestBodyBS bs) = requestBody $ upBody req
+  putStrLn "Request"
+  print $ upReq req
+  putStrLn "body"
+  print bs
+  
   OAuth2.authRequest req upReq manager
-  where upBody req = req {requestBody =  RequestBodyLBS $ encode pb }
-        upHeaders = OAuth2.updateRequestHeaders (Just token) . OAuth2.setMethod HT.POST
-        upReq = upHeaders . upBody
+  where upBody req = req {requestBody =  RequestBodyBS $ BSL.toStrict $ encode pb }        
+        upHeaders  = OAuth2.updateRequestHeaders (Just token) . OAuth2.setMethod HT.POST
+        upContentHeader req = req {requestHeaders = ((HT.hContentType,"application/json") : (requestHeaders req) )}
+        upReq      = upBody . upHeaders
 
 
 --------------------------------------------------
@@ -136,7 +144,7 @@ testOAuth2 :: OAuth2.OAuth2
 testOAuth2 = OAuth2.OAuth2 {
     OAuth2.oauthClientId            = ""
   , OAuth2.oauthClientSecret        = ""
-  , OAuth2.oauthOAuthorizeEndpoint  = [uri|https://appcenter.intuit.com/connect/obbauth2|]
+  , OAuth2.oauthOAuthorizeEndpoint  = [uri|https://appcenter.intuit.com/connect/oauth2|]
   , OAuth2.oauthAccessTokenEndpoint = [uri|https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer|] 
   , OAuth2.oauthCallback            =  Just [uri|https://developer.intuit.com/v2/OAuth2Playground/RedirectUrl|]
   }
