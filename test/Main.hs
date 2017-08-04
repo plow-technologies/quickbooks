@@ -54,8 +54,7 @@ main = do
         defaultMain $ tests (OAuth2 $ OAuth2.accessToken authTokens)
 
 tests :: OAuthTokens -> TestTree
-tests tok = testGroup "API Calls" [ testCase "Post Test" $ postTest tok 
-                              , testCase "Query Customer" $ queryCustomerTest tok
+tests tok = testGroup "API Calls" [ testCase "Query Customer" $ queryCustomerTest tok
                               , testCase "Query Empty Customer" $ queryEmptyCustomerTest tok
                               , testCase "Query Max Customer" $ queryMaxCustomerTest tok
                               , testCase "Query Count Customer" $ queryCountCustomerTest tok

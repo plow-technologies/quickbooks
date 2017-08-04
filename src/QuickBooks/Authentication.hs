@@ -95,16 +95,40 @@ qbAuthPostBS ::ToJSON a =>  Manager	-> OAuth2.AccessToken
 qbAuthPostBS manager token url pb = do
   req <- OAuth2.uriToRequest url
   let (RequestBodyBS bs) = requestBody $ upBody req
-  putStrLn "Request"
-  print $ upReq req
-  putStrLn "body"
-  print bs
   
   OAuth2.authRequest req upReq manager
   where upBody req = req {requestBody =  RequestBodyBS $ BSL.toStrict $ encode pb }        
         upHeaders  = OAuth2.updateRequestHeaders (Just token) . OAuth2.setMethod HT.POST
         upContentHeader req = req {requestHeaders = ((HT.hContentType,"application/json") : (requestHeaders req) )}
-        upReq      = upBody . upHeaders
+        upReq      = upContentHeader . upBody . upHeaders
+
+
+
+
+-- POST /v3/company/123145873160324/item?minorversion=4 HTTP/1.1
+-- Host: sandbox-quickbooks.api.intuit.com
+-- Authorization: Bearer eyJlbmMiOiJBMTI4Q0JDLUhTMjU2IiwiYWxnIjoiZGlyIn0..s_B3fFmr5mtt1FWU8QKmGA.JIFda4iB3amwDuulDgq_suCRdWFBDw1ceZwxufgL7XicY3eeT0DNZE5V7mRhTKCgbMmK7ebocqNCSYApEVUnZF_uwgjxo9BPT4i8mmkPYRztsL9Yy1vDLcq1MIH3GLkTZkcNH5E6L_nuA-PuE6U-oahA_YHAT__lBEjoy7Wn7C80gYVtLeTk41AMhsi5Gyh37lE2XeCRo35GtVE4f-BqHEWC6pPG4m6GguvYbuZZI8qhtRCWGHsO2wsYRTJReX6XzozvXHflioX7PmO2GBHrXfv6piyTSgr8TLZAKrX0FXpPxc-ZuwE3j7cSrK3MULeBpy3EFmUilfOUv4GzCk3V-5RXx-I49Wc18WvwxRRL3VaR-CDRZ8HuTlH3c4DuU87mZa-bwqroJ1qhKcLnac5n-1TBl1pE711MJYsPf1Hiz3Q2z8MbB7y3860IlHDNFelKNbpwLa2ovEaOVvlcYJDYyWgzouTaFIS5WpxN38zEyobJVgkFbeol6_g6rfEx8mUL8JwinIQgH5Hac5JyCubptaBxCT78EY5thWauvGt1zS1dPqdvNO368bkQsZ29Jy_vIh3aJfjfp2coI9zaxLKPowzDfnnvrvwvLqqWmUte_VIFB406K5VKRSBTzqNyQg9JPs_4ySmMUFgidEfz-cRWe77rcYCJSEoIo0Rr-NFHZ9SW2hK3g-MsUEexjOpuQSHU.mHB3E3GluIzfI8PPxxtw3Q
+-- Content-Type: application/json
+-- Accept: application/json
+-- Cache-Control: no-cache
+-- Postman-Token: 09a46062-bd6d-47c1-3f0e-7e2a68bdbb08
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 --------------------------------------------------
