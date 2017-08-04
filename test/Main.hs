@@ -1,4 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ImplicitParams    #-}
+{-# LANGUAGE QuasiQuotes       #-}
 
 module Main where
 
@@ -6,9 +8,13 @@ import Test.Tasty
 import Test.Tasty.QuickCheck as QC
 import Test.Tasty.HUnit
 import QuickBooks
+import QuickBooks.Logging
+import QuickBooks.Types
 import Test.QuickCheck.Arbitrary       (arbitrary)
 import Test.QuickCheck.Gen             (generate)
 
+import           Data.String.Interpolate   (i)
+import           Data.Aeson.QQ
 import           Control.Monad         (ap, liftM)
 import           Control.Monad.IO.Class (liftIO)
 import           Data.ByteString.Char8 (pack)
@@ -16,12 +22,20 @@ import           Data.Maybe            (fromJust)
 import           Data.String
 import qualified Data.Text             as T
 import           Data.Text             (Text)
+import           QuickBooks
 import           QuickBooks.Authentication
-import           QuickBooks.Types
 import           QuickBooks.QBText
 import           System.Environment    (getEnvironment)
 import qualified Text.Email.Validate   as E (EmailAddress, emailAddress)
 import qualified Network.OAuth.OAuth2            as OAuth2
+
+import           Data.Aeson                (encode, eitherDecode)
+import           Network.HTTP.Client
+import           Network.HTTP.Client.TLS   (tlsManagerSettings)
+import           Network.HTTP.Types.Header (hAccept, hContentType)
+import           Network.URI               (escapeURIString, isUnescapedInURI, isUnescapedInURIComponent)
+import           URI.ByteString
+import Data.Yaml (ParseException, decodeFileEither)
 
 
 main :: IO ()
@@ -40,7 +54,8 @@ main = do
         defaultMain $ tests (OAuth2 $ OAuth2.accessToken authTokens)
 
 tests :: OAuthTokens -> TestTree
-tests tok = testGroup "API Calls" [ testCase "Query Customer" $ queryCustomerTest tok
+tests tok = testGroup "API Calls" [ testCase "Post Test" $ postTest tok 
+                              , testCase "Query Customer" $ queryCustomerTest tok
                               , testCase "Query Empty Customer" $ queryEmptyCustomerTest tok
                               , testCase "Query Max Customer" $ queryMaxCustomerTest tok
                               , testCase "Query Count Customer" $ queryCountCustomerTest tok
@@ -78,6 +93,66 @@ tests tok = testGroup "API Calls" [ testCase "Query Customer" $ queryCustomerTes
 -----------  Note: There is a very small chance that they may fail due to duplicate name errors on create.
 -- Tests --  Just rerun the tests and they will likely pass.
 -----------
+
+---- Post Test ----
+postTest :: OAuthTokens -> Assertion
+postTest tok = do
+  apiConfig <- Main.readAPIConfig
+  appConfig <- Main.readAppConfig
+  manager   <- newManager tlsManagerSettings
+  logger <- getLogger apiLogger
+  let ?appConfig = appConfig
+  let ?apiConfig = apiConfig
+  let ?manager   = manager
+  let ?logger    = logger
+  let eitherQueryURI = parseURI strictURIParserOptions . pack $ [i|https://sandbox.api.intuit.com/quickbooks/v4/payments/charges|]
+  req' <- parseUrlThrow $ (escapeURIString isUnescapedInURI [i|https://sandbox.api.intuit.com/quickbooks/v4/payments/charges|])
+  case eitherQueryURI of
+    Left err -> assertEither (show err) eitherQueryURI
+    Right queryURI -> do
+      -- Make the call
+      let (OAuth2 token) = tok
+      logAPICall req'
+      eitherResponse <- qbAuthPostBS ?manager (token) queryURI [aesonQQ|{"amount": "10.55", "token": "bFy3h7W3D2tmOfYxl2msnLbUirY=", "currency": "USD"}|]
+      case eitherResponse of
+        Left err -> assertEither (show err) eitherResponse
+        Right resp -> do
+          assertEither "It worked?" eitherResponse
+          -- (eitherDecode resp)
+
+
+
+readAPIConfig = do
+  eitherAPIConfig <- Main.readAPIConfigFromFile $ "config/quickbooksConfig.yml"
+  case eitherAPIConfig of
+    Left _ -> fail "The config variables companyId, hostname, and loggingEnabled must be set"
+    Right config -> return config
+  -- env <- getEnvironment
+  -- case lookupAPIConfig env of
+  --   Just config -> return config
+  --   Nothing     -> fail "The environment variables INTUIT_COMPANY_ID,INTUIT_TOKEN,INTUIT_SECRET, and INTUIT_HOSTNAME must be set"
+
+readAppConfig :: IO AppConfig
+readAppConfig = do
+  eitherAppConfig <- Main.readAppConfigFromFile $ "config/quickbooksConfig.yml"
+  case eitherAppConfig of
+    Left _ -> fail "The config variables INTUIT_CONSUMER_KEY and INTUIT_CONSUMER_SECRET must be set"
+    Right config -> return config
+  -- env <- getEnvironment
+  -- case lookupAppConfig env of
+  --   Just config -> return config
+  --   Nothing     -> fail "The evironment variables INTUIT_CONSUMER_KEY and INTUIT_CONSUMER_SECRET must be set"
+
+readAPIConfigFromFile :: FilePath -> IO (Either ParseException APIConfig)
+readAPIConfigFromFile = decodeFileEither
+
+readAppConfigFromFile :: FilePath -> IO (Either ParseException AppConfig)
+readAppConfigFromFile = decodeFileEither
+
+
+
+
+
 
 ---- Create Customer ----
 createCustomerTest :: OAuthTokens -> Assertion
