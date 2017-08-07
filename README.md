@@ -14,6 +14,7 @@ The following is a sample config file:
 
 quickbooksConfig.yml (for OAuth 2)
 
+```
 companyId           : ""
 oauth2ClientId      : ""
 oauth2ClientSecret  : ""
@@ -31,6 +32,7 @@ consumerSecret      : ""
 oauthToken          : ""
 oauthSecret         : ""
 loggingEnabled      : "true"
+```
 
 You can gather these pieces of information by following the instructions found on QuickBooks' Developer web site.
 
