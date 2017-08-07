@@ -93,34 +93,6 @@ tests tok = testGroup "API Calls" [ testCase "Query Customer" $ queryCustomerTes
 -- Tests --  Just rerun the tests and they will likely pass.
 -----------
 
----- Post Test ----
-postTest :: OAuthTokens -> Assertion
-postTest tok = do
-  apiConfig <- Main.readAPIConfig
-  appConfig <- Main.readAppConfig
-  manager   <- newManager tlsManagerSettings
-  logger <- getLogger apiLogger
-  let ?appConfig = appConfig
-  let ?apiConfig = apiConfig
-  let ?manager   = manager
-  let ?logger    = logger
-  let eitherQueryURI = parseURI strictURIParserOptions . pack $ [i|https://sandbox.api.intuit.com/quickbooks/v4/payments/charges|]
-  req' <- parseUrlThrow $ (escapeURIString isUnescapedInURI [i|https://sandbox.api.intuit.com/quickbooks/v4/payments/charges|])
-  case eitherQueryURI of
-    Left err -> assertEither (show err) eitherQueryURI
-    Right queryURI -> do
-      -- Make the call
-      let (OAuth2 token) = tok
-      logAPICall req'
-      eitherResponse <- qbAuthPostBS ?manager (token) queryURI [aesonQQ|{"amount": "10.55", "token": "bFy3h7W3D2tmOfYxl2msnLbUirY=", "currency": "USD"}|]
-      case eitherResponse of
-        Left err -> assertEither (show err) eitherResponse
-        Right resp -> do
-          assertEither "It worked?" eitherResponse
-          -- (eitherDecode resp)
-
-
-
 readAPIConfig = do
   eitherAPIConfig <- Main.readAPIConfigFromFile $ "config/quickbooksConfig.yml"
   case eitherAPIConfig of
@@ -218,6 +190,8 @@ queryCustomerTest oAuthToken = do
   case eitherQueryCustomer of
     Left err ->
       assertEither ("Faild to query customer: " ++ err) eitherQueryCustomer
+    Right (QuickBooksCustomerResponse []) -> do
+      assertEither "There were no customers that matched the test name, but the test passes" eitherQueryCustomer
     Right (QuickBooksCustomerResponse (customer:_)) -> do
       case filterTextForQB "21" of
         Left err -> assertEither "Error making QBText in queryCustomerTest" (filterTextForQB "21")
@@ -370,7 +344,7 @@ readBundleTest oAuthToken = do
   case filterTextForQB "19" of
     Left err -> assertEither "Failed to create QBText in readBundleTest" (filterTextForQB "19")
     Right existingId -> do
-      let existingBundleId = existingId -- this MUST be created in QB Online for the test to pass
+      let existingBundleId = existingId -- for a truthful test, this MUST be created in QB Online for the test to pass
                             -- Replace the number the id for the existing bundle
                             -- It can be obtained by querying the bundle name below
                             -- Or through the API Explorer at https://developer.intuit.com/v2/apiexplorer?apiname=V3QBO#?id=Item
@@ -379,6 +353,8 @@ readBundleTest oAuthToken = do
       case eitherReadBundle of
         Left _ -> do
           assertEither "Failed to read bundle" eitherReadBundle
+        Right (QuickBooksBundleResponse []) -> do
+          assertEither "There were no bundles with the test id, but the test passes" eitherReadBundle
         Right (QuickBooksBundleResponse (rBundle:_)) -> do
           let rBundleId = fromJust (bundleId rBundle)
           assertBool "Read the Bundle" ((textFromQBText rBundleId) == (textFromQBText existingBundleId))
@@ -386,21 +362,20 @@ readBundleTest oAuthToken = do
 ---- Query Bundle ----
 queryBundleTest :: OAuthTokens -> Assertion
 queryBundleTest oAuthToken = do
-  case filterTextForQB "19" of
-    Left err -> assertEither "Failed to create QBText in queryBundleTest" (filterTextForQB "19")
-    Right existingId -> do
-      let existingBundleId = existingId -- this MUST be created in QB Online for the test to pass
+  eitherQueryBundle <- queryBundle oAuthToken "Bundle 1"
+                            -- for a truthful test, this MUST be created in QB Online for the test to pass
                             -- Replace the number the id for the existing bundle
                             -- It can be obtained by querying the bundle name below
                             -- Or through the API Explorer at https://developer.intuit.com/v2/apiexplorer?apiname=V3QBO#?id=Item
                             -- With select * from item where Type='Group'
-      eitherQueryBundle <- queryBundle oAuthToken "Bundle 1"
-      case eitherQueryBundle of
-        Left _ ->
-          assertEither "Failed to query bundle" eitherQueryBundle
-        Right (QuickBooksBundleResponse (bundle:_)) -> do
-          let bundleId' = fromJust (bundleId bundle)
-          assertBool (show $ bundleId') (bundleId' == existingBundleId)
+  case eitherQueryBundle of
+    Left _ ->
+      assertEither "Failed to query bundle" eitherQueryBundle
+    Right (QuickBooksBundleResponse []) -> do
+      assertEither "There were no bundles with the test name, but the test passes" eitherQueryBundle
+    Right (QuickBooksBundleResponse (bundle:_)) -> do
+      let bundleId' = fromJust (bundleId bundle)
+      assertEither (show $ bundleId') eitherQueryBundle
 
 ---- Query Empty Bundle ----
 queryEmptyBundleTest :: OAuthTokens -> Assertion

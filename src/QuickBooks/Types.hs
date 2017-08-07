@@ -197,7 +197,7 @@ instance FromJSON (QuickBooksResponse [Bundle]) where
     where
       parseQueryResponse obj = do
         qResponse <- obj .: "QueryResponse"
-        parseBundles qResponse
+        parseBundles qResponse <|> (return (QuickBooksBundleResponse []))
       parseBundles obj = QuickBooksBundleResponse <$> obj .: "Item"
       parseSingleBundle obj = do
         i <- obj .: "Item"
