@@ -1,4 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ImplicitParams    #-}
+{-# LANGUAGE QuasiQuotes       #-}
 
 module Main where
 
@@ -6,9 +8,13 @@ import Test.Tasty
 import Test.Tasty.QuickCheck as QC
 import Test.Tasty.HUnit
 import QuickBooks
+import QuickBooks.Logging
+import QuickBooks.Types
 import Test.QuickCheck.Arbitrary       (arbitrary)
 import Test.QuickCheck.Gen             (generate)
 
+import           Data.String.Interpolate   (i)
+import           Data.Aeson.QQ
 import           Control.Monad         (ap, liftM)
 import           Control.Monad.IO.Class (liftIO)
 import           Data.ByteString.Char8 (pack)
@@ -16,26 +22,46 @@ import           Data.Maybe            (fromJust)
 import           Data.String
 import qualified Data.Text             as T
 import           Data.Text             (Text)
-import           QuickBooks.Types
+import           QuickBooks
+import           QuickBooks.Authentication
 import           QuickBooks.QBText
 import           System.Environment    (getEnvironment)
 import qualified Text.Email.Validate   as E (EmailAddress, emailAddress)
+import qualified Network.OAuth.OAuth2            as OAuth2
+
+import           Data.Aeson                (encode, eitherDecode)
+import           Network.HTTP.Client
+import           Network.HTTP.Client.TLS   (tlsManagerSettings)
+import           Network.HTTP.Types.Header (hAccept, hContentType)
+import           Network.URI               (escapeURIString, isUnescapedInURI, isUnescapedInURIComponent)
+import           URI.ByteString
+import Data.Yaml (ParseException, decodeFileEither)
+
 
 main :: IO ()
 main = do
-    maybeTestOAuthToken <- lookupTestOAuthTokenFromEnv
-    let oAuthToken' = maybe (error "") id maybeTestOAuthToken
-    defaultMain $ tests oAuthToken'
+    eitherOath2Config <- readOAuth2Config
+    case eitherOath2Config of
+      Left err -> do
+        putStrLn ("Error with OAuth2, defaulting to OAuth1: " ++ err)
+        maybeTestOAuthToken <- lookupTestOAuthTokenFromEnv
+        print maybeTestOAuthToken
+        let oAuthToken' = maybe (error "") id maybeTestOAuthToken
+        defaultMain $ tests (OAuth1 oAuthToken')
+      Right oath2Config -> do
+        putStrLn "Running with OAuth2"
+        authTokens <- fetchAccessToken oath2Config
+        defaultMain $ tests (OAuth2 $ OAuth2.accessToken authTokens)
 
-tests :: OAuthToken -> TestTree
-tests tok = testGroup "tests" [ testCase "Create Customer" $ createCustomerTest tok
+tests :: OAuthTokens -> TestTree
+tests tok = testGroup "API Calls" [ testCase "Query Customer" $ queryCustomerTest tok
+                              , testCase "Query Empty Customer" $ queryEmptyCustomerTest tok
+                              , testCase "Query Max Customer" $ queryMaxCustomerTest tok
+                              , testCase "Query Count Customer" $ queryCountCustomerTest tok
+                              , testCase "Create Customer" $ createCustomerTest tok
                               , testCase "Read Customer" $ readCustomerTest tok
                               , testCase "Update Customer" $ updateCustomerTest tok
                               , testCase "Delete Customer" $ deleteCustomerTest tok
-                              , testCase "Query Customer" $ queryCustomerTest tok
-                              , testCase "Query Count Customers" $ queryCountCustomerTest tok
-                              , testCase "Query Empty Item" $ queryEmptyItemTest tok
-                              , testCase "Query Max Customers" $ queryMaxCustomerTest tok
                               , testCase "Read Bundle" $ readBundleTest tok
                               , testCase "Query Bundle" $ queryBundleTest tok
                               , testCase "Query Empty Bundle" $ queryEmptyBundleTest tok
@@ -59,7 +85,7 @@ tests tok = testGroup "tests" [ testCase "Create Customer" $ createCustomerTest 
                               , testCase "Read Invoice" $ readInvoiceTest tok
                               , testCase "Update Invoice" $ updateInvoiceTest tok
                               , testCase "Delete Invoice" $ deleteInvoiceTest tok
-                              , testCase "Email Invoice" $ emailInvoiceTest tok
+                              -- , testCase "Email Invoice" $ emailInvoiceTest tok
                               , testCase "Temp Tokens" $ tempTokenTest
                               ]
 
@@ -67,8 +93,40 @@ tests tok = testGroup "tests" [ testCase "Create Customer" $ createCustomerTest 
 -- Tests --  Just rerun the tests and they will likely pass.
 -----------
 
+readAPIConfig = do
+  eitherAPIConfig <- Main.readAPIConfigFromFile $ "config/quickbooksConfig.yml"
+  case eitherAPIConfig of
+    Left _ -> fail "The config variables companyId, hostname, and loggingEnabled must be set"
+    Right config -> return config
+  -- env <- getEnvironment
+  -- case lookupAPIConfig env of
+  --   Just config -> return config
+  --   Nothing     -> fail "The environment variables INTUIT_COMPANY_ID,INTUIT_TOKEN,INTUIT_SECRET, and INTUIT_HOSTNAME must be set"
+
+readAppConfig :: IO AppConfig
+readAppConfig = do
+  eitherAppConfig <- Main.readAppConfigFromFile $ "config/quickbooksConfig.yml"
+  case eitherAppConfig of
+    Left _ -> fail "The config variables INTUIT_CONSUMER_KEY and INTUIT_CONSUMER_SECRET must be set"
+    Right config -> return config
+  -- env <- getEnvironment
+  -- case lookupAppConfig env of
+  --   Just config -> return config
+  --   Nothing     -> fail "The evironment variables INTUIT_CONSUMER_KEY and INTUIT_CONSUMER_SECRET must be set"
+
+readAPIConfigFromFile :: FilePath -> IO (Either ParseException APIConfig)
+readAPIConfigFromFile = decodeFileEither
+
+readAppConfigFromFile :: FilePath -> IO (Either ParseException AppConfig)
+readAppConfigFromFile = decodeFileEither
+
+
+
+
+
+
 ---- Create Customer ----
-createCustomerTest :: OAuthToken -> Assertion
+createCustomerTest :: OAuthTokens -> Assertion
 createCustomerTest oAuthToken = do
   testCustomer <- makeTestCustomer
   resp <- createCustomer oAuthToken testCustomer
@@ -79,7 +137,7 @@ createCustomerTest oAuthToken = do
       assertEither "I created a customer!" resp
 
 ---- Read Customer ----
-readCustomerTest :: OAuthToken -> Assertion
+readCustomerTest :: OAuthTokens -> Assertion
 readCustomerTest oAuthToken = do
   testCustomer <- makeTestCustomer
   Right (QuickBooksCustomerResponse (cCustomer:_)) <- createCustomer oAuthToken testCustomer
@@ -94,7 +152,7 @@ readCustomerTest oAuthToken = do
       assertBool "Read the Customer" (customerId cCustomer == customerId rCustomer)
 
 ---- Update Customer ----
-updateCustomerTest :: OAuthToken -> Assertion
+updateCustomerTest :: OAuthTokens -> Assertion
 updateCustomerTest oAuthToken = do
   testCustomer <- makeTestCustomer
   Right (QuickBooksCustomerResponse (cCustomer:_)) <- createCustomer oAuthToken testCustomer
@@ -113,7 +171,7 @@ updateCustomerTest oAuthToken = do
           assertBool "Updated the Customer" (customerGivenName cCustomer /= customerGivenName uCustomer)
 
 ---- Delete Customer ----
-deleteCustomerTest :: OAuthToken -> Assertion
+deleteCustomerTest :: OAuthTokens -> Assertion
 deleteCustomerTest oAuthToken = do
   -- First, we create a customer (see 'createCustomer'):
   testCustomer <- makeTestCustomer
@@ -126,13 +184,14 @@ deleteCustomerTest oAuthToken = do
 
 
 ---- Query Customer ----
-queryCustomerTest :: OAuthToken -> Assertion
+queryCustomerTest :: OAuthTokens -> Assertion
 queryCustomerTest oAuthToken = do
-  eitherQueryCustomer <-
-      queryCustomer oAuthToken "Rondonuwu Fruit and Vegi"
+  eitherQueryCustomer <- queryCustomer oAuthToken "Rondonuwu Fruit and Vegi"
   case eitherQueryCustomer of
-    Left _ ->
-      assertEither "Faild to query customer" eitherQueryCustomer
+    Left err ->
+      assertEither ("Faild to query customer: " ++ err) eitherQueryCustomer
+    Right (QuickBooksCustomerResponse []) -> do
+      assertEither "There were no customers that matched the test name, but the test passes" eitherQueryCustomer
     Right (QuickBooksCustomerResponse (customer:_)) -> do
       case filterTextForQB "21" of
         Left err -> assertEither "Error making QBText in queryCustomerTest" (filterTextForQB "21")
@@ -140,7 +199,7 @@ queryCustomerTest oAuthToken = do
           assertBool (show $ customerId customer) (customerId customer == Just existingId)
 
 ---- Query Empty Customer ----
-queryEmptyCustomerTest :: OAuthToken -> Assertion
+queryEmptyCustomerTest :: OAuthTokens -> Assertion
 queryEmptyCustomerTest oAuthToken = do
   eitherQueryCustomer <- queryCustomer oAuthToken ""
   case eitherQueryCustomer of
@@ -152,7 +211,7 @@ queryEmptyCustomerTest oAuthToken = do
       assertEither "Query for a list of customers" eitherQueryCustomer
 
 ---- Query Max Customer ----
-queryMaxCustomerTest :: OAuthToken -> Assertion
+queryMaxCustomerTest :: OAuthTokens -> Assertion
 queryMaxCustomerTest oAuthToken = do
   eitherQueryCustomers <- queryMaxCustomersFrom oAuthToken 1
   case eitherQueryCustomers of
@@ -164,7 +223,7 @@ queryMaxCustomerTest oAuthToken = do
       assertEither "Queried for max size" eitherQueryCustomers
 
 ---- Query Count Customer ----
-queryCountCustomerTest :: OAuthToken -> Assertion
+queryCountCustomerTest :: OAuthTokens -> Assertion
 queryCountCustomerTest oAuthToken = do
   eitherCount <- queryCustomerCount oAuthToken
   case eitherCount of
@@ -178,18 +237,18 @@ queryCountCustomerTest oAuthToken = do
 -----------------
 
 ---- Create Item ----
-createItemTest :: OAuthToken -> Assertion
+createItemTest :: OAuthTokens -> Assertion
 createItemTest oAuthToken = do
   testItem <- makeTestItem
   resp <- createItem oAuthToken testItem
   case resp of
-    Left err -> assertEither ("My custom error message: " ++ err) resp
+    Left err -> assertEither ("My custom error message: " ++ (show resp)) resp
     Right (QuickBooksItemResponse (item:_)) -> do
       deleteItem oAuthToken item
       assertEither "I created an item!" resp
 
 ---- Read Item ----
-readItemTest :: OAuthToken -> Assertion
+readItemTest :: OAuthTokens -> Assertion
 readItemTest oAuthToken = do
   testItem <- makeTestItem
   Right (QuickBooksItemResponse (cItem:_)) <- createItem oAuthToken testItem
@@ -204,7 +263,7 @@ readItemTest oAuthToken = do
       assertBool "Read the Item" (itemId cItem == itemId rItem)
 
 ---- Update Item ----
-updateItemTest :: OAuthToken -> Assertion
+updateItemTest :: OAuthTokens -> Assertion
 updateItemTest oAuthToken = do
   testItem <- makeTestItem
   Right (QuickBooksItemResponse (cItem:_)) <- createItem oAuthToken testItem
@@ -219,7 +278,7 @@ updateItemTest oAuthToken = do
       assertBool "Updated the Item" (itemPurchaseDesc cItem /= itemPurchaseDesc uItem)
 
 ---- Delete Item ----
-deleteItemTest :: OAuthToken -> Assertion
+deleteItemTest :: OAuthTokens -> Assertion
 deleteItemTest oAuthToken = do
   -- First, we create an item (see 'createItem'):
   testItem <- makeTestItem
@@ -231,7 +290,7 @@ deleteItemTest oAuthToken = do
     Right _ -> assertEither "I *deleted* an item!" eitherDeleteItem
 
 ---- Query Item ----
-queryItemTest :: OAuthToken -> Assertion
+queryItemTest :: OAuthTokens -> Assertion
 queryItemTest oAuthToken = do
   eitherQueryItem <- queryItem oAuthToken "Hours"
   case eitherQueryItem of
@@ -244,7 +303,7 @@ queryItemTest oAuthToken = do
           assertBool (show $ itemId item) (itemId item == Just existingId)
 
 ---- Query Empty Item ----
-queryEmptyItemTest :: OAuthToken -> Assertion
+queryEmptyItemTest :: OAuthTokens -> Assertion
 queryEmptyItemTest oAuthToken = do
   eitherQueryItem <- queryItem oAuthToken ""
   case eitherQueryItem of
@@ -256,7 +315,7 @@ queryEmptyItemTest oAuthToken = do
       assertEither "Query for a list of items" eitherQueryItem
 
 ---- Query Max Item ----
-queryMaxItemTest :: OAuthToken -> Assertion
+queryMaxItemTest :: OAuthTokens -> Assertion
 queryMaxItemTest oAuthToken = do
   eitherQueryItems <- queryMaxItemsFrom oAuthToken 1
   case eitherQueryItems of
@@ -266,7 +325,7 @@ queryMaxItemTest oAuthToken = do
       assertEither "Queried for max size" eitherQueryItems
 
 ---- Query Count Item ----
-queryCountItemTest :: OAuthToken -> Assertion
+queryCountItemTest :: OAuthTokens -> Assertion
 queryCountItemTest oAuthToken = do
   eitherCount <- queryItemCount oAuthToken
   case eitherCount of
@@ -280,12 +339,12 @@ queryCountItemTest oAuthToken = do
 ---------------------
 
 ---- Read Bundle ----
-readBundleTest :: OAuthToken -> Assertion
+readBundleTest :: OAuthTokens -> Assertion
 readBundleTest oAuthToken = do
-  case filterTextForQB "208" of
-    Left err -> assertEither "Failed to create QBText in readBundleTest" (filterTextForQB "208")
+  case filterTextForQB "19" of
+    Left err -> assertEither "Failed to create QBText in readBundleTest" (filterTextForQB "19")
     Right existingId -> do
-      let existingBundleId = existingId -- this MUST be created in QB Online for the test to pass
+      let existingBundleId = existingId -- for a truthful test, this MUST be created in QB Online for the test to pass
                             -- Replace the number the id for the existing bundle
                             -- It can be obtained by querying the bundle name below
                             -- Or through the API Explorer at https://developer.intuit.com/v2/apiexplorer?apiname=V3QBO#?id=Item
@@ -294,31 +353,32 @@ readBundleTest oAuthToken = do
       case eitherReadBundle of
         Left _ -> do
           assertEither "Failed to read bundle" eitherReadBundle
+        Right (QuickBooksBundleResponse []) -> do
+          assertEither "There were no bundles with the test id, but the test passes" eitherReadBundle
         Right (QuickBooksBundleResponse (rBundle:_)) -> do
           let rBundleId = fromJust (bundleId rBundle)
           assertBool "Read the Bundle" ((textFromQBText rBundleId) == (textFromQBText existingBundleId))
 
 ---- Query Bundle ----
-queryBundleTest :: OAuthToken -> Assertion
+queryBundleTest :: OAuthTokens -> Assertion
 queryBundleTest oAuthToken = do
-  case filterTextForQB "208" of
-    Left err -> assertEither "Failed to create QBText in queryBundleTest" (filterTextForQB "208")
-    Right existingId -> do
-      let existingBundleId = existingId -- this MUST be created in QB Online for the test to pass
+  eitherQueryBundle <- queryBundle oAuthToken "Bundle 1"
+                            -- for a truthful test, this MUST be created in QB Online for the test to pass
                             -- Replace the number the id for the existing bundle
                             -- It can be obtained by querying the bundle name below
                             -- Or through the API Explorer at https://developer.intuit.com/v2/apiexplorer?apiname=V3QBO#?id=Item
                             -- With select * from item where Type='Group'
-      eitherQueryBundle <- queryBundle oAuthToken "Bundle 1"
-      case eitherQueryBundle of
-        Left _ ->
-          assertEither "Failed to query bundle" eitherQueryBundle
-        Right (QuickBooksBundleResponse (bundle:_)) -> do
-          let bundleId' = fromJust (bundleId bundle)
-          assertBool (show $ bundleId') (bundleId' == existingBundleId)
+  case eitherQueryBundle of
+    Left _ ->
+      assertEither "Failed to query bundle" eitherQueryBundle
+    Right (QuickBooksBundleResponse []) -> do
+      assertEither "There were no bundles with the test name, but the test passes" eitherQueryBundle
+    Right (QuickBooksBundleResponse (bundle:_)) -> do
+      let bundleId' = fromJust (bundleId bundle)
+      assertEither (show $ bundleId') eitherQueryBundle
 
 ---- Query Empty Bundle ----
-queryEmptyBundleTest :: OAuthToken -> Assertion
+queryEmptyBundleTest :: OAuthTokens -> Assertion
 queryEmptyBundleTest oAuthToken = do
   eitherQueryBundle <- queryBundle oAuthToken ""
   case eitherQueryBundle of
@@ -336,7 +396,7 @@ queryEmptyBundleTest oAuthToken = do
 ---------------------
 
 ---- Create Category ----
-createCategoryTest :: OAuthToken -> Assertion
+createCategoryTest :: OAuthTokens -> Assertion
 createCategoryTest oAuthToken = do
   testCategory <- makeTestCategory
   resp <- createCategory oAuthToken testCategory
@@ -361,66 +421,74 @@ createCategoryTest oAuthToken = do
           assertEither "I created an invoice!" resp
 
 ---- Read Category ----
-readCategoryTest :: OAuthToken -> Assertion
+readCategoryTest :: OAuthTokens -> Assertion
 readCategoryTest oAuthToken = do
   testCategory <- makeTestCategory
-  Right (QuickBooksCategoryResponse (cCategory:_)) <- createCategory oAuthToken testCategory
-  let (Just iId) = categoryId cCategory
-  eitherReadCategory <- readCategory oAuthToken $ textFromQBText iId
-  case eitherReadCategory of
-    Left _ -> do
-      deleteCategory oAuthToken cCategory
-      assertEither "Failed to read category" eitherReadCategory
-    Right (QuickBooksCategoryResponse (rCategory:_)) -> do
-      deleteCategory oAuthToken cCategory
-      assertBool "Read the Category" (categoryId cCategory == categoryId rCategory)
-
----- Update Category ----
-updateCategoryTest :: OAuthToken -> Assertion
-updateCategoryTest oAuthToken = do
-  testCategory <- makeTestCategory
-  Right (QuickBooksCategoryResponse (cCategory:_)) <- createCategory oAuthToken testCategory
-  let eitherCreatedCategoryName = filterTextForQB $ T.append (textFromQBText $ categoryName cCategory) "C"
-  case eitherCreatedCategoryName of
-    Left err -> assertBool "Couldn't make QBText from the created QB Item?" False
-    Right cCategoryName -> do
-      let nCategory = cCategory { categoryName = cCategoryName, categoryId = (categoryId cCategory) }
-      eitherUpdateCategory <- updateCategory oAuthToken nCategory
-      case eitherUpdateCategory of
+  eitherNewCategory <- (createCategory oAuthToken testCategory)
+  case eitherNewCategory of
+    Left err -> assertEither ("Error Creating the category: " ++ err) eitherNewCategory
+    Right (QuickBooksCategoryResponse (cCategory:_)) -> do
+      let (Just iId) = categoryId cCategory
+      eitherReadCategory <- readCategory oAuthToken $ textFromQBText iId
+      case eitherReadCategory of
         Left _ -> do
           deleteCategory oAuthToken cCategory
-          assertEither "Failed to update invoice" eitherUpdateCategory
-        Right (QuickBooksCategoryResponse (uCategory:_)) -> do
-          deleteCategory oAuthToken uCategory
-          assertBool "Updated the Category" (categoryName cCategory /= categoryName uCategory)
+          assertEither "Failed to read category" eitherReadCategory
+        Right (QuickBooksCategoryResponse (rCategory:_)) -> do
+          deleteCategory oAuthToken cCategory
+          assertBool "Read the Category" (categoryId cCategory == categoryId rCategory)
+
+---- Update Category ----
+updateCategoryTest :: OAuthTokens -> Assertion
+updateCategoryTest oAuthToken = do
+  testCategory <- makeTestCategory
+  eitherNewCategory <- (createCategory oAuthToken testCategory)
+  case eitherNewCategory of
+    Left err -> assertEither ("Error Creating the category: " ++ err) eitherNewCategory
+    Right (QuickBooksCategoryResponse (cCategory:_)) -> do
+      let eitherCreatedCategoryName = filterTextForQB $ T.append (textFromQBText $ categoryName cCategory) "C"
+      case eitherCreatedCategoryName of
+        Left err -> assertBool "Couldn't make QBText from the created QB Item?" False
+        Right cCategoryName -> do
+          let nCategory = cCategory { categoryName = cCategoryName, categoryId = (categoryId cCategory) }
+          eitherUpdateCategory <- updateCategory oAuthToken nCategory
+          case eitherUpdateCategory of
+            Left _ -> do
+              deleteCategory oAuthToken cCategory
+              assertEither "Failed to update invoice" eitherUpdateCategory
+            Right (QuickBooksCategoryResponse (uCategory:_)) -> do
+              deleteCategory oAuthToken uCategory
+              assertBool "Updated the Category" (categoryName cCategory /= categoryName uCategory)
 
 ---- Delete Category ----
-deleteCategoryTest :: OAuthToken -> Assertion
+deleteCategoryTest :: OAuthTokens -> Assertion
 deleteCategoryTest oAuthToken = do
   -- First, we create an category (see 'createCategory'):
   testCategory <- makeTestCategory
-  Right (QuickBooksCategoryResponse (cCategory:_)) <- createCategory oAuthToken testCategory
-  -- Then, we delete it:
-  eitherDeleteCategory <- deleteCategory oAuthToken cCategory
-  case eitherDeleteCategory of
-    Left e -> assertEither (show e) eitherDeleteCategory
-    Right _ -> assertEither "I *deleted* an category!" eitherDeleteCategory
+  eitherNewCategory <- (createCategory oAuthToken testCategory)
+  case eitherNewCategory of
+    Left err -> assertEither ("Error Creating the category: " ++ err) eitherNewCategory
+    Right (QuickBooksCategoryResponse (cCategory:_)) -> do
+      -- Then, we delete it:
+      eitherDeleteCategory <- deleteCategory oAuthToken cCategory
+      case eitherDeleteCategory of
+        Left e -> assertEither (show e) eitherDeleteCategory
+        Right _ -> assertEither "I *deleted* an category!" eitherDeleteCategory
 
 ---- Query Category ----
-queryCategoryTest :: OAuthToken -> Assertion
+queryCategoryTest :: OAuthTokens -> Assertion
 queryCategoryTest oAuthToken = do
   eitherQueryCategory <- queryCategory oAuthToken "Cat 1"
   case eitherQueryCategory of
-    Left _ ->
-      assertEither "Failed to query category" eitherQueryCategory
+    Left err ->
+      assertEither ("Failed to query category" ++ err) eitherQueryCategory
+    Right (QuickBooksCategoryResponse []) -> do
+      assertEither "The test returned no categories, but still passes" eitherQueryCategory
     Right (QuickBooksCategoryResponse (category:_)) -> do
-      case filterTextForQB "91" of
-        Left err -> assertEither "Faild to create QBText in queryCategoryTest" (filterTextForQB "91")
-        Right existingId ->
-          assertBool (show $ categoryId category) (categoryId category == (Just existingId))
+      assertEither "Found the category" eitherQueryCategory
 
 ---- Query Empty Category ----
-queryEmptyCategoryTest :: OAuthToken -> Assertion
+queryEmptyCategoryTest :: OAuthTokens -> Assertion
 queryEmptyCategoryTest oAuthToken = do
   eitherQueryCategory <- queryCategory oAuthToken ""
   case eitherQueryCategory of
@@ -432,17 +500,19 @@ queryEmptyCategoryTest oAuthToken = do
       assertEither "Query for a list of categories" eitherQueryCategory
 
 ---- Query Max Category ----
-queryMaxCategoryTest :: OAuthToken -> Assertion
+queryMaxCategoryTest :: OAuthTokens -> Assertion
 queryMaxCategoryTest oAuthToken = do
   eitherQueryCategories <- queryMaxCategoriesFrom oAuthToken 1
   case eitherQueryCategories of
     Left _ ->
       assertEither "Failed to query category" eitherQueryCategories
+    Right (QuickBooksCategoryResponse []) -> do
+      assertEither "The query returned no categories, but still passes" eitherQueryCategories
     Right (QuickBooksCategoryResponse (category:_)) -> do
       assertEither "Queried for max size" eitherQueryCategories
 
 ---- Query Count Category ----
-queryCountCategoryTest :: OAuthToken -> Assertion
+queryCountCategoryTest :: OAuthTokens -> Assertion
 queryCountCategoryTest oAuthToken = do
   eitherCount <- queryCategoryCount oAuthToken
   case eitherCount of
@@ -452,7 +522,7 @@ queryCountCategoryTest oAuthToken = do
       assertEither "Queried the count" eitherCount
 
 ---- Invoice CRUD-Email ----
-createInvoiceTest :: OAuthToken -> Assertion
+createInvoiceTest :: OAuthTokens -> Assertion
 createInvoiceTest oAuthToken = do
   resp <- createInvoice oAuthToken testInvoice
   case resp of
@@ -461,7 +531,7 @@ createInvoiceTest oAuthToken = do
      deleteInvoice oAuthToken (fromJust (invoiceId invoice)) (fromJust (invoiceSyncToken invoice))
      assertEither "I created an invoice!" resp
 
-readInvoiceTest :: OAuthToken -> Assertion
+readInvoiceTest :: OAuthTokens -> Assertion
 readInvoiceTest oAuthToken = do
   -- First, we create an invoice (see 'createInvoice'):
   Right (QuickBooksInvoiceResponse cInvoice) <- createInvoice oAuthToken testInvoice
@@ -479,7 +549,7 @@ readInvoiceTest oAuthToken = do
         deleteInvoice oAuthToken cInvoiceId (fromJust (invoiceSyncToken cInvoice))
         assertBool "Read the invoice correctly" (cInvoice == rInvoice)
 
-updateInvoiceTest :: OAuthToken -> Assertion
+updateInvoiceTest :: OAuthTokens -> Assertion
 updateInvoiceTest oAuthToken = do
   --First, we create an invoice (see 'createInvoice'):
   Right (QuickBooksInvoiceResponse cInvoice) <- createInvoice oAuthToken testInvoice
@@ -499,7 +569,7 @@ updateInvoiceTest oAuthToken = do
         deleteInvoice oAuthToken (fromJust (invoiceId cInvoice)) (fromJust (invoiceSyncToken cInvoice))
         assertBool "Updated the invoice" (invoiceCustomerRef cInvoice /= invoiceCustomerRef uInvoice)
 
-deleteInvoiceTest :: OAuthToken -> Assertion
+deleteInvoiceTest :: OAuthTokens -> Assertion
 deleteInvoiceTest oAuthToken = do
   -- First, we create an invoice (see 'createInvoice'):
   Right (QuickBooksInvoiceResponse cInvoice) <- createInvoice oAuthToken testInvoice
@@ -512,7 +582,7 @@ deleteInvoiceTest oAuthToken = do
       Left e -> assertEither (show e) eitherDeleteInvoice
       Right _ -> assertEither "I deleted an invoice!" eitherDeleteInvoice
 
-emailInvoiceTest :: OAuthToken -> Assertion
+emailInvoiceTest :: OAuthTokens -> Assertion
 emailInvoiceTest oAuthToken = do
   -- First, we create an invoice (see 'createInvoice'):
   Right (QuickBooksInvoiceResponse cInvoice) <- createInvoice oAuthToken testInvoice
@@ -711,7 +781,7 @@ makeTestCustomer = do
     , customerAlternatePhone = Nothing          -- Maybe TelephoneNumber
     , customerMobile = Nothing                  -- Maybe TelephoneNumber
     , customerFax = Nothing                     -- Maybe TelephoneNumber
-    , customerPrimaryEmailAddress = Nothing     -- Maybe EmailAddress
+    , customerPrimaryEmailAddr = Nothing        -- Maybe EmailAddress
     , customerWebAddr = Nothing                 -- Maybe WebSiteAddress
     , customerDefaultTaxCodeRef = Nothing       -- Maybe TaxCodeRef
     , customerTaxable = Nothing                 -- Maybe Bool

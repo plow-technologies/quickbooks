@@ -40,7 +40,7 @@ import qualified Text.Email.Validate as E (EmailAddress)
 import           System.Log.FastLogger (LoggerSet)
 import           Network.HTTP.Client   (Manager)
 import           QuickBooks.QBText
-
+import qualified Network.OAuth.OAuth2            as OAuth2
 type Logger = LoggerSet
 
 type CallbackURL = String
@@ -61,30 +61,42 @@ instance FromJSON AppConfig where
     where parseByteString obj name = encodeUtf8 <$> (obj .: name)
   parseJSON _ = mzero
 
+
+-- Config types for OAuth2 data
+data OAuth2Config = OAuth2Config
+  { oauthClientId      :: !Text
+  , oauthClientSecret  :: !Text
+  , oauthRefreshToken  :: !Text
+  } deriving (Show)
+
+instance FromJSON OAuth2Config where
+  parseJSON (Object o) = OAuth2Config <$> o .: "oauth2ClientId"
+                                      <*> o .: "oauth2ClientSecret"
+                                      <*> o .: "oauth2RefreshToken"
+
+  parseJSON _ = mzero
+
+
 data APIConfig = APIConfig
-  { companyId      :: !ByteString
-  , oauthToken     :: !ByteString
-  , oauthSecret    :: !ByteString
-  , hostname       :: !ByteString
-  , loggingEnabled :: !ByteString
+  { companyId          :: !ByteString
+  , hostname           :: !ByteString
+  , loggingEnabled     :: !ByteString
   } deriving (Show, Eq)
 
+
+
 instance ToJSON APIConfig where
-  toJSON (APIConfig cId oToken oSecret hName lEnabled) = object [
+  toJSON (APIConfig cId hName lEnabled) = object [
                                                                   "companyId" .= (decodeUtf8 cId),
-                                                                  "oauthToken" .= (decodeUtf8 oToken),
-                                                                  "oauthSecret" .= (decodeUtf8 oSecret),
                                                                   "hostname" .= (decodeUtf8 hName),
                                                                   "loggingEnabled" .= (decodeUtf8 lEnabled)
                                                                 ]
 
 instance FromJSON APIConfig where
   parseJSON (Object o) = APIConfig <$> (parseByteString o "companyId")
-                                   <*> (parseByteString o "oauthToken")
-                                   <*> (parseByteString o "oauthSecret")
                                    <*> (parseByteString o "hostname")
                                    <*> (parseByteString o "loggingEnabled")
-    where parseByteString obj name = encodeUtf8 <$> (obj .: name)
+    where parseByteString  obj name = encodeUtf8 <$> (obj .: name)
   parseJSON _ = mzero
 
 
@@ -104,6 +116,11 @@ type NetworkEnv = ( ?manager :: Manager
 
 -- | A request or access OAuth token.
 
+
+data OAuthTokens = OAuth1 OAuthToken
+                 | OAuth2 OAuth2.AccessToken
+
+
 data OAuthToken = OAuthToken
   { token       :: ByteString
   , tokenSecret :: ByteString
@@ -121,6 +138,7 @@ data instance QuickBooksResponse [Customer] =
 
 data instance QuickBooksResponse [Item] =
   QuickBooksItemResponse { quickBooksResponseItem :: [Item] }
+  deriving (Show)
 
 data instance QuickBooksResponse [Bundle] =
   QuickBooksBundleResponse { quickBooksResponseBundle :: [Bundle] }
@@ -179,7 +197,7 @@ instance FromJSON (QuickBooksResponse [Bundle]) where
     where
       parseQueryResponse obj = do
         qResponse <- obj .: "QueryResponse"
-        parseBundles qResponse
+        parseBundles qResponse <|> (return (QuickBooksBundleResponse []))
       parseBundles obj = QuickBooksBundleResponse <$> obj .: "Item"
       parseSingleBundle obj = do
         i <- obj .: "Item"
@@ -451,7 +469,7 @@ data WebSiteAddress = WebAddress
   deriving (Eq, Show)
 
 data PhysicalAddress = PhysicalAddress
-  { physicalAddressId                     :: !Text
+  { physicalAddressId                     :: !(Maybe Text)
   , physicalAddressLine1                  :: !Text
   , physicalAddressLine2                  :: !(Maybe Text)
   , physicalAddressLine3                  :: !(Maybe Text)
@@ -651,7 +669,7 @@ data Customer = Customer
   , customerAlternatePhone          :: !(Maybe TelephoneNumber)
   , customerMobile                  :: !(Maybe TelephoneNumber)
   , customerFax                     :: !(Maybe TelephoneNumber)
-  , customerPrimaryEmailAddress     :: !(Maybe EmailAddress)
+  , customerPrimaryEmailAddr        :: !(Maybe EmailAddress)
   , customerWebAddr                 :: !(Maybe WebSiteAddress)
   , customerDefaultTaxCodeRef       :: !(Maybe TaxCodeRef)
   , customerTaxable                 :: !(Maybe Bool)

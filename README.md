@@ -8,27 +8,39 @@ A QuickBooks API binding for Haskell
 Test and Development Environment
 --------------------------------
 
-Testing and Development should run against an Intuit QuickBooks API sandbox. You need to signup for a sandbox and export environment variables containing your sandbox credentials. You must set the environment variables to get the tests to pass.
+Testing and Development should run against an Intuit QuickBooks API sandbox. You need to signup for a sandbox and make a config file with your sandbox credentials. You must have the config file to get the tests to pass.
 
-The following environment variable need to be exported:
+The following is a sample config file:
 
-`INTUIT_COMPANY_ID`
-`INTUIT_CONSUMER_KEY` 
-`INTUIT_CONSUMER_SECRET`
-`INTUIT_TOKEN`
-`INTUIT_SECRET`
-`INTUIT_HOSTNAME`
+quickbooksConfig.yml (for OAuth 2)
 
-You can gather these pieces of information by following the instructions found on QuickBooks web site.
+companyId           : ""
+oauth2ClientId      : ""
+oauth2ClientSecret  : ""
+oauth2RefreshToken  : ""
+consumerToken       : "" Leave empty
+consumerSecret      : "" Leave empty
+hostname            : "sandbox-quickbooks.api.intuit.com"
+loggingEnabled      : "true"
+
+quickbooksConfig.yml (for OAuth 1)
+
+hostname            : "sandbox-quickbooks.api.intuit.com"
+consumerToken       : ""
+consumerSecret      : ""
+oauthToken          : ""
+oauthSecret         : ""
+loggingEnabled      : "true"
+
+You can gather these pieces of information by following the instructions found on QuickBooks' Developer web site.
 
 Logging
 -------
 
-If you would like to enable logging for a given environment. Please set the following environment variable as follows:
+If you would like to enable logging for a given environment. Please set the following config variable as follows:
 
-`INTUIT_API_LOGGING_ENABLED=True`
+loggingEnabled : "true"
 
-Logging is enabled by default.
 Setting the value to anything other than true `True` (case insensitive) will disable logging.
 
 
