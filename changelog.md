@@ -1,5 +1,8 @@
 Quickbooks Changelog
 ----------------------
+# Version 1.0.0.0
+* Added support for OAuth2 requests to existing QuickBooks API Calls
+* Support for OAuth1 remains through the format of the config file (readme)
 
 # Version 0.6.0.0
 * Added a QBText type that filters out characters that break the QuickBooks api calls. This is a black list filter and it is not complete. If a character causes the api to act unexpectedly, then the filter function is likely the place to fix it.

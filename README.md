@@ -32,7 +32,7 @@ oauthToken          : ""
 oauthSecret         : ""
 loggingEnabled      : "true"
 
-You can gather these pieces of information by following the instructions found on QuickBooks web site.
+You can gather these pieces of information by following the instructions found on QuickBooks' Developer web site.
 
 Logging
 -------
