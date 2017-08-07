@@ -469,7 +469,7 @@ data WebSiteAddress = WebAddress
   deriving (Eq, Show)
 
 data PhysicalAddress = PhysicalAddress
-  { physicalAddressId                     :: !Text
+  { physicalAddressId                     :: !(Maybe Text)
   , physicalAddressLine1                  :: !Text
   , physicalAddressLine2                  :: !(Maybe Text)
   , physicalAddressLine3                  :: !(Maybe Text)
@@ -669,7 +669,7 @@ data Customer = Customer
   , customerAlternatePhone          :: !(Maybe TelephoneNumber)
   , customerMobile                  :: !(Maybe TelephoneNumber)
   , customerFax                     :: !(Maybe TelephoneNumber)
-  , customerPrimaryEmailAddress     :: !(Maybe EmailAddress)
+  , customerPrimaryEmailAddr        :: !(Maybe EmailAddress)
   , customerWebAddr                 :: !(Maybe WebSiteAddress)
   , customerDefaultTaxCodeRef       :: !(Maybe TaxCodeRef)
   , customerTaxable                 :: !(Maybe Bool)
