@@ -142,6 +142,7 @@ data instance QuickBooksResponse [Customer] =
 
 data instance QuickBooksResponse [Item] =
   QuickBooksItemResponse { quickBooksResponseItem :: [Item] }
+  deriving (Show)
 
 data instance QuickBooksResponse [Bundle] =
   QuickBooksBundleResponse { quickBooksResponseBundle :: [Bundle] }

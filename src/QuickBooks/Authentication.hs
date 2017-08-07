@@ -102,7 +102,32 @@ qbAuthPostBS manager token url pb = do
         upContentHeader req = req {requestHeaders = ((HT.hContentType,"application/json") : (requestHeaders req) )}
         upReq      = upContentHeader . upBody . upHeaders
 
-
+testValue = eitherDecode "This isn't valid" :: Either String Value 
+-- {
+--   "SyncToken":"0",
+--   "Active":false,
+--   "Level":0,
+--   "UnitPrice":0,
+--   "Type":"Inventory",
+--   "IncomeAccountRef":{
+--     "name":"Sales of Product Income",
+--     "value":"79"
+--   },
+--   "PurchaseDesc":"Purchase Desc",
+--   "PurchaseCost":0,
+--   "ExpenseAccountRef":{
+--     "name":"Cost of Goods Sold",
+--     "value":"80"
+--   },
+--   "AssetAccountRef":{
+--     "name":"Inventory Asset",
+--     "value":"81"
+--   },
+--   "TrackQtyOnHand":true,
+--   "QtyOnHand":10,
+--   "InvStartDate":"2015-01-01",
+--   "Name":"testItemName17238491529754203"
+-- }
 
 
 -- POST /v3/company/123145873160324/item?minorversion=4 HTTP/1.1

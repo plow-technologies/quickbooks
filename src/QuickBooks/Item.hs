@@ -385,4 +385,4 @@ queryURITemplate APIConfig{..} =
 --   ? update create 'delete'
 itemURITemplate :: APIConfig -> String
 itemURITemplate APIConfig{..} =
-  [i|https://#{hostname}/v4/company/#{companyId}/item|]
+  [i|https://#{hostname}/v3/company/#{companyId}/item|]

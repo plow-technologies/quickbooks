@@ -85,7 +85,7 @@ tests tok = testGroup "API Calls" [ testCase "Query Customer" $ queryCustomerTes
                               , testCase "Read Invoice" $ readInvoiceTest tok
                               , testCase "Update Invoice" $ updateInvoiceTest tok
                               , testCase "Delete Invoice" $ deleteInvoiceTest tok
-                              , testCase "Email Invoice" $ emailInvoiceTest tok
+                              -- , testCase "Email Invoice" $ emailInvoiceTest tok
                               , testCase "Temp Tokens" $ tempTokenTest
                               ]
 
@@ -268,7 +268,7 @@ createItemTest oAuthToken = do
   testItem <- makeTestItem
   resp <- createItem oAuthToken testItem
   case resp of
-    Left err -> assertEither ("My custom error message: " ++ err) resp
+    Left err -> assertEither ("My custom error message: " ++ (show resp)) resp
     Right (QuickBooksItemResponse (item:_)) -> do
       deleteItem oAuthToken item
       assertEither "I created an item!" resp
@@ -449,47 +449,56 @@ createCategoryTest oAuthToken = do
 readCategoryTest :: OAuthTokens -> Assertion
 readCategoryTest oAuthToken = do
   testCategory <- makeTestCategory
-  Right (QuickBooksCategoryResponse (cCategory:_)) <- createCategory oAuthToken testCategory
-  let (Just iId) = categoryId cCategory
-  eitherReadCategory <- readCategory oAuthToken $ textFromQBText iId
-  case eitherReadCategory of
-    Left _ -> do
-      deleteCategory oAuthToken cCategory
-      assertEither "Failed to read category" eitherReadCategory
-    Right (QuickBooksCategoryResponse (rCategory:_)) -> do
-      deleteCategory oAuthToken cCategory
-      assertBool "Read the Category" (categoryId cCategory == categoryId rCategory)
+  eitherNewCategory <- (createCategory oAuthToken testCategory)
+  case eitherNewCategory of
+    Left err -> assertEither ("Error Creating the category: " ++ err) eitherNewCategory
+    Right (QuickBooksCategoryResponse (cCategory:_)) -> do
+      let (Just iId) = categoryId cCategory
+      eitherReadCategory <- readCategory oAuthToken $ textFromQBText iId
+      case eitherReadCategory of
+        Left _ -> do
+          deleteCategory oAuthToken cCategory
+          assertEither "Failed to read category" eitherReadCategory
+        Right (QuickBooksCategoryResponse (rCategory:_)) -> do
+          deleteCategory oAuthToken cCategory
+          assertBool "Read the Category" (categoryId cCategory == categoryId rCategory)
 
 ---- Update Category ----
 updateCategoryTest :: OAuthTokens -> Assertion
 updateCategoryTest oAuthToken = do
   testCategory <- makeTestCategory
-  Right (QuickBooksCategoryResponse (cCategory:_)) <- createCategory oAuthToken testCategory
-  let eitherCreatedCategoryName = filterTextForQB $ T.append (textFromQBText $ categoryName cCategory) "C"
-  case eitherCreatedCategoryName of
-    Left err -> assertBool "Couldn't make QBText from the created QB Item?" False
-    Right cCategoryName -> do
-      let nCategory = cCategory { categoryName = cCategoryName, categoryId = (categoryId cCategory) }
-      eitherUpdateCategory <- updateCategory oAuthToken nCategory
-      case eitherUpdateCategory of
-        Left _ -> do
-          deleteCategory oAuthToken cCategory
-          assertEither "Failed to update invoice" eitherUpdateCategory
-        Right (QuickBooksCategoryResponse (uCategory:_)) -> do
-          deleteCategory oAuthToken uCategory
-          assertBool "Updated the Category" (categoryName cCategory /= categoryName uCategory)
+  eitherNewCategory <- (createCategory oAuthToken testCategory)
+  case eitherNewCategory of
+    Left err -> assertEither ("Error Creating the category: " ++ err) eitherNewCategory
+    Right (QuickBooksCategoryResponse (cCategory:_)) -> do
+      let eitherCreatedCategoryName = filterTextForQB $ T.append (textFromQBText $ categoryName cCategory) "C"
+      case eitherCreatedCategoryName of
+        Left err -> assertBool "Couldn't make QBText from the created QB Item?" False
+        Right cCategoryName -> do
+          let nCategory = cCategory { categoryName = cCategoryName, categoryId = (categoryId cCategory) }
+          eitherUpdateCategory <- updateCategory oAuthToken nCategory
+          case eitherUpdateCategory of
+            Left _ -> do
+              deleteCategory oAuthToken cCategory
+              assertEither "Failed to update invoice" eitherUpdateCategory
+            Right (QuickBooksCategoryResponse (uCategory:_)) -> do
+              deleteCategory oAuthToken uCategory
+              assertBool "Updated the Category" (categoryName cCategory /= categoryName uCategory)
 
 ---- Delete Category ----
 deleteCategoryTest :: OAuthTokens -> Assertion
 deleteCategoryTest oAuthToken = do
   -- First, we create an category (see 'createCategory'):
   testCategory <- makeTestCategory
-  Right (QuickBooksCategoryResponse (cCategory:_)) <- createCategory oAuthToken testCategory
-  -- Then, we delete it:
-  eitherDeleteCategory <- deleteCategory oAuthToken cCategory
-  case eitherDeleteCategory of
-    Left e -> assertEither (show e) eitherDeleteCategory
-    Right _ -> assertEither "I *deleted* an category!" eitherDeleteCategory
+  eitherNewCategory <- (createCategory oAuthToken testCategory)
+  case eitherNewCategory of
+    Left err -> assertEither ("Error Creating the category: " ++ err) eitherNewCategory
+    Right (QuickBooksCategoryResponse (cCategory:_)) -> do
+      -- Then, we delete it:
+      eitherDeleteCategory <- deleteCategory oAuthToken cCategory
+      case eitherDeleteCategory of
+        Left e -> assertEither (show e) eitherDeleteCategory
+        Right _ -> assertEither "I *deleted* an category!" eitherDeleteCategory
 
 ---- Query Category ----
 queryCategoryTest :: OAuthTokens -> Assertion
