@@ -29,19 +29,21 @@ module QuickBooks.Category
   )
   where
 
-import QuickBooks.Authentication
-import QuickBooks.Logging
-import QuickBooks.Types
--- import QuickBooks.QBText
+import           QuickBooks.Authentication
+import           QuickBooks.Logging
+import           QuickBooks.Types
+
 import qualified Network.OAuth.OAuth2      as OAuth2
-import           Data.ByteString.Char8
-import           Data.ByteString.Lazy      (fromStrict)
+
 import           Data.Aeson                (encode, eitherDecode)
+import           Data.ByteString.Char8
 import           Data.String.Interpolate   (i)
 import           Data.Text                 (Text)
+
 import           Network.HTTP.Client
 import           Network.HTTP.Types.Header (hAccept, hContentType)
 import           Network.URI               (escapeURIString, isUnescapedInURI, isUnescapedInURIComponent)
+
 import           URI.ByteString
 
 -- | Create an category. (Supply a new Category WITHOUT an id field)

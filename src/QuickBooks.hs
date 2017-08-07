@@ -429,7 +429,7 @@ queryCategoryCount'
 queryCategoryCount' apiConfig appConfig tok =
   queryQuickBooks' apiConfig appConfig tok QueryCountCategory
 
-  
+
 queryMaxCategoriesFrom
   :: OAuthTokens
   -> Int
@@ -626,7 +626,7 @@ getTempTokens =
 getTempTokens' :: AppConfig -> CallbackURL -> IO (Either String (QuickBooksResponse OAuthToken))
 getTempTokens' appConfig =
   queryQuickBooksOAuth' appConfig Nothing . GetTempOAuthCredentials
- 
+
 -- | Exchange oauth_verifier for access tokens
 getAccessToken :: OAuthToken -> OAuthVerifier -> IO (Either String (QuickBooksResponse OAuthToken))
 getAccessToken tempToken =
@@ -660,7 +660,6 @@ queryQuickBooks' :: APIConfig -> AppConfig -> OAuthTokens -> QuickBooksQuery a -
 queryQuickBooks' apiConfig appConfig tokens' query = do
   manager   <- newManager tlsManagerSettings
   logger    <- getLogger apiLogger
-  let tok        = oauth1Only tokens' 
   let ?appConfig = appConfig
   let ?apiConfig = apiConfig
   let ?manager   = manager
@@ -674,7 +673,7 @@ queryQuickBooks' apiConfig appConfig tokens' query = do
     CreateCustomer customer             -> createCustomerRequest tokens' customer
     ReadCustomer cId                    -> readCustomerRequest tokens' cId
     UpdateCustomer customer             -> updateCustomerRequest tokens' customer
-    DeleteCustomer customer             -> deleteCustomerRequest tokens' customer    
+    DeleteCustomer customer             -> deleteCustomerRequest tokens' customer
     QueryCustomer queryCustomerName     -> queryCustomerRequest tokens' queryCustomerName
     QueryMaxCustomersFrom startIndex    -> queryMaxCustomerRequest tokens' startIndex
     QueryCountCustomer                  -> countCustomerRequest tokens'
@@ -701,7 +700,7 @@ queryQuickBooksOAuth :: Maybe OAuthToken
                      -> IO (Either String (QuickBooksResponse a))
 queryQuickBooksOAuth maybeOAuthToken query = do
   appConfig <- readAppConfig
-  queryQuickBooksOAuth' appConfig maybeOAuthToken query 
+  queryQuickBooksOAuth' appConfig maybeOAuthToken query
 
 queryQuickBooksOAuth' :: AppConfig
                       -> Maybe OAuthToken

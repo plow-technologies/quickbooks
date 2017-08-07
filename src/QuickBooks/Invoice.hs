@@ -32,7 +32,6 @@ import qualified Network.OAuth.OAuth2      as OAuth2
 import qualified Text.Email.Validate       as Email (EmailAddress, toByteString)
 
 import           Data.ByteString.Char8
-import           Data.ByteString.Lazy      (fromStrict)
 import           Data.Aeson                (encode, eitherDecode, object, Value(String))
 import           Data.String.Interpolate   (i)
 import           Network.HTTP.Client       (httpLbs
@@ -150,7 +149,7 @@ deleteInvoiceRequestOAuth2 :: APIEnv
 deleteInvoiceRequestOAuth2 tok iId syncToken = do
   let apiConfig = ?apiConfig
   let eitherQueryURI = parseURI strictURIParserOptions . pack $ [i|#{invoiceURITemplate apiConfig}?operation=delete|]
-  -- Made for logging 
+  -- Made for logging
   req'  <- parseUrlThrow $ escapeURIString isUnescapedInURI [i|#{invoiceURITemplate apiConfig}?operation=delete|]
   case eitherQueryURI of
     Left err -> return (Left . show $ err)

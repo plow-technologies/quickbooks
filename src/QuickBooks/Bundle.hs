@@ -30,14 +30,16 @@ import QuickBooks.Types
 -- import QuickBooks.QBText
 
 import qualified Network.OAuth.OAuth2      as OAuth2
-import           Data.ByteString.Char8
-import           Data.ByteString.Lazy      (fromStrict)
+
 import           Data.Aeson                (eitherDecode)
+import           Data.ByteString.Char8
 import           Data.String.Interpolate   (i)
 import           Data.Text                 (Text)
+
 import           Network.HTTP.Client
 import           Network.HTTP.Types.Header (hAccept)
 import           Network.URI               (escapeURIString, isUnescapedInURI, isUnescapedInURIComponent)
+
 import           URI.ByteString
 
 -- | Read a bundle by id
@@ -70,7 +72,7 @@ readBundleRequestOAuth2 ::  APIEnv
 readBundleRequestOAuth2 tok iId = do
   let apiConfig = ?apiConfig
   let eitherQueryURI = parseURI strictURIParserOptions . pack $ [i|#{bundleURITemplate apiConfig}/#{iId}|]
-  -- Made for logging 
+  -- Made for logging
   req' <- parseUrlThrow (escapeURIString isUnescapedInURI [i|#{bundleURITemplate apiConfig}/#{iId}|])
   case eitherQueryURI of
     Left err -> return (Left . show $ err)

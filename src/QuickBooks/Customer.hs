@@ -37,7 +37,6 @@ import QuickBooks.QBText
 import qualified Network.OAuth.OAuth2      as OAuth2
 import           Data.Aeson                (encode, eitherDecode)
 import           Data.ByteString.Char8
-import           Data.ByteString.Lazy      (fromStrict)
 import           Data.String.Interpolate   (i)
 import           Data.Text                 (Text)
 import           Network.HTTP.Client
@@ -167,14 +166,14 @@ postCustomerOAuth2 tok customer = do
 
 -- GET /v3/company/<companyID>/query=<selectStatement>
 
-queryCustomerRequest :: APIEnv 
+queryCustomerRequest :: APIEnv
                      => OAuthTokens
                      -> Text
                      -> IO (Either String (QuickBooksResponse [Customer]))
 queryCustomerRequest (OAuth1 tok) name = queryCustomerRequestOAuth tok name
 queryCustomerRequest (OAuth2 tok) name = queryCustomerRequestOAuth2 tok name
 
-queryCustomerRequestOAuth :: APIEnv 
+queryCustomerRequestOAuth :: APIEnv
                      => OAuthToken
                      -> Text
                      -> IO (Either String (QuickBooksResponse [Customer]))
@@ -200,7 +199,7 @@ queryCustomerRequestOAuth tok queryCustomerName = do
     query = "SELECT * FROM Customer"
 
 
-queryCustomerRequestOAuth2 :: APIEnv 
+queryCustomerRequestOAuth2 :: APIEnv
                             => OAuth2.AccessToken
                             -> Text
                             -> IO (Either String (QuickBooksResponse [Customer]))
@@ -245,7 +244,7 @@ queryMaxCustomerRequestOAuth :: APIEnv
 queryMaxCustomerRequestOAuth tok startIndex = do
   let apiConfig = ?apiConfig
   let uriComponent = escapeURIString isUnescapedInURIComponent [i|#{query} #{pagination}|]
-  let queryURI = parseUrl $ [i|#{queryURITemplate apiConfig}#{uriComponent}&minorversion=4|]
+  let queryURI = parseUrlThrow $ [i|#{queryURITemplate apiConfig}#{uriComponent}&minorversion=4|]
   req <- oauthSignRequest tok =<< queryURI
   let oauthHeaders = requestHeaders req
   let req' = req { method = "GET"
@@ -311,7 +310,7 @@ countCustomerRequestOAuth :: APIEnv
 countCustomerRequestOAuth tok = do
   let apiConfig = ?apiConfig
   let uriComponent = escapeURIString isUnescapedInURIComponent [i|#{query}|]
-  let queryURI = parseUrl $ [i|#{queryURITemplate apiConfig}#{uriComponent}&minorversion=4|]
+  let queryURI = parseUrlThrow $ [i|#{queryURITemplate apiConfig}#{uriComponent}&minorversion=4|]
   req <- oauthSignRequest tok =<< queryURI
   let oauthHeaders = requestHeaders req
   let req' = req { method = "GET"

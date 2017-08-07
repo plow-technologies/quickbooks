@@ -28,11 +28,10 @@ module QuickBooks.Types where
 import           Control.Applicative ((<$>), (<*>), (<|>))
 import           Control.Monad       (mzero)
 import           Data.Aeson          (FromJSON (..), ToJSON(..), Value (Object),
-                                      (.:), object, (.=),(.:?))
+                                      (.:), object, (.=))
 import           Data.Aeson.TH       (Options (fieldLabelModifier, omitNothingFields),
                                       defaultOptions, deriveJSON)
 import           Data.ByteString     (ByteString)
-import           Data.Maybe          (fromMaybe)
 import           Data.Char           (toLower)
 import           Data.Text           (Text)
 import           Data.Text.Encoding  (encodeUtf8, decodeUtf8)
@@ -74,8 +73,8 @@ instance FromJSON OAuth2Config where
   parseJSON (Object o) = OAuth2Config <$> o .: "oauth2ClientId"
                                       <*> o .: "oauth2ClientSecret"
                                       <*> o .: "oauth2RefreshToken"
-    where parseByteString obj name = encodeUtf8 <$> (obj .: name)
-  parseJSON _ = mzero  
+
+  parseJSON _ = mzero
 
 
 data APIConfig = APIConfig
@@ -120,9 +119,6 @@ type NetworkEnv = ( ?manager :: Manager
 
 data OAuthTokens = OAuth1 OAuthToken
                  | OAuth2 OAuth2.AccessToken
-
-oauth1Only :: OAuthTokens -> OAuthToken
-oauth1Only (OAuth1 t) = t
 
 
 data OAuthToken = OAuthToken

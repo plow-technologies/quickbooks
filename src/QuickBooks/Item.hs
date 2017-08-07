@@ -28,19 +28,22 @@ module QuickBooks.Item
   , deleteItemRequest
   )
   where
-import URI.ByteString
-import Data.ByteString.Char8
-import Data.ByteString.Lazy (fromStrict)
-import QuickBooks.Authentication
-import QuickBooks.Logging
-import QuickBooks.Types
-import qualified Network.OAuth.OAuth2            as OAuth2
-import Data.Aeson                (encode, eitherDecode)
-import Data.String.Interpolate   (i)
-import Data.Text                 (Text)
-import Network.HTTP.Client
-import Network.HTTP.Types.Header (hAccept, hContentType)
-import Network.URI               (escapeURIString, isUnescapedInURI, isUnescapedInURIComponent)
+
+import           Data.Aeson                (encode, eitherDecode)
+import           Data.ByteString.Char8
+import           Data.String.Interpolate   (i)
+import           Data.Text                 (Text)
+
+import           QuickBooks.Authentication
+import           QuickBooks.Logging
+import           QuickBooks.Types
+
+import qualified Network.OAuth.OAuth2      as OAuth2
+import           Network.HTTP.Client
+import           Network.HTTP.Types.Header (hAccept, hContentType)
+import           Network.URI               (escapeURIString, isUnescapedInURI, isUnescapedInURIComponent)
+
+import           URI.ByteString
 
 -- | Create an item. (Supply a new Item WITHOUT an id field)
 createItemRequest :: APIEnv
@@ -243,8 +246,8 @@ queryMaxItemRequest :: APIEnv
                     => OAuthTokens
                     -> Int
                     -> IO (Either String (QuickBooksResponse [Item]))
-queryMaxItemRequest (OAuth1 tok) index = queryMaxItemRequestOAuth tok index
-queryMaxItemRequest (OAuth2 tok) index = queryMaxItemRequestOAuth2 tok index
+queryMaxItemRequest (OAuth1 tok) startingIndex = queryMaxItemRequestOAuth tok startingIndex
+queryMaxItemRequest (OAuth2 tok) startingIndex = queryMaxItemRequestOAuth2 tok startingIndex
 
 --- OAuth 1 ---
 queryMaxItemRequestOAuth :: APIEnv
