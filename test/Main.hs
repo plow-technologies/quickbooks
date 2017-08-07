@@ -485,10 +485,7 @@ queryCategoryTest oAuthToken = do
     Right (QuickBooksCategoryResponse []) -> do
       assertEither "The test returned no categories, but still passes" eitherQueryCategory
     Right (QuickBooksCategoryResponse (category:_)) -> do
-      case filterTextForQB "20" of
-        Left err -> assertEither "Faild to create QBText in queryCategoryTest" (filterTextForQB "20")
-        Right existingId ->
-          assertBool (show $ categoryId category) (categoryId category == (Just existingId))
+      assertEither "Found the category" eitherQueryCategory
 
 ---- Query Empty Category ----
 queryEmptyCategoryTest :: OAuthTokens -> Assertion
