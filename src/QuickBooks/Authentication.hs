@@ -171,7 +171,9 @@ quickbooksAuthRequest oauth = do
 -- OAUTH
 --------------------------------------------------
 
-getTempOAuthCredentialsRequest :: AppEnv
+getTempOAuthCredentialsRequest :: ( ?logger :: Logger
+                                  , ?manager :: Manager
+                                  , AppEnv)
                                => CallbackURL
                                -> IO (Either String (QuickBooksResponse OAuthToken)) -- ^ Temporary OAuthToken
 getTempOAuthCredentialsRequest callbackURL =
@@ -181,7 +183,7 @@ getTempOAuthCredentialsRequest callbackURL =
       tokensRequest = getToken temporaryTokenURL "?oauth_callback=" callbackURL oauthSignRequestWithEmptyCredentials
 
 
-getAccessTokenRequest :: AppEnv
+getAccessTokenRequest :: (?logger::Logger, ?manager::Manager, AppEnv)
                        => OAuthToken                                         -- ^ Temporary Token
                        -> OAuthVerifier                                      -- ^ OAuthVerifier provided by QuickBooks
                        -> IO (Either String (QuickBooksResponse OAuthToken)) -- ^ OAuthToken
@@ -191,7 +193,7 @@ getAccessTokenRequest  tempToken verifier =
     tokensRequest = getToken accessTokenURL "?oauth_token=" (unpack $ token tempToken) (oauthSignRequestWithVerifier verifier tempToken)
 
 
-disconnectRequest :: AppEnv
+disconnectRequest :: (?logger::Logger, ?manager::Manager, AppEnv)
                   => OAuthToken
                   -> IO (Either String (QuickBooksResponse ()))
 disconnectRequest  tok = do
@@ -201,7 +203,7 @@ disconnectRequest  tok = do
   logAPICall' req'
   return $ Right QuickBooksVoidResponse
 
-getToken :: AppEnv
+getToken :: (?logger :: Logger, ?manager::Manager, AppEnv)
           => String                  -- ^ Endpoint to request the token
           -> String                  -- ^ URL parameter name
           -> String                  -- ^ URL parameter value
