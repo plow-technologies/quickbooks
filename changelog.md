@@ -1,5 +1,8 @@
 Quickbooks Changelog
 ----------------------
+# Version 1.1.0.0
+* builds in GHC 8.0.2
+
 # Version 1.0.0.0
 * Added support for OAuth2 requests to existing QuickBooks API Calls
 * Support for OAuth1 remains through the format of the config file (readme)
