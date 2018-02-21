@@ -60,7 +60,7 @@ chmod +x ~/.local/bin/plow-build-archive
 mkdir -p config	
 aws s3 cp s3://plow-configs/testing/plow-backoffice-backend/config/quickbooksConfig.yml config/
 stack setup
-stack --haddock --no-haddock-deps test
+stack --haddock --no-haddock-deps build
 
 # DEPLOY SECTION
 #--------------------------------------------------------------------------------------------------------------#
