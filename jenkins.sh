@@ -81,7 +81,7 @@ in quickbooks-master)
       tagthis
       cd ~/docsets
       tar --exclude='.DS_Store' -czf Plowtech.tgz Plowtech.docset
-      rsync -avzPe ssh ~/docsets/Plowtech.tgz scott@testing.plowtech.net:~/docset/;;
+      rsync -avzPe ssh ~/docsets/Plowtech.tgz $TESTING_URL:~/docset/;;
 
    *)
       printf "\n"
