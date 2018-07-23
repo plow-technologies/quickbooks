@@ -58,7 +58,7 @@ aws s3 cp --quiet s3://plow-build-tools/plow-build-archive ~/.local/bin/plow-bui
 chmod +x ~/.local/bin/plow-build-archive
 
 mkdir -p config	
-aws s3 cp s3://plow-configs/testing/plow-backoffice-backend/config/quickbooksConfig.yml config/
+aws s3 cp s3://plow-configs/testing/plow-backoffice/plow-backoffice-backend/config/quickbooksConfig.yml config/
 stack setup
 stack --haddock --no-haddock-deps build
 
@@ -72,16 +72,9 @@ in quickbooks-master)
       printf "\n"
       echo "case match quickbooks-master"
       echo "Tagthis Repo"
-      # Make sure stack path is the same as plow-stack path
-      #cp global-stack.yaml stack.yaml
-      stackPath=$(stack path --dist-dir)
+      stackPath=$(stack path --stack-yaml=global-stack.yaml --dist-dir)
       haddocset -t ~/docsets/Plowtech.docset add -s "$(stack path --local-pkg-db)"/*.conf
-      # If you changed the stack.yaml file reset it
-      git reset --hard
-      tagthis
-      cd ~/docsets
-      tar --exclude='.DS_Store' -czf Plowtech.tgz Plowtech.docset
-      rsync -avzPe ssh ~/docsets/Plowtech.tgz $TESTING_URL:~/docset/;;
+      tagthis;;
 
    *)
       printf "\n"
