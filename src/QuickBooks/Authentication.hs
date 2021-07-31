@@ -69,33 +69,46 @@ import           Web.Authenticate.OAuth  (signOAuth
 
 
 import           Data.Aeson
-import           Data.Text.Encoding      (encodeUtf8)
+import qualified Data.Text               as T
+import           Data.Text.Encoding      (encodeUtf8
+                                         ,decodeUtf8)
 import           QuickBooks.Logging      (logAPICall')
 import           QuickBooks.Types
 import qualified Network.OAuth.OAuth2    as OAuth2
+import qualified Network.OAuth.OAuth2.HttpClient as OAuth2
 import qualified Network.HTTP.Types      as HT
 
 
 
 qbAuthGetBS :: Manager -> OAuth2.AccessToken
             -> URI
-            -> IO (OAuth2.OAuth2Result String BSL.ByteString)
+            -> IO (Either BSL.ByteString BSL.ByteString)
 qbAuthGetBS = OAuth2.authGetBS
 
 
 -- | Conduct POST request for Quickbooks.
 
-qbAuthPostBS :: ToJSON a =>  Manager -> OAuth2.AccessToken
-            -> URI
-            -> a
-            -> IO (OAuth2.OAuth2Result String BSL.ByteString)
+qbAuthPostBS :: ToJSON a
+             => Manager
+             -> OAuth2.AccessToken
+             -> URI
+             -> a
+             -> IO (Either BSL.ByteString BSL.ByteString)
 qbAuthPostBS manager tok url pb = do
-  req <- OAuth2.uriToRequest url
-  OAuth2.authRequest req upReq manager
-  where upBody req = req {requestBody =  RequestBodyBS $ BSL.toStrict $ encode pb }
-        upHeaders  = OAuth2.updateRequestHeaders (Just tok) . OAuth2.setMethod HT.POST
-        upContentHeader req = req {requestHeaders = ((HT.hContentType,"application/json") : (requestHeaders req) )}
-        upReq      = upContentHeader . upBody . upHeaders
+  rawReq <- OAuth2.uriToRequest url
+  let req = rawReq
+        { requestBody = RequestBodyBS $ BSL.toStrict $ encode pb
+        , method = "POST"
+        , requestHeaders =
+            [ (HT.hContentType,"application/json")
+            , (HT.hAccept,"application/json")
+            , (HT.hAuthorization, "Bearer " <> encodeUtf8 (OAuth2.atoken tok))
+            ] <> requestHeaders rawReq
+        }
+  rsp <- httpLbs req manager
+  pure $ if HT.statusIsSuccessful $ responseStatus rsp
+    then Right $ responseBody rsp
+    else Left $ responseBody rsp
 
 --------------------------------------------------
 -- OAUTH2
@@ -105,7 +118,7 @@ fetchAccessToken oauth2Config = do
    mgr <- TLS.getGlobalManager
    let newOAuth2 = makeOAuth2 oauth2Config
    let refreshToken = OAuth2.RefreshToken $ oauthRefreshToken oauth2Config
-   oauthTokenRslt <- OAuth2.fetchRefreshToken mgr newOAuth2 refreshToken
+   oauthTokenRslt <- OAuth2.refreshAccessToken mgr newOAuth2 refreshToken
    case oauthTokenRslt of
      Left e       -> fail $ show e
      Right tok  -> do
@@ -124,7 +137,7 @@ readOAuth2ConfigFromFile = decodeFileEither
 makeOAuth2 :: OAuth2Config -> OAuth2.OAuth2
 makeOAuth2 config = OAuth2.OAuth2 {
     OAuth2.oauthClientId            = (oauthClientId config)
-  , OAuth2.oauthClientSecret        = (oauthClientSecret config)
+  , OAuth2.oauthClientSecret        = Just (oauthClientSecret config)
   , OAuth2.oauthOAuthorizeEndpoint  = [uri|https://appcenter.intuit.com/connect/obbauth2|]
   , OAuth2.oauthAccessTokenEndpoint = [uri|https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer|]
   , OAuth2.oauthCallback            =  Just [uri|https://developer.intuit.com/v2/OAuth2Playground/RedirectUrl|]
