@@ -303,7 +303,7 @@ data SalesItemLineDetail = SalesItemLineDetail
   , salesItemLineDetailMarkupInfo      :: !(Maybe Text)
   , salesItemLineDetailQty             :: !(Maybe Double)
   , salesItemLineDetailTaxCodeRef      :: !(Maybe TaxCodeRef)
-  , salesItemLineDetailServiceData     :: !(Maybe Text)
+  , salesItemLineDetailServiceDate     :: !(Maybe Text)
   , salesItemLineDetailTaxInclusiveAmt :: !(Maybe Double)
   }
   deriving (Show, Eq)
