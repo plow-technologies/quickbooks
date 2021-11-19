@@ -78,7 +78,7 @@ library
                          -- https://github.com/bos/aeson/issues/293
                          -- is fixed.
                        , aeson
-                       , hoauth2 >= 1.3.0
+                       , hoauth2 >= 1.16.0
                        , authenticate-oauth
                        , bytestring
                        , http-client

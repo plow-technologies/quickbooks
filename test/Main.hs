@@ -86,7 +86,6 @@ tests tok = testGroup "API Calls" [ testCase "Query Customer" $ queryCustomerTes
                               , testCase "Update Invoice" $ updateInvoiceTest tok
                               , testCase "Delete Invoice" $ deleteInvoiceTest tok
                               -- , testCase "Email Invoice" $ emailInvoiceTest tok
-                              , testCase "Temp Tokens" $ tempTokenTest
                               ]
 
 -----------  Note: There is a very small chance that they may fail due to duplicate name errors on create.
@@ -600,15 +599,6 @@ emailInvoiceTest oAuthToken = do
         -- Finally, we delete the invoice we created:
         deleteInvoice oAuthToken cInvoiceId (fromJust (invoiceSyncToken cInvoice))
         assertEither "I sent an invoice!" eitherSendInvoice
-
----- Temp Tokens ----
-tempTokenTest :: Assertion
-tempTokenTest = do
-  -- | Get temporary tokens to request permission.
-  eitherTempTokens <- getTempTokens "localhost"
-  case eitherTempTokens of
-    Left e -> assertEither e eitherTempTokens
-    Right _ -> assertEither "I got my request tokens!" eitherTempTokens
 
 -------------------
 --HelperFunctions--

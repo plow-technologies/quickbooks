@@ -32,6 +32,7 @@ import qualified Network.OAuth.OAuth2      as OAuth2
 import qualified Text.Email.Validate       as Email (EmailAddress, toByteString)
 
 import           Data.ByteString.Char8
+import qualified Data.ByteString.Lazy
 import           Data.Aeson                (encode, eitherDecode, object, Value(String))
 import           Data.String.Interpolate   (i)
 import           Network.HTTP.Client       (httpLbs
@@ -104,6 +105,7 @@ readInvoiceRequestOAuth2 tok iId = do
       case eitherResponse of
         (Left err) -> return (Left . show $ err)
         (Right resp) -> do
+          Data.ByteString.Lazy.putStrLn resp
           return $ eitherDecode resp
 
 
