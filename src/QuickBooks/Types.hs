@@ -46,14 +46,14 @@ type Logger = LoggerSet
 type CallbackURL = String
 
 newtype OAuthVerifier = OAuthVerifier { unOAuthVerifier :: ByteString }
-  deriving (Show, Eq)
+  deriving (Show, Eq, Ord)
 
 -- | QuickBooks Application Keys
 
 data AppConfig = AppConfig
   { consumerToken  :: !ByteString
   , consumerSecret :: !ByteString
-  } deriving (Show, Eq)
+  } deriving (Show, Eq, Ord)
 
 instance FromJSON AppConfig where
   parseJSON (Object o) = AppConfig <$> (parseByteString o "consumerToken")
@@ -81,7 +81,7 @@ data APIConfig = APIConfig
   { companyId          :: !ByteString
   , hostname           :: !ByteString
   , loggingEnabled     :: !ByteString
-  } deriving (Show, Eq)
+  } deriving (Show, Eq, Ord)
 
 
 
@@ -124,7 +124,7 @@ data OAuthTokens = OAuth1 OAuthToken
 data OAuthToken = OAuthToken
   { token       :: ByteString
   , tokenSecret :: ByteString
-  } deriving (Show, Eq)
+  } deriving (Show, Eq, Ord)
 
 data family QuickBooksResponse a
 data instance QuickBooksResponse Invoice = QuickBooksInvoiceResponse { quickBooksResponseInvoice :: Invoice }
@@ -265,13 +265,13 @@ data QuickBooksRequest a where
   QueryMaxCategoriesFrom  :: Int -> QuickBooksQuery [Category]
 
 newtype InvoiceId = InvoiceId {unInvoiceId :: Text}
-  deriving (Show, Eq, FromJSON, ToJSON)
+  deriving (Show, Eq, Ord, FromJSON, ToJSON)
 
 newtype LineId    = LineId {unLineId :: Text}
-  deriving (Show, Eq, FromJSON, ToJSON)
+  deriving (Show, Eq, Ord, FromJSON, ToJSON)
 
 newtype SyncToken = SyncToken { unSyncToken :: Text }
-  deriving (Show, Eq, FromJSON, ToJSON)
+  deriving (Show, Eq, Ord, FromJSON, ToJSON)
 
 -- | Details of a description line.
 
@@ -279,7 +279,7 @@ data DescriptionLineDetail = DescriptionLineDetail
   { descriptionLineDetailServiceDate :: !(Maybe Text)
   , descriptionLineDetailTaxCodeRef  :: !(Maybe TaxCodeRef)
   }
-  deriving (Show, Eq)
+  deriving (Show, Eq, Ord)
 
 -- | Details of a discount line.
 
@@ -289,7 +289,7 @@ data DiscountLineDetail = DiscountLineDetail
   , discountLineDetailDiscountPercent    :: !(Maybe Double)
   , discountLineDetailDiscountAccountRef :: !(Maybe DiscountAccountRef)
   }
-  deriving (Show, Eq)
+  deriving (Show, Eq, Ord)
 
 -- | Details of a sales item line.
 -- In order to create a sales item line detail, use 'salesItemLineDetail'.
@@ -306,7 +306,7 @@ data SalesItemLineDetail = SalesItemLineDetail
   , salesItemLineDetailServiceDate     :: !(Maybe Text)
   , salesItemLineDetailTaxInclusiveAmt :: !(Maybe Double)
   }
-  deriving (Show, Eq)
+  deriving (Show, Eq, Ord)
 
 -- | Create a sales item line detail with a reference to an item.
 --
@@ -333,13 +333,13 @@ salesItemLineDetail itemRef =
 
 data SubTotalLineDetail = SubTotalLineDetail
   { subtotalLineDetailItemRef :: !(Maybe ItemRef) }
-  deriving (Show, Eq)
+  deriving (Show, Eq, Ord)
 
 -- | An individual line item of a transaction.
 
 data ItemGroupDetail = ItemGroupDetail
   { itemGroupLine             :: !(Maybe [ItemGroupLine])}
-  deriving (Show, Eq)
+  deriving (Show, Eq, Ord)
 
 data Line = Line
   { lineId                    :: !(Maybe LineId)
@@ -354,7 +354,7 @@ data Line = Line
   , lineSubTotalLineDetail    :: !(Maybe SubTotalLineDetail)
   , lineCustomField           :: !(Maybe [CustomField])
   }
-  deriving (Show, Eq)
+  deriving (Show, Eq, Ord)
 
 -- | Create a sales item line with amount and details.
 --
@@ -395,13 +395,13 @@ emptySalesItemLine =
 
 
 newtype DeletedInvoiceId = DeletedInvoiceId { unDeletedInvoiceId :: Text }
-  deriving (Show, Eq, FromJSON, ToJSON)
+  deriving (Show, Eq, Ord, FromJSON, ToJSON)
 
 data DeletedInvoice = DeletedInvoice
   { deletedInvoiceId     :: !DeletedInvoiceId
   , deletedInvoicedomain :: !Text
   , deletedInvoicestatus :: !Text
-  } deriving (Show, Eq)
+  } deriving (Show, Eq, Ord)
 
 -- | A reference.
 -- In order to create a reference, use 'reference'.
@@ -410,14 +410,14 @@ data ItemGroupLine = ItemGroupLine
   { itemRef        :: !(Maybe ItemRef)
   , itemQty        :: !(Maybe Integer)
   }
-  deriving (Show, Eq)
+  deriving (Show, Eq, Ord)
 
 data Reference = Reference
   { referenceName  :: !(Maybe Text)
   , referenceType  :: !(Maybe Text)
   , referenceValue :: !Text
   }
-  deriving (Show, Eq)
+  deriving (Show, Eq, Ord)
 
 -- | Create a reference with a value.
 --
@@ -456,17 +456,17 @@ data ModificationMetaData = ModificationMetaData
   { modificationMetaDataCreateTime      :: !Text
   , modificationMetaDataLastUpdatedTime :: !Text
   }
-  deriving (Show, Eq)
+  deriving (Show, Eq, Ord)
 
 data TelephoneNumber = TelephoneNumber
   { telephoneNumberFreeFormNumber :: !Text
   }
-  deriving (Eq, Show)
+  deriving (Eq, Ord, Show)
 
 data WebSiteAddress = WebAddress
   { webSiteAddressURI :: !Text
   }
-  deriving (Eq, Show)
+  deriving (Eq, Ord, Show)
 
 data PhysicalAddress = PhysicalAddress
   { physicalAddressId                     :: !(Maybe Text)
@@ -483,7 +483,7 @@ data PhysicalAddress = PhysicalAddress
   , physicalAddressLat                    :: !(Maybe Text)
   , physicalAddressLong                   :: !(Maybe Text)
   }
-  deriving (Show, Eq)
+  deriving (Show, Eq, Ord)
 
 type BillAddr = PhysicalAddress
 type ShipAddr = PhysicalAddress
@@ -491,27 +491,27 @@ type ShipAddr = PhysicalAddress
 data EmailAddress = EmailAddress
   { emailAddress :: !Text
   }
-  deriving (Show, Eq)
+  deriving (Show, Eq, Ord)
 
 data TxnTaxDetail = TxnTaxDetail
   { txnTaxDetailTxnTaxCodeRef :: !(Maybe TxnTaxCodeRef)
   , txnTaxDetailTotalTax      :: !Double
   , txnTaxDetailTaxLine       :: !(Maybe Line)
   }
-  deriving (Show, Eq)
+  deriving (Show, Eq, Ord)
 
 data DeliveryInfo = DeliveryInfo
   { deliveryInfoDeliveryType :: !(Maybe Text)
   , deliveryInfoDeliveryTime :: !(Maybe Text)
   }
-  deriving (Show, Eq)
+  deriving (Show, Eq, Ord)
 
 data LinkedTxn = LinkedTxn
   { linkedTxnId     :: !(Maybe Text)
   , linkedTxnType   :: !(Maybe Text)
   , linkedTxnLineId :: !(Maybe Text)
   }
-  deriving (Show, Eq)
+  deriving (Show, Eq, Ord)
 
 data CustomField = CustomField
   { customFieldDefinitionId :: !Text
@@ -522,20 +522,20 @@ data CustomField = CustomField
   , customFieldDateValue    :: !(Maybe Text)
   , customFieldNumberValue  :: !(Maybe Double)
   }
-  deriving (Show, Eq)
+  deriving (Show, Eq, Ord)
 
 data CustomFieldType
   = BooleanType
   | DateType
   | NumberType
   | StringType
-  deriving (Show, Eq)
+  deriving (Show, Eq, Ord)
 
 data GlobalTaxModel
   = NotApplicable
   | TaxExcluded
   | TaxInclusive
-  deriving (Show, Eq)
+  deriving (Show, Eq, Ord)
 
 -- | An invoice transaction entity, that is, a sales form where the customer
 -- pays for a product or service later.
@@ -587,7 +587,7 @@ data Invoice = Invoice
   , invoiceDomain                :: !(Maybe QBText)
   , invoiceSparse                :: !(Maybe Bool)
   }
-  deriving (Show, Eq)
+  deriving (Show, Eq, Ord)
 
 -- | Create an 'Invoice' with the minimum elements.
 --
@@ -644,12 +644,12 @@ defaultInvoice lines customerRef =
 
 data InvoiceResponse = InvoiceResponse
   { invoiceResponseInvoice :: Invoice }
-  deriving (Show, Eq)
+  deriving (Show, Eq, Ord)
 
 data CustomerResponse = CustomerResponse
   { customerResponseCustomer :: !Customer
   }
-  deriving (Eq, Show)
+  deriving (Eq, Ord, Show)
 
 data Customer = Customer
   { customerId                      :: !(Maybe QBText)
@@ -689,12 +689,12 @@ data Customer = Customer
   , customerPreferredDeliveryMethod :: !(Maybe QBText)
   , customerResaleNum               :: !(Maybe QBText) -- max 15
   }
-  deriving (Eq, Show)
+  deriving (Eq, Ord, Show)
 
 data ItemResponse = ItemResponse
   { itemResponseItem :: !Item
   }
-  deriving (Eq, Show)
+  deriving (Eq, Ord, Show)
 
 data Item = Item
   { itemId                   :: !(Maybe QBText)
@@ -723,7 +723,7 @@ data Item = Item
   , itemPurchaseTaxCodeRef   :: !(Maybe Reference)
   , itemInvStartDate         :: !(Maybe Text) -- required for inventory items
   }
-  deriving (Eq, Show)
+  deriving (Eq, Ord, Show)
 
 data Bundle = Bundle
   { bundleId                 :: !(Maybe QBText)
@@ -741,7 +741,7 @@ data Bundle = Bundle
   , bundlePrintGroupItems    :: !(Maybe Bool) -- Specifies if all group items get printed
   , bundleGroupDetail        :: !(Maybe ItemGroupDetail) -- [ItemGroupLine]
   }
-  deriving (Eq, Show)
+  deriving (Eq, Ord, Show)
 
 data Category = Category
   { categoryId                 :: !(Maybe QBText)
@@ -755,13 +755,13 @@ data Category = Category
   , categoryFullyQualifiedName :: !(Maybe QBText)    -- readonly
   , categoryType               :: !(Maybe Text)
   }
-  deriving (Eq, Show)
+  deriving (Eq, Ord, Show)
 
 data DeletedCategory = DeletedCategory
   { deletedCategoryId     :: !Text
   , deletedCategorydomain :: !Text
   , deletedCategorystatus :: !Text
-  } deriving (Show, Eq)
+  } deriving (Show, Eq, Ord)
 
 $(deriveJSON defaultOptions
                { fieldLabelModifier = drop 8
